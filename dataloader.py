@@ -7,12 +7,6 @@ from torchvision import transforms
 import numpy as np
 
 
-parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument("--dataset-path", type=str, default='data/speech_commands_v0.01', help='path to the dataset')
-args = parser.parse_args()
-
-#MFCC feature extraction
-#40 MFCC speech frame of length 40ms with a stride of 20ms, which gives 1960 (49×40) features for 1 second of audio
 
 
 MAX_NUM_WAVS_PER_CLASS = 2**27 - 1  # ~134M
@@ -71,11 +65,14 @@ def which_set(filename, validation_percentage, testing_percentage):
 class SpeechCommandsGoogle(Dataset):
     """Google Speech Command Dataset configured from Hello Edge"""
 
-    def __init__(self, root_dir, train_test_val, val_perc, test_perc, words, transform=None):
+    def __init__(self, root_dir, train_test_val, val_perc, test_perc, words, sample_rate, transform=None):
         """
         Args:
             root_dir (string): Directory with all the recording.
-            set (string): train/test/validation
+            set (string): training/testing/validation
+            val_perc: 
+            test_perc:
+            words:
             transform (callable, optional): Optional transform to be applied
                 on a sample.
         """
@@ -97,59 +94,27 @@ class SpeechCommandsGoogle(Dataset):
 
         self.root_dir = root_dir
         self.transform = transform
+        self.train_test_val = train_test_val
+        self.val_perc = val_perc
+        self.test_perc = test_perc
+        self.words = words
+        self.sample_rate = sample_rate
 
     def __len__(self):
         return len(self.list_of_labels)
 
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
-            idx = idx.tolist()
+            idx = idx.tolist()        
 
-        import pdb; pdb.set_trace()
-
-        #for i in idx:
-        waveform, _ = torchaudio.load(self.list_of_files[idx])
-
-
-        
-        
-
-        #img_name = os.path.join(self.root_dir,
-        #                        self.landmarks_frame.iloc[idx, 0])
-        #image = io.imread(img_name)
-        #landmarks = self.landmarks_frame.iloc[idx, 1:]
-        #landmarks = np.array([landmarks])
-        #landmarks = landmarks.astype('float').reshape(-1, 2)
-        #sample = {'image': image, 'landmarks': landmarks}
+        waveform, sample_rate = torchaudio.load(self.list_of_files[idx])
+        if sample_rate != self.sample_rate:
+            raise ValueError('Specified sample rate doesn\'t match sample rate in .wav file.')
+        uniform_waveform = torch.zeros((1, self.sample_rate))
+        uniform_waveform[0, :waveform.shape[1]] = uniform_waveform[0, :waveform.shape[1]] + waveform[0,:]
 
         if self.transform:
-            waveform = self.transform(waveform)
+            waveform = self.transform(uniform_waveform)
 
         return waveform, self.list_of_labels[idx]
-
-
-
-
-files_path = "data.nosync/speech_commands_v0.01"
-word_list = ['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'silence'] #unknown category
-
-
-data_transform = transforms.Compose([
-        torchaudio.transforms.MFCC(sample_rate = 16000, n_mfcc = 40, melkwargs = {'win_length' : 40, 'hop_length' : 20})
-    ])
-
-speech_dataset_train = SpeechCommandsGoogle(files_path, 'training', 10, 10, word_list)
-speech_dataset_test = SpeechCommandsGoogle(files_path, 'testing', 10, 10, word_list)
-speech_dataset_val = SpeechCommandsGoogle(files_path, 'validation', 10, 10, word_list)
-print(len(speech_dataset_train))
-print(len(speech_dataset_test))
-print(len(speech_dataset_val))
-
-train_dataloader = torch.utils.data.DataLoader(speech_dataset_train, batch_size=4, shuffle=True, num_workers=4)
-
-
-for i_batch, sample_batched in enumerate(train_dataloader):
-    print(sample_batched)
-
-
 
