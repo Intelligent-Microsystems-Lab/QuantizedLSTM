@@ -39,8 +39,9 @@ args = parser.parse_args()
 
 
 class KWS_LSTM(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, batch_size, num_LSTM, dropout):
+    def __init__(self, input_dim, hidden_dim, output_dim, batch_size, num_LSTM, dropout, device):
         super(KWS_LSTM, self).__init__()
+        self.device = device
         self.batch_size = batch_size
         self.dropout = dropout
         self.num_LSTM = num_LSTM
@@ -59,7 +60,7 @@ class KWS_LSTM(nn.Module):
 
     def forward(self, inputs):
         # init states with zero
-        self.hidden_state = (torch.zeros(self.num_LSTM, inputs.shape[0], self.hidden_dim), torch.zeros(self.num_LSTM, inputs.shape[0], self.hidden_dim))
+        self.hidden_state = (torch.zeros(self.num_LSTM, inputs.shape[0], self.hidden_dim, device = self.device), torch.zeros(self.num_LSTM, inputs.shape[0], self.hidden_dim, device = self.device))
         # pass throug LSTM units
         lstm_out, self.hidden_state = self.lstmL(inputs, self.hidden_state)
         # read out layer
@@ -82,17 +83,18 @@ train_dataloader = torch.utils.data.DataLoader(speech_dataset_train, batch_size=
 test_dataloader = torch.utils.data.DataLoader(speech_dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
 validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
 
-model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list)+1, batch_size = args.batch_size, num_LSTM = args.num_LSTM, dropout = args.dropout).to(device)
+model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list)+1, batch_size = args.batch_size, num_LSTM = args.num_LSTM, dropout = args.dropout, device = device).to(device)
 loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)  
 
 
-
+print("Start Training:")
 for e in range(args.epochs):
     # train
     acc_aux = []
     for i_batch, sample_batch in enumerate(train_dataloader):
         x_data, y_label = sample_batch
+        y_label = y_label.to(device)
         output = model(x_data)
         loss_val = loss_fn(output, y_label)
         acc_aux.append((output.argmax(dim=1) == y_label))
@@ -106,6 +108,7 @@ for e in range(args.epochs):
     acc_aux = []
     for i_batch, sample_batch in enumerate(validation_dataloader):
         x_data, y_label = sample_batch
+        y_label = y_label.to(device)
         output = model(x_data)
         acc_aux.append((output.argmax(dim=1) == y_label))
     val_acc = np.hstack(acc_aux).mean()
@@ -113,10 +116,12 @@ for e in range(args.epochs):
     print("Epoch {0:02d}: Train Loss {1:.4f}, Train Acc {2:.4f}, Validation Acc {3:.4f}".format(e, loss_val, train_acc, val_acc))
 
 
-# validation
+# Testing
+print("Start Testing:")
 acc_aux = []
 for i_batch, sample_batch in enumerate(test_dataloader):
     x_data, y_label = sample_batch
+    y_label = y_label.to(device)
     output = model(x_data)
     acc_aux.append()
     acc_aux.append((output.argmax(dim=1) == y_label))
