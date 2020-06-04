@@ -120,5 +120,5 @@ class SpeechCommandsGoogle(Dataset):
         if self.transform:
             waveform = self.transform(uniform_waveform)
 
-        return waveform[0].t().to(self.device), self.list_of_y[idx].to(self.device)
+        return waveform[0].t().to(self.device), self.list_of_y[idx]
 
