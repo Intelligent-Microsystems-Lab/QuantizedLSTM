@@ -79,6 +79,7 @@ class SpeechCommandsGoogle(Dataset):
 
         self.list_of_files = []
         self.list_of_labels = []
+        self.list_of_y = []
         sub_dirs = [x[0].split('/')[-1] for x in os.walk(root_dir)][1:]
         for cur_dir in sub_dirs:
             if cur_dir[0] == "_":
@@ -88,8 +89,10 @@ class SpeechCommandsGoogle(Dataset):
                 if which_set(cur_f, val_perc, test_perc) == train_test_val:
                     self.list_of_files.append(cur_f)
                     if cur_dir not in words:
+                        self.list_of_y.append(len(words))
                         self.list_of_labels.append('unknown')
                     else:
+                        self.list_of_y.append(words.index(cur_dir))
                         self.list_of_labels.append(cur_dir)
 
         self.root_dir = root_dir
@@ -116,5 +119,5 @@ class SpeechCommandsGoogle(Dataset):
         if self.transform:
             waveform = self.transform(uniform_waveform)
 
-        return waveform, self.list_of_labels[idx]
+        return waveform[0].t(), self.list_of_y[idx]
 
