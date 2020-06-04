@@ -65,7 +65,7 @@ def which_set(filename, validation_percentage, testing_percentage):
 class SpeechCommandsGoogle(Dataset):
     """Google Speech Command Dataset configured from Hello Edge"""
 
-    def __init__(self, root_dir, train_test_val, val_perc, test_perc, words, sample_rate, transform=None):
+    def __init__(self, root_dir, train_test_val, val_perc, test_perc, words, sample_rate, device, transform=None):
         """
         Args:
             root_dir (string): Directory with all the recording.
@@ -80,6 +80,7 @@ class SpeechCommandsGoogle(Dataset):
         self.list_of_files = []
         self.list_of_labels = []
         self.list_of_y = []
+        self.device = device
         sub_dirs = [x[0].split('/')[-1] for x in os.walk(root_dir)][1:]
         for cur_dir in sub_dirs:
             if cur_dir[0] == "_":
@@ -119,5 +120,5 @@ class SpeechCommandsGoogle(Dataset):
         if self.transform:
             waveform = self.transform(uniform_waveform)
 
-        return waveform[0].t(), self.list_of_y[idx]
+        return waveform[0].t().to(device), self.list_of_y[idx].to(device)
 
