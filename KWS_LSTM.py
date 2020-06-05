@@ -102,7 +102,6 @@ for e in range(args.epochs):
         loss_val.backward()
         optimizer.step()
         optimizer.zero_grad()
-        import pdb; pdb.set_trace()
     train_acc = torch.cat(acc_aux).float().mean().item()
 
     # validation
