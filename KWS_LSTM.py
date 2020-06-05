@@ -19,7 +19,7 @@ else:
 
 
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument("--dataset-path", type=str, default='data.nosync/speech_commands_v0.02', help='Path to Dataset')
+parser.add_argument("--dataset-path", type=str, default='data.nosync/speech_commands_v0.01', help='Path to Dataset')
 parser.add_argument("--batch-size", type=int, default=128, help='Batch Size')
 parser.add_argument("--epochs", type=int, default=300, help='Epochs')
 parser.add_argument("--num-LSTM", type=int, default=1, help='Number is stacked LSTM layers')
@@ -102,7 +102,8 @@ for e in range(args.epochs):
         loss_val.backward()
         optimizer.step()
         optimizer.zero_grad()
-    train_acc = np.hstack(acc_aux).mean()
+        import pdb; pdb.set_trace()
+    train_acc = torch.cat(acc_aux).float().mean().item()
 
     # validation
     acc_aux = []
@@ -111,7 +112,7 @@ for e in range(args.epochs):
         y_label = y_label.to(device)
         output = model(x_data)
         acc_aux.append((output.argmax(dim=1) == y_label))
-    val_acc = np.hstack(acc_aux).mean()
+    val_acc = torch.cat(acc_aux).float().mean().item()
 
     print("Epoch {0:02d}: Train Loss {1:.4f}, Train Acc {2:.4f}, Validation Acc {3:.4f}".format(e, loss_val, train_acc, val_acc))
 
@@ -126,6 +127,6 @@ for i_batch, sample_batch in enumerate(test_dataloader):
     acc_aux.append()
     acc_aux.append((output.argmax(dim=1) == y_label))
 
-test_acc = np.hstack(acc_aux).mean()
+test_acc = torch.cat(acc_aux).float().mean().item()
 print("Test Accuracy: {0:.4f}".format(test_acc))
 
