@@ -19,9 +19,10 @@ else:
 
 
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument("--dataset-path", type=str, default='data.nosync/speech_commands_v0.01', help='Path to Dataset')
+parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speech_commands_v0.02', help='Path to Dataset')
+parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
 parser.add_argument("--batch-size", type=int, default=128, help='Batch Size')
-parser.add_argument("--epochs", type=int, default=300, help='Epochs')
+parser.add_argument("--epochs", type=int, default=20000, help='Epochs')
 parser.add_argument("--num-LSTM", type=int, default=1, help='Number is stacked LSTM layers')
 parser.add_argument("--hidden", type=int, default=200, help='Number of hidden LSTM units')
 parser.add_argument("--dropout", type=float, default=0, help='Dropout Percentage')
@@ -33,7 +34,7 @@ parser.add_argument("--sample-rate", type=int, default=16000, help='Audio Sample
 parser.add_argument("--n-mfcc", type=int, default=40, help='Number of mfc coefficients to retain')
 parser.add_argument("--win-length", type=int, default=400, help='Window size in ms')
 parser.add_argument("--hop-length", type=int, default=320, help='Length of hop between STFT windows')
-parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'silence'], help='Keywords to be learned')
+parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
 args = parser.parse_args()
 
 
@@ -74,9 +75,9 @@ data_transform = transforms.Compose([
         torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, melkwargs = {'win_length' : args.win_length, 'hop_length':args.hop_length})
     ])
 
-speech_dataset_train = SpeechCommandsGoogle(args.dataset_path, 'training', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, device = device, transform=data_transform)
-speech_dataset_test = SpeechCommandsGoogle(args.dataset_path, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, device = device, transform=data_transform)
-speech_dataset_val = SpeechCommandsGoogle(args.dataset_path, 'validation', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, device = device, transform=data_transform)
+speech_dataset_train = SpeechCommandsGoogle(args.dataset_path_train, 'training', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, device = device, transform=data_transform)
+speech_dataset_val = SpeechCommandsGoogle(args.dataset_path_train , 'validation', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, device = device, transform=data_transform)
+speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_test, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, device = device, transform=data_transform)
 
 
 train_dataloader = torch.utils.data.DataLoader(speech_dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
@@ -91,29 +92,25 @@ optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
 print("Start Training:")
 for e in range(args.epochs):
     # train
-    acc_aux = []
-    for i_batch, sample_batch in enumerate(train_dataloader):
-        x_data, y_label = sample_batch
-        y_label = y_label.to(device)
-        output = model(x_data)
-        loss_val = loss_fn(output, y_label)
-        acc_aux.append((output.argmax(dim=1) == y_label))
+    x_data, y_label = next(iter(train_dataloader))
+    y_label = y_label.to(device).view((-1))
+    output = model(x_data)
+    loss_val = loss_fn(output, y_label)
         
-        loss_val.backward()
-        optimizer.step()
-        optimizer.zero_grad()
-    train_acc = torch.cat(acc_aux).float().mean().item()
+        
+    loss_val.backward()
+    optimizer.step()
+    optimizer.zero_grad()
+    train_acc = (output.argmax(dim=1) == y_label).float().mean().item()
 
     # validation
-    acc_aux = []
-    for i_batch, sample_batch in enumerate(validation_dataloader):
-        x_data, y_label = sample_batch
-        y_label = y_label.to(device)
-        output = model(x_data)
-        acc_aux.append((output.argmax(dim=1) == y_label))
-    val_acc = torch.cat(acc_aux).float().mean().item()
+    x_data, y_label = next(iter(validation_dataloader))
+    y_label = y_label.to(device).view((-1))
+    output = model(x_data)
+    val_acc = (output.argmax(dim=1) == y_label).float().mean().item()
 
-    print("Epoch {0:02d}: Train Loss {1:.4f}, Train Acc {2:.4f}, Validation Acc {3:.4f}".format(e, loss_val, train_acc, val_acc))
+    if e%100 == 0:
+        print("Epoch {0:02d}: Train Loss {1:.4f}, Train Acc {2:.4f}, Validation Acc {3:.4f}".format(e, loss_val, train_acc, val_acc))
 
 
 # Testing
@@ -121,7 +118,7 @@ print("Start Testing:")
 acc_aux = []
 for i_batch, sample_batch in enumerate(test_dataloader):
     x_data, y_label = sample_batch
-    y_label = y_label.to(device)
+    y_label = y_label.to(device).view((-1))
     output = model(x_data)
     acc_aux.append()
     acc_aux.append((output.argmax(dim=1) == y_label))
