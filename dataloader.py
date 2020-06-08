@@ -89,7 +89,8 @@ class SpeechCommandsGoogle(Dataset):
                 if cur_dir == "background_noise":
                     self.list_of_y.append(words.index('silence'))
                     self.list_of_labels.append('silence')
-                if which_set(cur_f, val_perc, test_perc) == train_test_val:
+                    self.list_of_files.append(cur_f)
+                elif which_set(cur_f, val_perc, test_perc) == train_test_val:
                     self.list_of_files.append(cur_f)
                     if (cur_dir not in words) and (train_test_val != 'testing'):
                         self.list_of_y.append(words.index('unknown'))
