@@ -122,10 +122,7 @@ class SpeechCommandsGoogle(Dataset):
             # balance training and validation samples
             y_sel = int(idx/len(self.list_of_labels)*len(self.words))
             idx = np.random.choice(np.argwhere(self.list_of_y == y_sel)[:,0],1)
-            try:
-                waveform, sample_rate = torchaudio.load(self.list_of_files[idx.item()])
-            except:
-                import pdb; pdb.set_trace()
+            waveform, sample_rate = torchaudio.load(self.list_of_files[idx.item()])
         if sample_rate != self.sample_rate:
             raise ValueError('Specified sample rate doesn\'t match sample rate in .wav file.')
 
