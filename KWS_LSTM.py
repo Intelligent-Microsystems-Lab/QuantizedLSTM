@@ -1,4 +1,4 @@
-import glob, os, argparse, re, hashlib
+import glob, os, argparse, re, hashlib, uuid
 
 import torch
 import torchaudio
@@ -21,8 +21,10 @@ else:
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speech_commands_v0.02', help='Path to Dataset')
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
-parser.add_argument("--batch-size", type=int, default=128, help='Batch Size')
+parser.add_argument("--batch-size", type=int, default=100, help='Batch Size')
+parser.add_argument("--validation-size", type=int, default=60, help='Number of batches used for validation')
 parser.add_argument("--epochs", type=int, default=20000, help='Epochs')
+parser.add_argument("--lr-divide", type=int, default=10000, help='Learning Rate divide')
 parser.add_argument("--num-LSTM", type=int, default=1, help='Number is stacked LSTM layers')
 parser.add_argument("--hidden", type=int, default=200, help='Number of hidden LSTM units')
 parser.add_argument("--dropout", type=float, default=0, help='Dropout Percentage')
@@ -88,9 +90,14 @@ model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim =
 loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)  
 
+best_acc = 0
+model_uuid = str(uuid.uuid4())
 
 print("Start Training:")
+print("Epoch Train Loss Train Acc Vali. Acc")
 for e in range(args.epochs):
+    if e == args.lr_divide:
+        optimizer.param_groups[-1]['lr'] /= 5
     # train
     x_data, y_label = next(iter(train_dataloader))
     y_label = y_label.to(device).view((-1))
@@ -104,23 +111,40 @@ for e in range(args.epochs):
     train_acc = (output.argmax(dim=1) == y_label).float().mean().item()
 
     # validation
-    x_data, y_label = next(iter(validation_dataloader))
-    y_label = y_label.to(device).view((-1))
-    output = model(x_data)
-    val_acc = (output.argmax(dim=1) == y_label).float().mean().item()
+    acc_aux = []
+    for i in range(args.validation_size):
+        x_data, y_label = next(iter(validation_dataloader))
+        y_label = y_label.to(device).view((-1))
+        output = model(x_data)
+        acc_aux.append((output.argmax(dim=1) == y_label))
+    val_acc = torch.cat(acc_aux).float().mean().item()
+
+    if best_acc < val_acc:
+        best_acc = val_acc
+        checkpoint_dict = {
+            'model_dict' : model.state_dict(), 
+            'optimizer'  : optimizer.state_dict(),
+            'epoch'      : e, 
+            'best_vali'  : best_acc, 
+            'arguments'  : args,
+            'train_loss' : loss_val
+        }
+        torch.save(checkpoint_dict, './checkpoints/'+model_uuid+'.pkl')
+        del checkpoint_dict
 
     if e%100 == 0:
-        print("Epoch {0:02d}: Train Loss {1:.4f}, Train Acc {2:.4f}, Validation Acc {3:.4f}".format(e, loss_val, train_acc, val_acc))
+        print("{0:02d}     {1:.4f}      {2:.4f}     {3:.4f}".format(e, loss_val, train_acc, best_acc))
 
 
 # Testing
 print("Start Testing:")
+checkpoint_dict = torch.load('./checkpoints/'+model_uuid+'.pkl')
+model.load_state_dict(checkpoint_dict['model_dict'])
 acc_aux = []
 for i_batch, sample_batch in enumerate(test_dataloader):
     x_data, y_label = sample_batch
     y_label = y_label.to(device).view((-1))
     output = model(x_data)
-    acc_aux.append()
     acc_aux.append((output.argmax(dim=1) == y_label))
 
 test_acc = torch.cat(acc_aux).float().mean().item()
