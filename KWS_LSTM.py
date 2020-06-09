@@ -1,4 +1,4 @@
-import glob, os, argparse, re, hashlib, uuid, collections
+import glob, os, argparse, re, hashlib, uuid, collections, math
 
 import torch
 import torchaudio
@@ -75,9 +75,9 @@ def quant_w(x, wb, scale = 1):
     if x is None:
         return None
 
-    with torch.no_grad():
-        y = quant(clip(x, wb) , wb)
-        diff = (y - x)
+    #with torch.no_grad():
+    y = quant(clip(x, wb) , wb)
+    diff = (y - x)
 
     #if scale <= 1.8:
     #    return x + diff
@@ -93,7 +93,7 @@ def limit_scale(shape, factor, beta, wb):
     scale = scale if scale > 1 else 1.0
     limit = Wm if Wm > limit else limit
 
-    return scale, limit
+    return scale, limit.item()
 
 #https://github.com/pytorch/benchmark/blob/master/rnns/fastrnns/custom_lstms.py#L32
 class LSTMCell(jit.ScriptModule):
@@ -109,7 +109,7 @@ class LSTMCell(jit.ScriptModule):
         self.bias_ih = nn.Parameter(torch.randn(4 * hidden_size))
         self.bias_hh = nn.Parameter(torch.randn(4 * hidden_size))
 
-    @jit.script_method
+    #@jit.script_method
     def forward(self, input, state):
         # type: (Tensor, Tuple[Tensor, Tensor]) -> Tuple[Tensor, Tuple[Tensor, Tensor]]
         hx, cx = state
@@ -137,7 +137,7 @@ class LSTMLayer(jit.ScriptModule):
         super(LSTMLayer, self).__init__()
         self.cell = cell(*cell_args)
 
-    @jit.script_method
+    #@jit.script_method
     def forward(self, input, state):
         # type: (Tensor, Tuple[Tensor, Tensor]) -> Tuple[Tensor, Tuple[Tensor, Tensor]]
         inputs = input.unbind(0)
@@ -177,13 +177,13 @@ class KWS_LSTM(nn.Module):
         self.scale_out, self.limit_out = limit_scale(self.hidden_dim, quant_factor, quant_beta, wb)
         self.scale_hh, self.limit_hh  = limit_scale(self.input_dim, quant_factor, quant_beta, wb)
         self.scale_ih, self.limit_ih  = limit_scale(self.hidden_dim, quant_factor, quant_beta, wb)
-        torch.nn.init.uniform_(self.outputL.weights, a = -self.limit_out, b = self.limit_out)
-        torch.nn.init.uniform_(self.lstmL.weight_ih, a = -self.limit_ih, b = self.limit_ih)
-        torch.nn.init.uniform_(self.lstmL.weight_hh, a = -self.limit_hh, b = self.limit_hh)
+        torch.nn.init.uniform_(self.outputL.weight, a = -self.limit_out, b = self.limit_out)
+        torch.nn.init.uniform_(self.lstmL.cell.weight_ih, a = -self.limit_ih, b = self.limit_ih)
+        torch.nn.init.uniform_(self.lstmL.cell.weight_hh, a = -self.limit_hh, b = self.limit_hh)
         # http://proceedings.mlr.press/v37/jozefowicz15.pdf
         torch.nn.init.uniform_(self.outputL.bias, a = -0, b = 0)
-        torch.nn.init.uniform_(self.lstmL.bias_ih, a = -0, b = 0)
-        torch.nn.init.uniform_(self.lstmL.bias_hh, a = 1, b = 1)
+        torch.nn.init.uniform_(self.lstmL.cell.bias_ih, a = -0, b = 0)
+        torch.nn.init.uniform_(self.lstmL.cell.bias_hh, a = 1, b = 1)
 
     def forward(self, inputs):
         # init states with zero
@@ -228,6 +228,7 @@ for e in range(args.epochs):
     # train
     x_data, y_label = next(iter(train_dataloader))
     y_label = y_label.to(device).view((-1))
+    import pdb; pdb.set_trace()
     x_data = quant_w(x_data.permute(1,0,2),args.quant_inp)
     output = model(x_data)
     loss_val = loss_fn(output, y_label)

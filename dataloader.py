@@ -138,6 +138,7 @@ class SpeechCommandsGoogle(Dataset):
         else:
             uniform_waveform = waveform
 
+        import pdb; pdb.set_trace()
         if self.transform:
             waveform = self.transform(uniform_waveform)
 
