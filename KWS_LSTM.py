@@ -22,13 +22,11 @@ else:
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speech_commands_v0.02', help='Path to Dataset')
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
-parser.add_argument("--batch-size", type=int, default=100, help='Batch Size')
+parser.add_argument("--batch-size", type=int, default=256, help='Batch Size')
 parser.add_argument("--validation-size", type=int, default=1000, help='Number of batches used for validation')
 parser.add_argument("--epochs", type=int, default=20000, help='Epochs')
 parser.add_argument("--lr-divide", type=int, default=10000, help='Learning Rate divide')
-#parser.add_argument("--num-LSTM", type=int, default=1, help='Number is stacked LSTM layers')
-parser.add_argument("--hidden", type=int, default=200, help='Number of hidden LSTM units') 
-#parser.add_argument("--dropout", type=float, default=0, help='Dropout Percentage')
+parser.add_argument("--hidden", type=int, default=300, help='Number of hidden LSTM units') 
 parser.add_argument("--learning-rate", type=float, default=0.0005, help='Dropout Percentage')
 parser.add_argument("--dataloader-num-workers", type=int, default=0, help='Number Workers Dataloader')
 parser.add_argument("--validation-percentage", type=int, default=10, help='Validation Set Percentage')
@@ -40,9 +38,9 @@ parser.add_argument("--hop-length", type=int, default=320, help='Length of hop b
 parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
 parser.add_argument("--noise-injection", type=int, default=None, help='Percentage of noise injected to weights')
 parser.add_argument("--quant-w", type=int, default=None, help='Bits available for weights')
-parser.add_argument("--quant-act", type=int, default=None, help='Bits available for activations/state')
-parser.add_argument("--quant-inp", type=int, default=None, help='Bits available for inputs')
-parser.add_argument("--quant-state", type=int, default=None, help='Bits available for LSTM states')
+parser.add_argument("--quant-act", type=int, default=5, help='Bits available for activations/state')
+parser.add_argument("--quant-inp", type=int, default=4, help='Bits available for inputs')
+parser.add_argument("--quant-state", type=int, default=4, help='Bits available for LSTM states')
 parser.add_argument("--global-beta", type=float, default=1.5, help='Globale Beta for quantization')
 parser.add_argument("--init-factor", type=float, default=2, help='Init factor for quantization')
 args = parser.parse_args()
@@ -65,25 +63,25 @@ def clip(x, bits):
     minv = -1 + delta
     return torch.clamp(x, float(minv), float(maxv))
 
-def quant(x, bits):
+def quant(x, bits, sign = True):
     if bits == 1: # BNN
         return torch.sign(x)
     else:
-        scale = step_d(bits)
+        if sign:
+            scale = step_d(bits)
+        else:
+            scale = 2.0 ** bits
         return torch.round(x * scale ) / scale
 
-def quant_w(x, wb, scale = 1):
+def quant_clip(x, wb, scale = 1, sign = True):
     if x is None:
         return None
     if wb is None:
         return x
 
-    #with torch.no_grad():
-    y = quant(clip(x, wb) , wb)
+    y = quant(torch.clamp(x, 0, 1), wb, sign)
     diff = (y - x)
 
-    #if scale <= 1.8:
-    #    return x + diff
     return (x + diff)/scale
 
 
@@ -121,18 +119,18 @@ class LSTMCell(jit.ScriptModule):
         hx, cx = state
 
         # quantize weights
-        gates = (torch.mm(input, quant_w(self.weight_ih.t(), self.wb)) + quant_w(self.bias_ih, self.wb) + torch.mm(hx, quant_w(self.weight_hh.t(), self.wb)) + quant_w(self.bias_hh, self.wb))
+        gates = (torch.mm(input, quant_clip(self.weight_ih.t(), self.wb)) + quant_clip(self.bias_ih, self.wb) + torch.mm(hx, quant_clip(self.weight_hh.t(), self.wb)) + quant_clip(self.bias_hh, self.wb))
         ingate, forgetgate, cellgate, outgate = gates.chunk(4, 1)
 
         # quantize activations -> step functions
-        ingate = quant_w(torch.sigmoid(ingate), self.ab) #no sign bit
-        forgetgate = quant_w(torch.sigmoid(forgetgate), self.ab) #no sign bit
-        cellgate = quant_w(torch.tanh(cellgate), self.ab) #sign bit
-        outgate = quant_w(torch.sigmoid(outgate), self.ab) #no sign bit
+        ingate = quant_clip(torch.sigmoid(ingate), self.ab, sign = False) 
+        forgetgate = quant_clip(torch.sigmoid(forgetgate), self.ab, sign = False) 
+        cellgate = quant_clip(torch.tanh(cellgate), self.ab)
+        outgate = quant_clip(torch.sigmoid(outgate), self.ab, sign = False)
         
         #quantize state
-        cy = quant_w((forgetgate * cx) + (ingate * cellgate), self.sb)
-        hy = quant_w(outgate * torch.tanh(cy), self.sb)
+        cy = quant_clip((forgetgate * cx) + (ingate * cellgate), self.sb)
+        hy = quant_clip(outgate * torch.tanh(cy), self.sb)
 
         
         return hy, (hy, cy)
@@ -157,22 +155,21 @@ class LSTMLayer(jit.ScriptModule):
 
 
 class KWS_LSTM(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, batch_size, device, quant_factor, quant_beta, wb, ab, sb): #num_LSTM, dropout,
+    def __init__(self, input_dim, hidden_dim, output_dim, batch_size, device, quant_factor, quant_beta, wb, ab, sb, ib): 
         super(KWS_LSTM, self).__init__()
         self.device = device
         self.batch_size = batch_size
         self.wb = wb
         self.ab = ab
         self.sb = sb
-        #self.dropout = dropout
-        #self.num_LSTM = num_LSTM
+        self.ib = ib
         self.hidden_dim = hidden_dim
         self.input_dim = input_dim
         self.output_dim = output_dim
         
         # LSTM units
-        #self.lstmL = nn.LSTM(input_size = self.input_dim, hidden_size = self.hidden_dim, num_layers = self.num_LSTM, bias = True, dropout = self.dropout, batch_first = True)
-        # custom cells
+        #self.lstmL = nn.LSTM(input_size = self.input_dim, hidden_size = self.hidden_dim, bias = True)
+        # custom LSTM unit
         self.lstmL = LSTMLayer(LSTMCell, self.input_dim, self.hidden_dim, self.wb, self.ab, self.sb) #, num_layers = self.num_LSTM, bias = True, dropout = self.dropout, batch_first = True
         self.LSTMState = collections.namedtuple('LSTMState', ['hx', 'cx'])
 
@@ -193,21 +190,22 @@ class KWS_LSTM(nn.Module):
 
     def forward(self, inputs):
         # init states with zero
-
         self.hidden_state = self.LSTMState(torch.zeros( inputs.shape[1], self.hidden_dim, device = self.device),
-                      torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device)) #(torch.zeros(self.num_LSTM, inputs.shape[0], self.hidden_dim, device = self.device), torch.zeros(self.num_LSTM, inputs.shape[0], self.hidden_dim, device = self.device))
-        # pass throug LSTM units
-        lstm_out, self.hidden_state = self.lstmL(inputs, self.hidden_state)
-        # read out layer -> quantize!
+                      torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device))
+        # input quantized
+        q_inputs = quant_clip(inputs, self.ib)
+        # pass throug LSTM units - quantized
+        lstm_out, self.hidden_state = self.lstmL(q_inputs, self.hidden_state)
+        # read out layer - quantized
         outputFC = self.outputL(lstm_out[-1,:,:]) 
-        output = quant_w(torch.sigmoid(outputFC), self.ab) #sigmoid so values arent too big?
+        output = quant_clip(torch.sigmoid(outputFC), self.ab, sign = False )
         return output
 
 
 
 # mfcc config
 data_transform = transforms.Compose([
-        torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, norm = '', melkwargs = {'win_length' : args.win_length, 'hop_length':args.hop_length})
+        torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, melkwargs = {'win_length' : args.win_length, 'hop_length':args.hop_length})
     ])
 
 speech_dataset_train = SpeechCommandsGoogle(args.dataset_path_train, 'training', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, device = device, transform=data_transform)
@@ -219,7 +217,7 @@ train_dataloader = torch.utils.data.DataLoader(speech_dataset_train, batch_size=
 test_dataloader = torch.utils.data.DataLoader(speech_dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
 validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_size=args.validation_size, shuffle=True, num_workers=args.dataloader_num_workers)
 
-model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = args.init_factor, quant_beta = args.global_beta, wb = args.quant_w, ab = args.quant_act , sb = args.quant_state).to(device) #num_LSTM = args.num_LSTM, dropout = args.dropout,
+model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = args.init_factor, quant_beta = args.global_beta, wb = args.quant_w, ab = args.quant_act , sb = args.quant_state, ib = args.quant_inp).to(device)
 loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)  
 
@@ -234,7 +232,7 @@ for e in range(args.epochs):
     # train
     x_data, y_label = next(iter(train_dataloader))
     y_label = y_label.to(device).view((-1))
-    #x_data = quant_w(x_data.permute(1,0,2),args.quant_inp)
+    x_data = x_data.permute(1,0,2)
     output = model(x_data)
     loss_val = loss_fn(output, y_label)
     train_acc = (output.argmax(dim=1) == y_label).float().mean().item()
@@ -246,7 +244,7 @@ for e in range(args.epochs):
     # validation
     x_data, y_label = next(iter(validation_dataloader))
     y_label = y_label.to(device).view((-1))
-    #x_data = quant_w(x_data.permute(1,0,2), agrs.quant_inp)
+    x_data = x_data.permute(1,0,2)
     output = model(x_data)
     val_acc = (output.argmax(dim=1) == y_label).float().mean().item()
 
@@ -274,7 +272,7 @@ model.load_state_dict(checkpoint_dict['model_dict'])
 acc_aux = []
 for i_batch, sample_batch in enumerate(test_dataloader):
     x_data, y_label = sample_batch
-    #x_data = quant_w(x_data.permute(1,0,2), args.quant_inp)
+    x_data = x_data.permute(1,0,2)
     y_label = y_label.to(device).view((-1))
     output = model(x_data)
     acc_aux.append((output.argmax(dim=1) == y_label))
