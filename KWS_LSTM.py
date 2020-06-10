@@ -202,7 +202,7 @@ class KWS_LSTM(nn.Module):
 
 
 
-
+# mfcc config
 data_transform = transforms.Compose([
         torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, melkwargs = {'win_length' : args.win_length, 'hop_length':args.hop_length})
     ])
