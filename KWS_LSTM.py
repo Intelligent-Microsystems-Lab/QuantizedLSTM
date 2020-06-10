@@ -27,7 +27,7 @@ parser.add_argument("--validation-size", type=int, default=1000, help='Number of
 parser.add_argument("--epochs", type=int, default=20000, help='Epochs')
 parser.add_argument("--lr-divide", type=int, default=10000, help='Learning Rate divide')
 #parser.add_argument("--num-LSTM", type=int, default=1, help='Number is stacked LSTM layers')
-parser.add_argument("--hidden", type=int, default=200, help='Number of hidden LSTM units')
+parser.add_argument("--hidden", type=int, default=200, help='Number of hidden LSTM units') 
 #parser.add_argument("--dropout", type=float, default=0, help='Dropout Percentage')
 parser.add_argument("--learning-rate", type=float, default=0.0005, help='Dropout Percentage')
 parser.add_argument("--dataloader-num-workers", type=int, default=0, help='Number Workers Dataloader')
@@ -38,7 +38,8 @@ parser.add_argument("--n-mfcc", type=int, default=40, help='Number of mfc coeffi
 parser.add_argument("--win-length", type=int, default=400, help='Window size in ms')
 parser.add_argument("--hop-length", type=int, default=320, help='Length of hop between STFT windows')
 parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
-parser.add_argument("--quant-w", type=int, default=4, help='Bits available for weights')
+parser.add_argument("--noise-injection", type=int, default=None, help='Percentage of noise injected to weights')
+parser.add_argument("--quant-w", type=int, default=None, help='Bits available for weights')
 parser.add_argument("--quant-act", type=int, default=5, help='Bits available for activations/state')
 parser.add_argument("--quant-inp", type=int, default=4, help='Bits available for inputs')
 parser.add_argument("--quant-state", type=int, default=4, help='Bits available for LSTM states')
@@ -74,6 +75,8 @@ def quant(x, bits):
 def quant_w(x, wb, scale = 1):
     if x is None:
         return None
+    if wb is None:
+        return x
 
     #with torch.no_grad():
     y = quant(clip(x, wb) , wb)
