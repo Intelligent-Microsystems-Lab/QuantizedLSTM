@@ -91,6 +91,9 @@ def limit_scale(shape, factor, beta, wb):
     fan_in = shape
 
     limit = torch.sqrt(torch.tensor([3*factor/fan_in]))
+    if wb is None:
+        return 1, limit
+    
     Wm = beta/step_d(torch.tensor([float(wb)]))
     scale = 2 ** round(math.log(Wm / limit, 2.0))
     scale = scale if scale > 1 else 1.0
