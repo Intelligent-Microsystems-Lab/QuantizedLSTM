@@ -40,9 +40,9 @@ parser.add_argument("--hop-length", type=int, default=320, help='Length of hop b
 parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
 parser.add_argument("--noise-injection", type=int, default=None, help='Percentage of noise injected to weights')
 parser.add_argument("--quant-w", type=int, default=None, help='Bits available for weights')
-parser.add_argument("--quant-act", type=int, default=5, help='Bits available for activations/state')
-parser.add_argument("--quant-inp", type=int, default=4, help='Bits available for inputs')
-parser.add_argument("--quant-state", type=int, default=4, help='Bits available for LSTM states')
+parser.add_argument("--quant-act", type=int, default=None, help='Bits available for activations/state')
+parser.add_argument("--quant-inp", type=int, default=None, help='Bits available for inputs')
+parser.add_argument("--quant-state", type=int, default=None, help='Bits available for LSTM states')
 parser.add_argument("--global-beta", type=float, default=1.5, help='Globale Beta for quantization')
 parser.add_argument("--init-factor", type=float, default=2, help='Init factor for quantization')
 args = parser.parse_args()
@@ -92,7 +92,7 @@ def limit_scale(shape, factor, beta, wb):
 
     limit = torch.sqrt(torch.tensor([3*factor/fan_in]))
     if wb is None:
-        return 1, limit
+        return 1, limit.item()
     
     Wm = beta/step_d(torch.tensor([float(wb)]))
     scale = 2 ** round(math.log(Wm / limit, 2.0))
@@ -124,11 +124,11 @@ class LSTMCell(jit.ScriptModule):
         gates = (torch.mm(input, quant_w(self.weight_ih.t(), self.wb)) + quant_w(self.bias_ih, self.wb) + torch.mm(hx, quant_w(self.weight_hh.t(), self.wb)) + quant_w(self.bias_hh, self.wb))
         ingate, forgetgate, cellgate, outgate = gates.chunk(4, 1)
 
-        # quantize activations
-        ingate = quant_w(torch.sigmoid(ingate), self.ab)
-        forgetgate = quant_w(torch.sigmoid(forgetgate), self.ab)
-        cellgate = quant_w(torch.tanh(cellgate), self.ab)
-        outgate = quant_w(torch.sigmoid(outgate), self.ab)
+        # quantize activations -> step functions
+        ingate = quant_w(torch.sigmoid(ingate), self.ab) #no sign bit
+        forgetgate = quant_w(torch.sigmoid(forgetgate), self.ab) #no sign bit
+        cellgate = quant_w(torch.tanh(cellgate), self.ab) #sign bit
+        outgate = quant_w(torch.sigmoid(outgate), self.ab) #no sign bit
         
         #quantize state
         cy = quant_w((forgetgate * cx) + (ingate * cellgate), self.sb)
@@ -198,8 +198,8 @@ class KWS_LSTM(nn.Module):
                       torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device)) #(torch.zeros(self.num_LSTM, inputs.shape[0], self.hidden_dim, device = self.device), torch.zeros(self.num_LSTM, inputs.shape[0], self.hidden_dim, device = self.device))
         # pass throug LSTM units
         lstm_out, self.hidden_state = self.lstmL(inputs, self.hidden_state)
-        # read out layer
-        outputFC = self.outputL(lstm_out[-1,:,:])
+        # read out layer -> quantize!
+        outputFC = self.outputL(lstm_out[-1,:,:]) 
         output = quant_w(torch.sigmoid(outputFC), self.ab) #sigmoid so values arent too big?
         return output
 
@@ -207,7 +207,7 @@ class KWS_LSTM(nn.Module):
 
 # mfcc config
 data_transform = transforms.Compose([
-        torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, melkwargs = {'win_length' : args.win_length, 'hop_length':args.hop_length})
+        torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, norm = '', melkwargs = {'win_length' : args.win_length, 'hop_length':args.hop_length})
     ])
 
 speech_dataset_train = SpeechCommandsGoogle(args.dataset_path_train, 'training', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, device = device, transform=data_transform)
@@ -234,8 +234,7 @@ for e in range(args.epochs):
     # train
     x_data, y_label = next(iter(train_dataloader))
     y_label = y_label.to(device).view((-1))
-    import pdb; pdb.set_trace()
-    x_data = quant_w(x_data.permute(1,0,2),args.quant_inp)
+    #x_data = quant_w(x_data.permute(1,0,2),args.quant_inp)
     output = model(x_data)
     loss_val = loss_fn(output, y_label)
     train_acc = (output.argmax(dim=1) == y_label).float().mean().item()
@@ -247,7 +246,7 @@ for e in range(args.epochs):
     # validation
     x_data, y_label = next(iter(validation_dataloader))
     y_label = y_label.to(device).view((-1))
-    x_data = quant_w(x_data.permute(1,0,2), agrs.quant_inp)
+    #x_data = quant_w(x_data.permute(1,0,2), agrs.quant_inp)
     output = model(x_data)
     val_acc = (output.argmax(dim=1) == y_label).float().mean().item()
 
@@ -275,7 +274,7 @@ model.load_state_dict(checkpoint_dict['model_dict'])
 acc_aux = []
 for i_batch, sample_batch in enumerate(test_dataloader):
     x_data, y_label = sample_batch
-    x_data = quant_w(x_data.permute(1,0,2), args.quant_inp)
+    #x_data = quant_w(x_data.permute(1,0,2), args.quant_inp)
     y_label = y_label.to(device).view((-1))
     output = model(x_data)
     acc_aux.append((output.argmax(dim=1) == y_label))

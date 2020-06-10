@@ -139,9 +139,12 @@ class SpeechCommandsGoogle(Dataset):
             uniform_waveform = waveform
 
         #stop to check before and after transform
-        import pdb; pdb.set_trace()
         if self.transform:
             waveform = self.transform(uniform_waveform)
+            waveform -= waveform.mean()
+            waveform /= waveform.std()
+
+
 
         return waveform[0].t().to(self.device), self.list_of_y[idx]
 
