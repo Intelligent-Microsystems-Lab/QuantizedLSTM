@@ -152,5 +152,5 @@ class SpeechCommandsGoogle(Dataset):
         waveform -= waveform.mean()
         waveform /= waveform.std()
 
-        return waveform[0].t().to(self.device), self.list_of_y[idx]
+        return waveform[0].t(), self.list_of_y[idx]
 

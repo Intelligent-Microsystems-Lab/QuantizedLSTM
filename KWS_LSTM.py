@@ -237,6 +237,7 @@ for e in range(args.epochs):
         optimizer.param_groups[-1]['lr'] /= 5
     # train
     x_data, y_label = next(iter(train_dataloader))
+    import pdb; pdb.set_trace()
     y_label = y_label.to(device).view((-1))
     x_data = x_data.permute(1,0,2)
     output = model(x_data)
