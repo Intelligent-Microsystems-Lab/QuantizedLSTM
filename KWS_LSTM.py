@@ -237,8 +237,8 @@ for e in range(args.epochs):
         optimizer.param_groups[-1]['lr'] /= 5
     # train
     x_data, y_label = next(iter(train_dataloader))
-    y_label = y_label.view((-1))#.to(device)
-    x_data = x_data.permute(1,0,2)#.to(device)
+    y_label = y_label.view((-1)).to(device)
+    x_data = x_data.permute(1,0,2).to(device)
     output = model(x_data)
     loss_val = loss_fn(output, y_label)
     train_acc = (output.argmax(dim=1) == y_label).float().mean().item()
@@ -249,8 +249,8 @@ for e in range(args.epochs):
 
     # validation
     x_data, y_label = next(iter(validation_dataloader))
-    y_label = y_label.view((-1))#.to(device)
-    x_data = x_data.permute(1,0,2)#.to(device)
+    y_label = y_label.view((-1)).to(device)
+    x_data = x_data.permute(1,0,2).to(device)
     output = model(x_data)
     val_acc = (output.argmax(dim=1) == y_label).float().mean().item()
 
@@ -278,8 +278,8 @@ model.load_state_dict(checkpoint_dict['model_dict'])
 acc_aux = []
 for i_batch, sample_batch in enumerate(test_dataloader):
     x_data, y_label = sample_batch
-    y_label = y_label.view((-1))#.to(device)
-    x_data = x_data.permute(1,0,2)#.to(device)
+    y_label = y_label.view((-1)).to(device)
+    x_data = x_data.permute(1,0,2).to(device)
     output = model(x_data)
     acc_aux.append((output.argmax(dim=1) == y_label))
 
