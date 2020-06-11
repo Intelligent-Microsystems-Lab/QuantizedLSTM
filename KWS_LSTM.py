@@ -206,11 +206,17 @@ class KWS_LSTM(nn.Module):
         return output
 
 
-def normalize_by_sample(x):
-    x -= x.mean(axis = 1)
-    x /= x.std(axis = 1)
+def pre_processing(x, y, device, mfcc_cuda):
+    batch_size = x.shape[0]
 
-    return x
+    x =  mfcc_cuda(x.to(device))
+    x -= x.reshape((batch_size, -1 )).mean(axis=1)[:, None, None]
+    x /= x.reshape((batch_size, -1 )).std(axis=1)[:, None, None]
+    x =  x.permute(2,0,1)
+    y =  y.view((-1)).to(device)
+
+
+    return x,y
 
 #@profile
 def main(args):
@@ -247,10 +253,7 @@ def main(args):
             optimizer.param_groups[-1]['lr'] /= 5
         # train
         x_data, y_label = next(iter(train_dataloader))
-        x_data = mfcc_cuda(x_data.cuda())
-        x_data = x_data.permute(1,0,2)
-        import pdb; pdb.set_trace()
-        y_label = y_label.view((-1)).to(device)
+        x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
 
         output = model(x_data)
         loss_val = loss_fn(output, y_label)
@@ -262,9 +265,7 @@ def main(args):
 
         # validation
         x_data, y_label = next(iter(validation_dataloader))
-        x_data = mfcc_cuda(x_data.cuda())
-        x_data = x_data.permute(1,0,2)
-        y_label = y_label.view((-1)).to(device)
+        x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
 
         output = model(x_data)
         val_acc = (output.argmax(dim=1) == y_label).float().mean().item()
@@ -293,9 +294,7 @@ def main(args):
     acc_aux = []
     for i_batch, sample_batch in enumerate(test_dataloader):
         x_data, y_label = sample_batch
-        x_data = mfcc_cuda(x_data.cuda())
-        x_data = x_data.permute(1,0,2)
-        y_label = y_label.view((-1)).to(device)
+        x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
 
         output = model(x_data)
         acc_aux.append((output.argmax(dim=1) == y_label))
