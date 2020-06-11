@@ -238,6 +238,7 @@ def main(args):
             optimizer.param_groups[-1]['lr'] /= 5
         # train
         x_data, y_label = next(iter(train_dataloader))
+        import pdb; pdb.set_trace()
         y_label = y_label.view((-1)).to(device)
         x_data = x_data.permute(1,0,2).to(device)
         output = model(x_data)

@@ -146,9 +146,9 @@ class SpeechCommandsGoogle(Dataset):
         else:
             uniform_waveform = waveform
 
-        waveform = self.transform(uniform_waveform)
-        waveform -= waveform.mean()
-        waveform /= waveform.std()
+        #waveform = self.transform(uniform_waveform)
+        #waveform -= waveform.mean()
+        #waveform /= waveform.std()
 
         return waveform[0].t(), self.list_of_y[idx]
 
