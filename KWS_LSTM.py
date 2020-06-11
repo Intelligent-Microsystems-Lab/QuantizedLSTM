@@ -205,17 +205,26 @@ class KWS_LSTM(nn.Module):
         output = quant_clip(torch.sigmoid(outputFC), self.ab, False)
         return output
 
+
+def normalize_by_sample(x):
+    x -= x.mean(axis = 1)
+    x /= x.std(axis = 1)
+
+    return x
+
 #@profile
 def main(args):
 
     # mfcc config
-    data_transform = transforms.Compose([
-            torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, melkwargs = {'win_length' : args.win_length, 'hop_length':args.hop_length})
-        ])
+    #data_transform = transforms.Compose([
+    #        torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, melkwargs = {'win_length' : args.win_length, 'hop_length':args.hop_length})
+    #    ])
 
-    speech_dataset_train = SpeechCommandsGoogle(args.dataset_path_train, 'training', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, device = device, transform=data_transform)
-    speech_dataset_val = SpeechCommandsGoogle(args.dataset_path_train , 'validation', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, device = device, transform=data_transform)
-    speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_test, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, device = device, transform=data_transform)
+    mfcc_cuda = torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, melkwargs = {'win_length' : args.win_length, 'hop_length':args.hop_length}).to(device)
+
+    speech_dataset_train = SpeechCommandsGoogle(args.dataset_path_train, 'training', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, device = device)
+    speech_dataset_val = SpeechCommandsGoogle(args.dataset_path_train , 'validation', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, device = device)
+    speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_test, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, device = device)
 
 
     train_dataloader = torch.utils.data.DataLoader(speech_dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
@@ -238,9 +247,11 @@ def main(args):
             optimizer.param_groups[-1]['lr'] /= 5
         # train
         x_data, y_label = next(iter(train_dataloader))
+        x_data = mfcc_cuda(x_data.cuda())
+        x_data = x_data.permute(1,0,2)
         import pdb; pdb.set_trace()
         y_label = y_label.view((-1)).to(device)
-        x_data = x_data.permute(1,0,2).to(device)
+
         output = model(x_data)
         loss_val = loss_fn(output, y_label)
         train_acc = (output.argmax(dim=1) == y_label).float().mean().item()
@@ -251,8 +262,10 @@ def main(args):
 
         # validation
         x_data, y_label = next(iter(validation_dataloader))
+        x_data = mfcc_cuda(x_data.cuda())
+        x_data = x_data.permute(1,0,2)
         y_label = y_label.view((-1)).to(device)
-        x_data = x_data.permute(1,0,2).to(device)
+
         output = model(x_data)
         val_acc = (output.argmax(dim=1) == y_label).float().mean().item()
 
@@ -280,8 +293,10 @@ def main(args):
     acc_aux = []
     for i_batch, sample_batch in enumerate(test_dataloader):
         x_data, y_label = sample_batch
+        x_data = mfcc_cuda(x_data.cuda())
+        x_data = x_data.permute(1,0,2)
         y_label = y_label.view((-1)).to(device)
-        x_data = x_data.permute(1,0,2).to(device)
+
         output = model(x_data)
         acc_aux.append((output.argmax(dim=1) == y_label))
 
