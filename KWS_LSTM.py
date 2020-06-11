@@ -205,7 +205,7 @@ class KWS_LSTM(nn.Module):
         output = quant_clip(torch.sigmoid(outputFC), self.ab, False)
         return output
 
-@profile
+#@profile
 def main(args):
 
     # mfcc config
