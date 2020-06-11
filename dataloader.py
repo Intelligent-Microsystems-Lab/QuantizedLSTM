@@ -76,11 +76,19 @@ class SpeechCommandsGoogle(Dataset):
             transform (callable, optional): Optional transform to be applied
                 on a sample.
         """
+        self.sample_rate = sample_rate
+        self.root_dir = root_dir
+        self.transform = transform
+        self.train_test_val = train_test_val
+        self.val_perc = val_perc
+        self.test_perc = test_perc
+        self.words = words
+        self.device = device
 
-        self.list_of_files = []
+
+        self.list_of_x = []
         self.list_of_labels = []
         self.list_of_y = []
-        self.device = device
         sub_dirs = [x[0].split('/')[-1] for x in os.walk(root_dir)][1:]
         for cur_dir in sub_dirs:
             files_in_dir = glob.glob(root_dir + "/" + cur_dir + "/" + "*.wav")
@@ -89,24 +97,43 @@ class SpeechCommandsGoogle(Dataset):
                 if cur_dir == "background_noise":
                     self.list_of_y.append(words.index('silence'))
                     self.list_of_labels.append('silence')
-                    self.list_of_files.append(cur_f)
                 elif which_set(cur_f, val_perc, test_perc) == train_test_val:
-                    self.list_of_files.append(cur_f)
                     if (cur_dir not in words) and (train_test_val != 'testing'):
                         self.list_of_y.append(words.index('unknown'))
                         self.list_of_labels.append('unknown')
                     else:
                         self.list_of_y.append(words.index(cur_dir))
                         self.list_of_labels.append(cur_dir)
+                else:
+                    continue
 
+                waveform, sample_rate = torchaudio.load(cur_f)
+                if sample_rate != self.sample_rate:
+                    raise ValueError('Specified sample rate doesn\'t match sample rate in .wav file.')
+
+                if waveform.shape[1] > self.sample_rate:
+                    # sample random 16000 from longer sequence
+                    start_idx = np.random.choice(np.arange(0,waveform.shape[1]-(self.sample_rate+1)))
+                    uniform_waveform = waveform[0,start_idx:(start_idx+self.sample_rate)].view(1,-1)
+                elif waveform.shape[1] < self.sample_rate:
+                    # pad front and back with 0
+                    pad_size = int((self.sample_rate - waveform.shape[1])/2)
+                    uniform_waveform = torch.zeros((1,self.sample_rate))
+                    uniform_waveform[0,pad_size:(pad_size+waveform.shape[1])] =  waveform[0,:]
+                else:
+                    uniform_waveform = waveform
+
+                waveform = self.transform(uniform_waveform)
+                waveform -= waveform.mean()
+                waveform /= waveform.std()
+
+                import pdb; pdb.set_trace()
+                self.list_of_x.append(waveform)
+
+        self.list_of_x = np.array(self.list_of_x)
         self.list_of_y = np.array(self.list_of_y)
-        self.root_dir = root_dir
-        self.transform = transform
-        self.train_test_val = train_test_val
-        self.val_perc = val_perc
-        self.test_perc = test_perc
-        self.words = words
-        self.sample_rate = sample_rate
+        
+        
 
     def __len__(self):
         return len(self.list_of_labels)
@@ -117,34 +144,13 @@ class SpeechCommandsGoogle(Dataset):
 
         if self.train_test_val == 'testing':
             # usig canonical testing set which is already balanced     
-            waveform, sample_rate = torchaudio.load(self.list_of_files[idx])
+            waveform = self.list_of_x[idx] 
         else:
             # balance training and validation samples
             y_sel = int(idx/len(self.list_of_labels)*len(self.words))
             idx = np.random.choice(np.argwhere(self.list_of_y == y_sel)[:,0],1)
-            waveform, sample_rate = torchaudio.load(self.list_of_files[idx.item()])
-        if sample_rate != self.sample_rate:
-            raise ValueError('Specified sample rate doesn\'t match sample rate in .wav file.')
-
-        if waveform.shape[1] > self.sample_rate:
-            # sample random 16000 from longer sequence
-            start_idx = np.random.choice(np.arange(0,waveform.shape[1]-(self.sample_rate+1)))
-            uniform_waveform = waveform[0,start_idx:(start_idx+self.sample_rate)].view(1,-1)
-        elif waveform.shape[1] < self.sample_rate:
-            # pad front and back with 0
-            pad_size = int((self.sample_rate - waveform.shape[1])/2)
-            uniform_waveform = torch.zeros((1,self.sample_rate))
-            uniform_waveform[0,pad_size:(pad_size+waveform.shape[1])] =  waveform[0,:]
-        else:
-            uniform_waveform = waveform
-
-        #stop to check before and after transform
-        if self.transform:
-            waveform = self.transform(uniform_waveform)
-            waveform -= waveform.mean()
-            waveform /= waveform.std()
-
-
+            waveform = self.list_of_x[idx] 
+       
 
         return waveform[0].t().to(self.device), self.list_of_y[idx]
 
