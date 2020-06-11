@@ -124,7 +124,6 @@ class SpeechCommandsGoogle(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()   
 
-        import pdb; pdb.set_trace()
         if self.train_test_val == 'testing':
             # usig canonical testing set which is already balanced     
             waveform = self.list_of_x[idx] 
@@ -152,8 +151,6 @@ class SpeechCommandsGoogle(Dataset):
         waveform = self.transform(uniform_waveform)
         waveform -= waveform.mean()
         waveform /= waveform.std()
-       
-        import pdb; pdb.set_trace()
 
         return waveform[0].t(), self.list_of_y[idx]
 
