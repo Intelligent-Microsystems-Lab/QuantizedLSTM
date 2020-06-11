@@ -127,9 +127,9 @@ class SpeechCommandsGoogle(Dataset):
                 waveform -= waveform.mean()
                 waveform /= waveform.std()
 
-                import pdb; pdb.set_trace()
                 self.list_of_x.append(waveform)
 
+        import pdb; pdb.set_trace()
         self.list_of_x = np.array(self.list_of_x)
         self.list_of_y = np.array(self.list_of_y)
         
