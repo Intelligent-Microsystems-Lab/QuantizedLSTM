@@ -110,27 +110,9 @@ class SpeechCommandsGoogle(Dataset):
                 waveform, sample_rate = torchaudio.load(cur_f)
                 if sample_rate != self.sample_rate:
                     raise ValueError('Specified sample rate doesn\'t match sample rate in .wav file.')
-
-                if waveform.shape[1] > self.sample_rate:
-                    # sample random 16000 from longer sequence
-                    start_idx = np.random.choice(np.arange(0,waveform.shape[1]-(self.sample_rate+1)))
-                    uniform_waveform = waveform[0,start_idx:(start_idx+self.sample_rate)].view(1,-1)
-                elif waveform.shape[1] < self.sample_rate:
-                    # pad front and back with 0
-                    pad_size = int((self.sample_rate - waveform.shape[1])/2)
-                    uniform_waveform = torch.zeros((1,self.sample_rate))
-                    uniform_waveform[0,pad_size:(pad_size+waveform.shape[1])] =  waveform[0,:]
-                else:
-                    uniform_waveform = waveform
-
-                waveform = self.transform(uniform_waveform)
-                waveform -= waveform.mean()
-                waveform /= waveform.std()
-
+                
                 self.list_of_x.append(waveform)
 
-        import pdb; pdb.set_trace()
-        self.list_of_x = np.array(self.list_of_x)
         self.list_of_y = np.array(self.list_of_y)
         
         
@@ -149,8 +131,28 @@ class SpeechCommandsGoogle(Dataset):
             # balance training and validation samples
             y_sel = int(idx/len(self.list_of_labels)*len(self.words))
             idx = np.random.choice(np.argwhere(self.list_of_y == y_sel)[:,0],1)
-            waveform = self.list_of_x[idx] 
-       
+            waveform = self.list_of_x[idx].to(device)
 
-        return waveform[0].t().to(self.device), self.list_of_y[idx]
+
+
+
+        if waveform.shape[1] > self.sample_rate:
+            # sample random 16000 from longer sequence
+            start_idx = np.random.choice(np.arange(0,waveform.shape[1]-(self.sample_rate+1)))
+            uniform_waveform = waveform[0,start_idx:(start_idx+self.sample_rate)].view(1,-1)
+        elif waveform.shape[1] < self.sample_rate:
+            # pad front and back with 0
+            pad_size = int((self.sample_rate - waveform.shape[1])/2)
+            uniform_waveform = torch.zeros((1,self.sample_rate))
+            uniform_waveform[0,pad_size:(pad_size+waveform.shape[1])] =  waveform[0,:]
+        else:
+            uniform_waveform = waveform
+
+        waveform = self.transform(uniform_waveform)
+        waveform -= waveform.mean()
+        waveform /= waveform.std()
+       
+        import pdb; pdb.set_trace()
+
+        return waveform[0].t(), self.list_of_y[idx]
 
