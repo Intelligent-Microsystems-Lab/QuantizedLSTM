@@ -124,15 +124,15 @@ class SpeechCommandsGoogle(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()   
 
-        print(type(idx))
+        print(type(idx.item()))
         if self.train_test_val == 'testing':
             # usig canonical testing set which is already balanced     
-            waveform = self.list_of_x[idx].to(self.device)
+            waveform = self.list_of_x[idx.item()].to(self.device)
         else:
             # balance training and validation samples
             y_sel = int(idx/len(self.list_of_labels)*len(self.words))
             idx = np.random.choice(np.argwhere(self.list_of_y == y_sel)[:,0],1)
-            waveform = self.list_of_x[idx].to(self.device)
+            waveform = self.list_of_x[idx.item()].to(self.device)
 
 
 
