@@ -122,7 +122,7 @@ class SpeechCommandsGoogle(Dataset):
 
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
-            idx = idx.tolist()   
+            idx = idx.tolist()
 
         if self.train_test_val == 'testing':
             # usig canonical testing set which is already balanced     
@@ -132,8 +132,6 @@ class SpeechCommandsGoogle(Dataset):
             y_sel = int(idx/len(self.list_of_labels)*len(self.words))
             idx = np.random.choice(np.argwhere(self.list_of_y == y_sel)[:,0],1)
             waveform = self.list_of_x[idx.item()]
-
-
 
 
         if waveform.shape[1] > self.sample_rate:
