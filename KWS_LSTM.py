@@ -13,7 +13,8 @@ from dataloader import SpeechCommandsGoogle
 
 torch.manual_seed(42)
 if torch.cuda.is_available():
-    device = torch.device("cuda")     
+    device = torch.device("cuda")    
+    torch.backends.cudnn.benchmark=True 
 else:
     device = torch.device("cpu")
 
@@ -25,7 +26,7 @@ parser.add_argument("--batch-size", type=int, default=512, help='Batch Size')
 parser.add_argument("--validation-size", type=int, default=1000, help='Number of batches used for validation')
 parser.add_argument("--epochs", type=int, default=20000, help='Epochs')
 parser.add_argument("--lr-divide", type=int, default=10000, help='Learning Rate divide')
-parser.add_argument("--hidden", type=int, default=300, help='Number of hidden LSTM units') 
+parser.add_argument("--hidden", type=int, default=200, help='Number of hidden LSTM units') 
 parser.add_argument("--learning-rate", type=float, default=0.0005, help='Dropout Percentage')
 parser.add_argument("--dataloader-num-workers", type=int, default=0, help='Number Workers Dataloader')
 parser.add_argument("--validation-percentage", type=int, default=10, help='Validation Set Percentage')
@@ -221,6 +222,7 @@ test_dataloader = torch.utils.data.DataLoader(speech_dataset_test, batch_size=ar
 validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_size=args.validation_size, shuffle=True, num_workers=args.dataloader_num_workers)
 
 model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = args.init_factor, quant_beta = args.global_beta, wb = args.quant_w, ab = args.quant_act , sb = args.quant_state, ib = args.quant_inp, noise_level = args.noise_injection).to(device)
+model.to(device)
 loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)  
 
