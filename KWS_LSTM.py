@@ -218,7 +218,7 @@ def pre_processing(x, y, device, mfcc_cuda):
 
     return x,y
 
-#@profile
+@profile
 def main(args):
 
     # mfcc config
