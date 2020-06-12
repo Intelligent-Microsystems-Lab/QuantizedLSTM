@@ -1,4 +1,4 @@
-import glob, os, argparse, re, hashlib, uuid, collections, math
+import glob, os, argparse, re, hashlib, uuid, collections, math, time
 
 from itertools import islice
 import torch
@@ -241,13 +241,12 @@ model_uuid = str(uuid.uuid4())
 
 print(args)
 print("Start Training:")
-print("Epoch     Train Loss  Train Acc  Vali. Acc")
-#for e in range(args.epochs):
-e = 0
-for (x_data, y_label),(x_vali, y_vali) in zip(islice(train_dataloader, args.epochs), islice(validation_dataloader, args.epochs)):
+print("Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)")
+for e, ((x_data, y_label),(x_vali, y_vali)) in enumerate(zip(islice(train_dataloader, args.epochs), islice(validation_dataloader, args.epochs))):
     if e == args.lr_divide:
         optimizer.param_groups[-1]['lr'] /= 5
     # train
+    start_time = time.time()
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
 
     output = model(x_data)
@@ -257,6 +256,7 @@ for (x_data, y_label),(x_vali, y_vali) in zip(islice(train_dataloader, args.epoc
     loss_val.backward()
     optimizer.step()
     optimizer.zero_grad()
+    train_time = time.time() - start_time
 
     # validation
     x_data, y_label = pre_processing(x_vali, y_vali, device, mfcc_cuda)
@@ -278,8 +278,7 @@ for (x_data, y_label),(x_vali, y_vali) in zip(islice(train_dataloader, args.epoc
         del checkpoint_dict
 
     if e%100 == 0:
-        print("{0:05d}     {1:.4f}      {2:.4f}     {3:.4f}".format(e, loss_val, train_acc, best_acc))
-    e += 1
+        print("{0:05d}     {1:.4f}      {2:.4f}     {3:.4f}     {4:.4f}".format(e, loss_val, train_acc, best_acc, train_time))
 
 # Testing
 print("Start Testing:")
