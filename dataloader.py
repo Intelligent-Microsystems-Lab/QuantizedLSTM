@@ -134,7 +134,7 @@ class SpeechCommandsGoogle(Dataset):
             waveform = self.list_of_x[idx]
         else:
             # balance training and validation samples
-            y_sel = int(idx/len(self.list_of_labels)*len(self.words))
+            y_sel = int(idx/(self.batch_size * self.epochs) *len(self.words))
             idx = np.random.choice(np.argwhere(self.list_of_y == y_sel)[:,0],1)
             waveform = self.list_of_x[idx.item()]
 
