@@ -1,5 +1,6 @@
 import glob, os, argparse, re, hashlib, uuid, collections, math
 
+from itertools import islice
 import torch
 import torchaudio
 from torch.utils.data import Dataset, DataLoader
@@ -248,11 +249,13 @@ def main(args):
     print(args)
     print("Start Training:")
     print("Epoch     Train Loss  Train Acc  Vali. Acc")
-    for e in range(args.epochs):
+    #for e in range(args.epochs):
+    e = 0
+    for (x_data, y_label),(x_vali, y_vali) in zip(islice(train_dataloader, args.epochs), islice(validation_dataloader, args.epochs)):
         if e == args.lr_divide:
             optimizer.param_groups[-1]['lr'] /= 5
         # train
-        x_data, y_label = next(iter(train_dataloader))
+        #x_data, y_label = next(iter(train_dataloader))
         x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
 
         output = model(x_data)
@@ -264,8 +267,8 @@ def main(args):
         optimizer.zero_grad()
 
         # validation
-        x_data, y_label = next(iter(validation_dataloader))
-        x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
+        #x_data, y_label = next(iter(validation_dataloader))
+        x_data, y_label = pre_processing(x_vali, y_vali, device, mfcc_cuda)
 
         output = model(x_data)
         val_acc = (output.argmax(dim=1) == y_label).float().mean().item()
@@ -285,7 +288,7 @@ def main(args):
 
         if e%100 == 0:
             print("{0:05d}     {1:.4f}      {2:.4f}     {3:.4f}".format(e, loss_val, train_acc, best_acc))
-
+        e += 1
 
     # Testing
     print("Start Testing:")
