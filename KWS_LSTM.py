@@ -42,10 +42,11 @@ parser.add_argument("--init-factor", type=float, default=2, help='Init factor fo
 parser.add_argument("--std-scale", type=int, default=2, help='Scaling by how many standard deviations (e.g. how many big values will be cut off: 1std = 65%, 2std = 95%)')
 
 parser.add_argument("--noise-injection", type=float, default=0, help='Percentage of noise injected to weights')
-parser.add_argument("--quant-w", type=int, default=None, help='Bits available for weights')
 parser.add_argument("--quant-act", type=int, default=None, help='Bits available for activations/state')
 parser.add_argument("--quant-inp", type=int, default=None, help='Bits available for inputs')
 parser.add_argument("--quant-state", type=int, default=None, help='Bits available for LSTM states')
+
+parser.add_argument("--quant-w", type=int, default=None, help='Bits available for weights')
 args = parser.parse_args()
 
 
@@ -125,8 +126,11 @@ class LSTMCell(nn.Module):
         # quantize weights
         noise_ih = torch.randn(self.weight_ih.t().shape, device = self.device) * self.weight_ih.max() * self.noise_level
         noise_hh = torch.randn(self.weight_hh.t().shape, device = self.device) * self.weight_hh.max() * self.noise_level
+        noise_bias_ih = torch.randn(self.bias_ih.t().shape, device = self.device) * self.bias_ih.max() * self.noise_level
+        noise_bias_hh = torch.randn(self.bias_hh.t().shape, device = self.device) * self.bias_hh.max() * self.noise_level
 
-        gates = (torch.mm(input, quant_clip(self.weight_ih.t(), self.wb, True) + noise_ih) + quant_clip(self.bias_ih, self.wb, True) + torch.mm(hx, quant_clip(self.weight_hh.t(), self.wb, True) + noise_hh) + quant_clip(self.bias_hh, self.wb, True))
+
+        gates = (torch.mm(input, quant_clip(self.weight_ih.t(), self.wb, True) + noise_ih) + quant_clip(self.bias_ih, self.wb, True) + noise_bias_ih + torch.mm(hx, quant_clip(self.weight_hh.t(), self.wb, True) + noise_hh) + quant_clip(self.bias_hh, self.wb, True) +noise_bias_hh)
         ingate, forgetgate, cellgate, outgate = gates.chunk(4, 1)
 
         # quantize activations -> step functions
