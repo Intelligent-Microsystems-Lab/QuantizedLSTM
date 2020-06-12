@@ -44,6 +44,7 @@ parser.add_argument("--quant-inp", type=int, default=None, help='Bits available 
 parser.add_argument("--quant-state", type=int, default=None, help='Bits available for LSTM states')
 parser.add_argument("--global-beta", type=float, default=1.5, help='Globale Beta for quantization')
 parser.add_argument("--init-factor", type=float, default=2, help='Init factor for quantization')
+parser.add_argument("--std-scale", type=int, default=2, help='Scaling by how many standard deviations (e.g. how many big values will be cut off: 1std = 65%, 2std = 95%)')
 args = parser.parse_args()
 
 
@@ -207,12 +208,12 @@ class KWS_LSTM(nn.Module):
         return output
 
 
-def pre_processing(x, y, device, mfcc_cuda):
+def pre_processing(x, y, device, mfcc_cuda, std_scale):
     batch_size = x.shape[0]
 
     x =  mfcc_cuda(x.to(device))
     x -= x.reshape((batch_size, -1 )).mean(axis=1)[:, None, None]
-    x /= x.reshape((batch_size, -1 )).std(axis=1)[:, None, None]
+    x /= (x.reshape((batch_size, -1 )).std(axis=1)*std_scale)[:, None, None]
     x =  x.permute(2,0,1)
     y =  y.view((-1)).to(device)
 
@@ -237,6 +238,8 @@ loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)  
 
 best_acc = 0
+train_acc = []
+val_acc = []
 model_uuid = str(uuid.uuid4())
 
 print(args)
@@ -247,11 +250,11 @@ for e, ((x_data, y_label),(x_vali, y_vali)) in enumerate(zip(islice(train_datalo
         optimizer.param_groups[-1]['lr'] /= 5
     # train
     start_time = time.time()
-    x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
+    x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale)
 
     output = model(x_data)
     loss_val = loss_fn(output, y_label)
-    train_acc = (output.argmax(dim=1) == y_label).float().mean().item()
+    train_acc.append((output.argmax(dim=1) == y_label).float().mean().item())
         
     loss_val.backward()
     optimizer.step()
@@ -259,10 +262,10 @@ for e, ((x_data, y_label),(x_vali, y_vali)) in enumerate(zip(islice(train_datalo
     train_time = time.time() - start_time
 
     # validation
-    x_data, y_label = pre_processing(x_vali, y_vali, device, mfcc_cuda)
+    x_data, y_label = pre_processing(x_vali, y_vali, device, mfcc_cuda, args.std_scale)
 
     output = model(x_data)
-    val_acc = (output.argmax(dim=1) == y_label).float().mean().item()
+    val_acc.append((output.argmax(dim=1) == y_label).float().mean().item())
 
     if best_acc < val_acc:
         best_acc = val_acc
@@ -278,7 +281,7 @@ for e, ((x_data, y_label),(x_vali, y_vali)) in enumerate(zip(islice(train_datalo
         del checkpoint_dict
 
     if e%100 == 0:
-        print("{0:05d}     {1:.4f}      {2:.4f}     {3:.4f}     {4:.4f}".format(e, loss_val, train_acc, best_acc, train_time))
+        print("{0:05d}     {1:.4f}      {2:.4f}     {3:.4f}     {4:.4f}".format(e, loss_val, train_acc[-1], best_acc, train_time))
 
 # Testing
 print("Start Testing:")
@@ -287,7 +290,7 @@ model.load_state_dict(checkpoint_dict['model_dict'])
 acc_aux = []
 for i_batch, sample_batch in enumerate(test_dataloader):
     x_data, y_label = sample_batch
-    x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
+    x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale)
 
     output = model(x_data)
     acc_aux.append((output.argmax(dim=1) == y_label))
