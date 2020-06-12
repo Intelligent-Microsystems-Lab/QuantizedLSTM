@@ -121,7 +121,7 @@ class SpeechCommandsGoogle(Dataset):
         if self.train_test_val == 'testing':
             return len(self.list_of_labels)
         else:
-            return 10e1000
+            return 10e300
 
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
