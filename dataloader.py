@@ -65,7 +65,7 @@ def which_set(filename, validation_percentage, testing_percentage):
 class SpeechCommandsGoogle(Dataset):
     """Google Speech Command Dataset configured from Hello Edge"""
 
-    def __init__(self, root_dir, train_test_val, val_perc, test_perc, words, sample_rate, device, transform=None):
+    def __init__(self, root_dir, train_test_val, val_perc, test_perc, words, sample_rate, batch_size, epochs, device, transform=None):
         """
         Args:
             root_dir (string): Directory with all the recording.
@@ -84,6 +84,8 @@ class SpeechCommandsGoogle(Dataset):
         self.test_perc = test_perc
         self.words = words
         self.device = device
+        self.batch_size = batch_size
+        self.epochs = epochs
 
 
         self.list_of_x = []
@@ -121,7 +123,7 @@ class SpeechCommandsGoogle(Dataset):
         if self.train_test_val == 'testing':
             return len(self.list_of_labels)
         else:
-            return 10e300
+            return self.batch_size * self.epochs
 
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
