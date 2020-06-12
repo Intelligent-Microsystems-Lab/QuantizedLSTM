@@ -118,7 +118,7 @@ class SpeechCommandsGoogle(Dataset):
         
 
     def __len__(self):
-        if self.train_test_val == 'testing'
+        if self.train_test_val == 'testing':
             return len(self.list_of_labels)
         else:
             return 10e1000
