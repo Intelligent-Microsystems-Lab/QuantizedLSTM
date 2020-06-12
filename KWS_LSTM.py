@@ -37,14 +37,15 @@ parser.add_argument("--n-mfcc", type=int, default=40, help='Number of mfc coeffi
 parser.add_argument("--win-length", type=int, default=400, help='Window size in ms')
 parser.add_argument("--hop-length", type=int, default=320, help='Length of hop between STFT windows')
 parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
+parser.add_argument("--global-beta", type=float, default=1.5, help='Globale Beta for quantization')
+parser.add_argument("--init-factor", type=float, default=2, help='Init factor for quantization')
+parser.add_argument("--std-scale", type=int, default=2, help='Scaling by how many standard deviations (e.g. how many big values will be cut off: 1std = 65%, 2std = 95%)')
+
 parser.add_argument("--noise-injection", type=float, default=0, help='Percentage of noise injected to weights')
 parser.add_argument("--quant-w", type=int, default=None, help='Bits available for weights')
 parser.add_argument("--quant-act", type=int, default=None, help='Bits available for activations/state')
 parser.add_argument("--quant-inp", type=int, default=None, help='Bits available for inputs')
 parser.add_argument("--quant-state", type=int, default=None, help='Bits available for LSTM states')
-parser.add_argument("--global-beta", type=float, default=1.5, help='Globale Beta for quantization')
-parser.add_argument("--init-factor", type=float, default=2, help='Init factor for quantization')
-parser.add_argument("--std-scale", type=int, default=2, help='Scaling by how many standard deviations (e.g. how many big values will be cut off: 1std = 65%, 2std = 95%)')
 args = parser.parse_args()
 
 
@@ -267,8 +268,8 @@ for e, ((x_data, y_label),(x_vali, y_vali)) in enumerate(zip(islice(train_datalo
     output = model(x_data)
     val_acc.append((output.argmax(dim=1) == y_label).float().mean().item())
 
-    if best_acc < val_acc:
-        best_acc = val_acc
+    if best_acc < val_acc[-1]:
+        best_acc = val_acc[-1]
         checkpoint_dict = {
             'model_dict' : model.state_dict(), 
             'optimizer'  : optimizer.state_dict(),
