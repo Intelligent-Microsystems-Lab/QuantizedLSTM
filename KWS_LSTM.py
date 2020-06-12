@@ -25,7 +25,7 @@ parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speec
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
 parser.add_argument("--batch-size", type=int, default=512, help='Batch Size')
 parser.add_argument("--validation-size", type=int, default=1000, help='Number of batches used for validation')
-parser.add_argument("--epochs", type=int, default=30, help='Epochs')
+parser.add_argument("--epochs", type=int, default=20000, help='Epochs')
 parser.add_argument("--lr-divide", type=int, default=10000, help='Learning Rate divide')
 parser.add_argument("--hidden", type=int, default=200, help='Number of hidden LSTM units') 
 parser.add_argument("--learning-rate", type=float, default=0.0005, help='Dropout Percentage')
@@ -219,91 +219,80 @@ def pre_processing(x, y, device, mfcc_cuda):
 
     return x,y
 
-@profile
-def main(args):
 
-    # mfcc config
-    #data_transform = transforms.Compose([
-    #        torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, melkwargs = {'win_length' : args.win_length, 'hop_length':args.hop_length})
-    #    ])
+mfcc_cuda = torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, melkwargs = {'win_length' : args.win_length, 'hop_length':args.hop_length}).to(device)
 
-    mfcc_cuda = torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, melkwargs = {'win_length' : args.win_length, 'hop_length':args.hop_length}).to(device)
-
-    speech_dataset_train = SpeechCommandsGoogle(args.dataset_path_train, 'training', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, device = device)
-    speech_dataset_val = SpeechCommandsGoogle(args.dataset_path_train , 'validation', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, device = device)
-    speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_test, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, device = device)
+speech_dataset_train = SpeechCommandsGoogle(args.dataset_path_train, 'training', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, device = device)
+speech_dataset_val = SpeechCommandsGoogle(args.dataset_path_train , 'validation', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, device = device)
+speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_test, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, device = device)
 
 
-    train_dataloader = torch.utils.data.DataLoader(speech_dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
-    test_dataloader = torch.utils.data.DataLoader(speech_dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
-    validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_size=args.validation_size, shuffle=True, num_workers=args.dataloader_num_workers)
+train_dataloader = torch.utils.data.DataLoader(speech_dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
+test_dataloader = torch.utils.data.DataLoader(speech_dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
+validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_size=args.validation_size, shuffle=True, num_workers=args.dataloader_num_workers)
 
-    model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = args.init_factor, quant_beta = args.global_beta, wb = args.quant_w, ab = args.quant_act , sb = args.quant_state, ib = args.quant_inp, noise_level = args.noise_injection).to(device)
-    model.to(device)
-    loss_fn = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)  
+model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = args.init_factor, quant_beta = args.global_beta, wb = args.quant_w, ab = args.quant_act , sb = args.quant_state, ib = args.quant_inp, noise_level = args.noise_injection).to(device)
+model.to(device)
+loss_fn = nn.CrossEntropyLoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)  
 
-    best_acc = 0
-    model_uuid = str(uuid.uuid4())
+best_acc = 0
+model_uuid = str(uuid.uuid4())
 
-    print(args)
-    print("Start Training:")
-    print("Epoch     Train Loss  Train Acc  Vali. Acc")
-    #for e in range(args.epochs):
-    e = 0
-    for (x_data, y_label),(x_vali, y_vali) in zip(islice(train_dataloader, args.epochs), islice(validation_dataloader, args.epochs)):
-        if e == args.lr_divide:
-            optimizer.param_groups[-1]['lr'] /= 5
-        # train
-        #x_data, y_label = next(iter(train_dataloader))
-        x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
+print(args)
+print("Start Training:")
+print("Epoch     Train Loss  Train Acc  Vali. Acc")
+#for e in range(args.epochs):
+e = 0
+for (x_data, y_label),(x_vali, y_vali) in zip(islice(train_dataloader, args.epochs), islice(validation_dataloader, args.epochs)):
+    if e == args.lr_divide:
+        optimizer.param_groups[-1]['lr'] /= 5
+    # train
+    x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
 
-        output = model(x_data)
-        loss_val = loss_fn(output, y_label)
-        train_acc = (output.argmax(dim=1) == y_label).float().mean().item()
-            
-        loss_val.backward()
-        optimizer.step()
-        optimizer.zero_grad()
+    output = model(x_data)
+    loss_val = loss_fn(output, y_label)
+    train_acc = (output.argmax(dim=1) == y_label).float().mean().item()
+        
+    loss_val.backward()
+    optimizer.step()
+    optimizer.zero_grad()
 
-        # validation
-        #x_data, y_label = next(iter(validation_dataloader))
-        x_data, y_label = pre_processing(x_vali, y_vali, device, mfcc_cuda)
+    # validation
+    x_data, y_label = pre_processing(x_vali, y_vali, device, mfcc_cuda)
 
-        output = model(x_data)
-        val_acc = (output.argmax(dim=1) == y_label).float().mean().item()
+    output = model(x_data)
+    val_acc = (output.argmax(dim=1) == y_label).float().mean().item()
 
-        if best_acc < val_acc:
-            best_acc = val_acc
-            checkpoint_dict = {
-                'model_dict' : model.state_dict(), 
-                'optimizer'  : optimizer.state_dict(),
-                'epoch'      : e, 
-                'best_vali'  : best_acc, 
-                'arguments'  : args,
-                'train_loss' : loss_val
-            }
-            torch.save(checkpoint_dict, './checkpoints/'+model_uuid+'.pkl')
-            del checkpoint_dict
+    if best_acc < val_acc:
+        best_acc = val_acc
+        checkpoint_dict = {
+            'model_dict' : model.state_dict(), 
+            'optimizer'  : optimizer.state_dict(),
+            'epoch'      : e, 
+            'best_vali'  : best_acc, 
+            'arguments'  : args,
+            'train_loss' : loss_val
+        }
+        torch.save(checkpoint_dict, './checkpoints/'+model_uuid+'.pkl')
+        del checkpoint_dict
 
-        if e%100 == 0:
-            print("{0:05d}     {1:.4f}      {2:.4f}     {3:.4f}".format(e, loss_val, train_acc, best_acc))
-        e += 1
+    if e%100 == 0:
+        print("{0:05d}     {1:.4f}      {2:.4f}     {3:.4f}".format(e, loss_val, train_acc, best_acc))
+    e += 1
 
-    # Testing
-    print("Start Testing:")
-    checkpoint_dict = torch.load('./checkpoints/'+model_uuid+'.pkl')
-    model.load_state_dict(checkpoint_dict['model_dict'])
-    acc_aux = []
-    for i_batch, sample_batch in enumerate(test_dataloader):
-        x_data, y_label = sample_batch
-        x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
+# Testing
+print("Start Testing:")
+checkpoint_dict = torch.load('./checkpoints/'+model_uuid+'.pkl')
+model.load_state_dict(checkpoint_dict['model_dict'])
+acc_aux = []
+for i_batch, sample_batch in enumerate(test_dataloader):
+    x_data, y_label = sample_batch
+    x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
 
-        output = model(x_data)
-        acc_aux.append((output.argmax(dim=1) == y_label))
+    output = model(x_data)
+    acc_aux.append((output.argmax(dim=1) == y_label))
 
-    test_acc = torch.cat(acc_aux).float().mean().item()
-    print("Test Accuracy: {0:.4f}".format(test_acc))
+test_acc = torch.cat(acc_aux).float().mean().item()
+print("Test Accuracy: {0:.4f}".format(test_acc))
 
-
-main(args)
