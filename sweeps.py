@@ -8,7 +8,7 @@ part3 = ".txt\n#$ -e ./logs/error_"
 
 part4 = ".txt\nmodule load python\nsetenv OMP_NUM_THREADS $NSLOTS\npython KWS_LSTM.py"
 
-sweep_parameters = {'noise-injection':[.05,.1,.2], 'quant-act':[2,3,4,5,6,7,8], 'quant-inp':[2,3,4,5,6,7,8]}
+sweep_parameters = {'noise-injection':[.05,.1,.2], 'quant-act':[2,3,5,6,7,8], 'quant-inp':[2,3,5,6,7,8]}
 trials = 1
 
 for i in range(trials):
