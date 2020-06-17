@@ -25,8 +25,8 @@ parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speec
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
 parser.add_argument("--batch-size", type=int, default=512, help='Batch Size')
 parser.add_argument("--validation-size", type=int, default=1000, help='Number of batches used for validation')
-parser.add_argument("--epochs", type=int, default=200000, help='Epochs')
-parser.add_argument("--lr-divide", type=int, default=40000, help='Learning Rate divide')
+parser.add_argument("--epochs", type=int, default=42000, help='Epochs')
+parser.add_argument("--lr-divide", type=int, default=10000, help='Learning Rate divide')
 parser.add_argument("--hidden", type=int, default=200, help='Number of hidden LSTM units') 
 parser.add_argument("--learning-rate", type=float, default=0.0005, help='Dropout Percentage')
 parser.add_argument("--dataloader-num-workers", type=int, default=4, help='Number Workers Dataloader')
@@ -41,9 +41,9 @@ parser.add_argument("--global-beta", type=float, default=1.5, help='Globale Beta
 parser.add_argument("--init-factor", type=float, default=2, help='Init factor for quantization')
 parser.add_argument("--std-scale", type=int, default=2, help='Scaling by how many standard deviations (e.g. how many big values will be cut off: 1std = 65%, 2std = 95%)')
 
-parser.add_argument("--noise-injection", type=float, default=0.1, help='Percentage of noise injected to weights')
-parser.add_argument("--quant-act", type=int, default=4, help='Bits available for activations/state')
-parser.add_argument("--quant-inp", type=int, default=4, help='Bits available for inputs')
+parser.add_argument("--noise-injection", type=float, default=0, help='Percentage of noise injected to weights')
+parser.add_argument("--quant-act", type=int, default=None, help='Bits available for activations/state')
+parser.add_argument("--quant-inp", type=int, default=None, help='Bits available for inputs')
 
 parser.add_argument("--quant-w", type=int, default=None, help='Bits available for weights')
 args = parser.parse_args()
