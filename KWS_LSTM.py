@@ -46,6 +46,9 @@ parser.add_argument("--quant-act", type=int, default=None, help='Bits available 
 parser.add_argument("--quant-inp", type=int, default=None, help='Bits available for inputs')
 
 parser.add_argument("--quant-w", type=int, default=None, help='Bits available for weights')
+
+
+parser.add_argument("--ab1", type=int, default=None, help='Bits available for weights')
 args = parser.parse_args()
 
 
@@ -163,7 +166,7 @@ class LSTMCell(nn.Module):
         ingate, forgetgate, cellgate, outgate = gates.chunk(4, 1)
 
         # quantize activations -> step functions
-        ingate = quant_pass(torch.sigmoid(ingate), self.ab, False) 
+        ingate = quant_pass(torch.sigmoid(ingate), args.ab1, False) 
         forgetgate = quant_pass(torch.sigmoid(forgetgate), self.ab, False) 
         cellgate = quant_pass(torch.tanh(cellgate), self.ab, True)
         outgate = quant_pass(torch.sigmoid(outgate), self.ab, False)
