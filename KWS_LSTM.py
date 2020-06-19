@@ -49,6 +49,15 @@ parser.add_argument("--quant-w", type=int, default=None, help='Bits available fo
 
 
 parser.add_argument("--ab1", type=int, default=None, help='Bits available for weights')
+parser.add_argument("--ab2", type=int, default=None, help='Bits available for weights')
+parser.add_argument("--ab3", type=int, default=None, help='Bits available for weights')
+parser.add_argument("--ab4", type=int, default=None, help='Bits available for weights')
+parser.add_argument("--ab5", type=int, default=None, help='Bits available for weights')
+parser.add_argument("--ab6", type=int, default=None, help='Bits available for weights')
+parser.add_argument("--ab7", type=int, default=None, help='Bits available for weights')
+parser.add_argument("--ab8", type=int, default=None, help='Bits available for weights')
+parser.add_argument("--ab9", type=int, default=None, help='Bits available for weights')
+parser.add_argument("--ab10", type=int, default=None, help='Bits available for weights')
 args = parser.parse_args()
 
 
@@ -166,14 +175,14 @@ class LSTMCell(nn.Module):
         ingate, forgetgate, cellgate, outgate = gates.chunk(4, 1)
 
         # quantize activations -> step functions
-        ingate = quant_pass(torch.sigmoid(ingate), args.ab1, False) 
-        forgetgate = quant_pass(torch.sigmoid(forgetgate), self.ab, False) 
-        cellgate = quant_pass(torch.tanh(cellgate), self.ab, True)
-        outgate = quant_pass(torch.sigmoid(outgate), self.ab, False)
+        ingate = quant_pass(torch.sigmoid(ingate), args.ab1, False)
+        forgetgate = quant_pass(torch.sigmoid(forgetgate), args.ab2, False) 
+        cellgate = quant_pass(torch.tanh(cellgate), args.ab3, True)
+        outgate = quant_pass(torch.sigmoid(outgate), args.ab4, False)
         
         #quantize state
-        cy = quant_pass(quant_pass(forgetgate * cx, self.ab, True) + quant_pass(ingate * cellgate, self.ab, True), self.ab, True)
-        hy = quant_pass(outgate * quant_pass(torch.tanh(cy), self.ab, True), self.ab, True)
+        cy = quant_pass(quant_pass(forgetgate * cx, args.ab5, True) + quant_pass(ingate * cellgate, args.ab6, True), args.ab7, True)
+        hy = quant_pass(outgate * quant_pass(torch.tanh(cy), args.ab8, True), args.ab9, True)
 
         
         return hy, (hy, cy)
@@ -239,7 +248,7 @@ class KWS_LSTM(nn.Module):
         lstm_out, self.hidden_state = self.lstmL(q_inputs, self.hidden_state)
         # read out layer - quantized
         outputFC = self.outputL(lstm_out[-1,:,:]) 
-        output = quant_pass(torch.sigmoid(outputFC), self.ab, False)
+        output = quant_pass(torch.sigmoid(outputFC), args.ab10, False)
         return output
 
 
