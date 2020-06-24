@@ -25,7 +25,7 @@ parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speec
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
 parser.add_argument("--batch-size", type=int, default=512, help='Batch Size')
 parser.add_argument("--validation-size", type=int, default=1000, help='Number of batches used for validation')
-parser.add_argument("--epochs", type=int, default=42000, help='Epochs')
+parser.add_argument("--epochs", type=int, default=20000, help='Epochs')
 parser.add_argument("--lr-divide", type=int, default=10000, help='Learning Rate divide')
 parser.add_argument("--hidden", type=int, default=200, help='Number of hidden LSTM units') 
 parser.add_argument("--learning-rate", type=float, default=0.0005, help='Dropout Percentage')
@@ -45,16 +45,18 @@ parser.add_argument("--noise-injection", type=float, default=0.1, help='Percenta
 parser.add_argument("--quant-act", type=int, default=32, help='Bits available for activations/state')
 parser.add_argument("--quant-inp", type=int, default=32, help='Bits available for inputs')
 
-parser.add_argument("--ab1", type=int, default=32, help='Bits available for weights')
-parser.add_argument("--ab2", type=int, default=32, help='Bits available for weights')
-parser.add_argument("--ab3", type=int, default=32, help='Bits available for weights')
-parser.add_argument("--ab4", type=int, default=32, help='Bits available for weights')
-parser.add_argument("--ab5", type=int, default=32, help='Bits available for weights')
-parser.add_argument("--ab6", type=int, default=32, help='Bits available for weights')
-parser.add_argument("--ab7", type=int, default=32, help='Bits available for weights')
-parser.add_argument("--ab8", type=int, default=32, help='Bits available for weights')
-parser.add_argument("--ab9", type=int, default=32, help='Bits available for weights')
-parser.add_argument("--ab10", type=int, default=32, help='Bits available for weights')
+parser.add_argument("--cy-scale", type=int, default=2, help='Scaling CY')
+
+# parser.add_argument("--ab1", type=int, default=32, help='Bits available for weights')
+# parser.add_argument("--ab2", type=int, default=32, help='Bits available for weights')
+# parser.add_argument("--ab3", type=int, default=32, help='Bits available for weights')
+# parser.add_argument("--ab4", type=int, default=32, help='Bits available for weights')
+# parser.add_argument("--ab5", type=int, default=None, help='Bits available for weights')
+# parser.add_argument("--ab6", type=int, default=None, help='Bits available for weights')
+# parser.add_argument("--ab7", type=int, default=None, help='Bits available for weights')
+# parser.add_argument("--ab8", type=int, default=None, help='Bits available for weights')
+# parser.add_argument("--ab9", type=int, default=None, help='Bits available for weights')
+# parser.add_argument("--ab10", type=int, default=32, help='Bits available for weights')
 
 parser.add_argument("--quant-w", type=int, default=None, help='Bits available for weights')
 args = parser.parse_args()
@@ -163,7 +165,7 @@ class LSTMCell(nn.Module):
         # type: (Tensor, Tuple[Tensor, Tensor]) -> Tuple[Tensor, Tuple[Tensor, Tensor]]
         hx, cx = state
 
-        # quantize weights
+        # noise injection
         noise_ih = torch.randn(self.weight_ih.t().shape, device = self.device) * self.weight_ih.max() * self.noise_level
         noise_hh = torch.randn(self.weight_hh.t().shape, device = self.device) * self.weight_hh.max() * self.noise_level
         noise_bias_ih = torch.randn(self.bias_ih.t().shape, device = self.device) * self.bias_ih.max() * self.noise_level
@@ -174,14 +176,18 @@ class LSTMCell(nn.Module):
         ingate, forgetgate, cellgate, outgate = gates.chunk(4, 1)
 
         # quantize activations -> step functions
-        ingate = quant_pass(torch.sigmoid(ingate), args.ab1, False)
-        forgetgate = quant_pass(torch.sigmoid(forgetgate), args.ab2, False) 
-        cellgate = quant_pass(torch.tanh(cellgate), args.ab3, True)
-        outgate = quant_pass(torch.sigmoid(outgate), args.ab4, False)
+        ingate = quant_pass(torch.sigmoid(ingate), self.ab, False)
+        forgetgate = quant_pass(torch.sigmoid(forgetgate), self.ab, False) 
+        cellgate = quant_pass(torch.tanh(cellgate), self.ab, True)
+        outgate = quant_pass(torch.sigmoid(outgate), self.ab, False)
         
+
         #quantize state
-        cy = quant_pass(quant_pass(forgetgate * cx, args.ab5, True) + quant_pass(ingate * cellgate, args.ab6, True), args.ab7, True)
-        hy = quant_pass(outgate * quant_pass(torch.tanh(cy), args.ab8, True), args.ab9, True)
+        cy = quant_pass( (quant_pass(forgetgate * cx, self.ab, True) + quant_pass(ingate * cellgate, self.ab, True)) * 1/args.cy_scale, self.ab, True)
+
+        # how about we give cy some scale
+        # cy = forgetgate * cx + ingate * cellgate
+        hy = quant_pass(outgate * quant_pass(torch.tanh(cy * args.cy_scale), self.ab, True), self.ab, True)
 
         
         return hy, (hy, cy)
@@ -195,8 +201,19 @@ class LSTMLayer(nn.Module):
     def forward(self, input, state):
         inputs = input.unbind(0)
         outputs = []
+
+        #####
+        #self.cy_hist = np.array([])
+        #self.hy_hist = np.array([])
+        #####
+
         for i in range(len(inputs)):
             out, state = self.cell(inputs[i], state)
+
+            ######
+            #self.hy_hist = np.concatenate((self.hy_hist, state[0].detach().cpu().numpy().flatten()))
+            #self.cy_hist = np.concatenate((self.cy_hist, state[1].detach().cpu().numpy().flatten()))
+            ######
             outputs += [out]
         return torch.stack(outputs), state
 
@@ -247,7 +264,7 @@ class KWS_LSTM(nn.Module):
         lstm_out, self.hidden_state = self.lstmL(q_inputs, self.hidden_state)
         # read out layer - quantized
         outputFC = self.outputL(lstm_out[-1,:,:]) 
-        output = quant_pass(torch.sigmoid(outputFC), args.ab10, False)
+        output = quant_pass(torch.sigmoid(outputFC), self.ab, False)
         return output
 
 
@@ -340,4 +357,31 @@ for i_batch, sample_batch in enumerate(test_dataloader):
 
 test_acc = torch.cat(acc_aux).float().mean().item()
 print("Test Accuracy: {0:.4f}".format(test_acc))
+
+
+
+
+# histogram
+import matplotlib.pyplot as plt
+
+plt.clf()
+n, bins, patches = plt.hist( model.lstmL.cy_hist , 50, density=True, facecolor='g', alpha=0.75)
+plt.xlabel('CY value')
+plt.ylabel('Count')
+plt.title('Histogram of CY')
+plt.grid(True)
+plt.savefig("figures/CY.png")
+plt.close()
+
+
+
+plt.clf()
+n, bins, patches = plt.hist( model.lstmL.hy_hist , 50, density=True, facecolor='g', alpha=0.75)
+plt.xlabel('HY value')
+plt.ylabel('Count')
+plt.title('Histogram of HY')
+plt.grid(True)
+plt.savefig("figures/HY.png")
+plt.close()
+
 
