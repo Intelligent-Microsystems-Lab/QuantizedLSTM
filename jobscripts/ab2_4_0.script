@@ -1,0 +1,11 @@
+#!/bin/csh 
+#$ -M cschaef6@nd.edu 
+#$ -m abe
+#$ -q gpu@@joshi
+#$ -l gpu_card=1
+#$ -N ab2_4_0
+#$ -o ./logs/output_ab2_4_0.txt
+#$ -e ./logs/error_ab2_4_0.txt
+module load python
+setenv OMP_NUM_THREADS $NSLOTS
+python KWS_LSTM.py --ab2 4
