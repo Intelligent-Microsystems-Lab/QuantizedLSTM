@@ -42,8 +42,8 @@ parser.add_argument("--init-factor", type=float, default=2, help='Init factor fo
 parser.add_argument("--std-scale", type=int, default=2, help='Scaling by how many standard deviations (e.g. how many big values will be cut off: 1std = 65%, 2std = 95%)')
 
 parser.add_argument("--noise-injection", type=float, default=0.1, help='Percentage of noise injected to weights')
-parser.add_argument("--quant-act", type=int, default=32, help='Bits available for activations/state')
-parser.add_argument("--quant-inp", type=int, default=32, help='Bits available for inputs')
+parser.add_argument("--quant-act", type=int, default=16, help='Bits available for activations/state')
+parser.add_argument("--quant-inp", type=int, default=16, help='Bits available for inputs')
 
 parser.add_argument("--cy-scale", type=int, default=2, help='Scaling CY')
 
