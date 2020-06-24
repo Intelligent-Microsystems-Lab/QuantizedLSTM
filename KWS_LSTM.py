@@ -39,7 +39,7 @@ parser.add_argument("--hop-length", type=int, default=320, help='Length of hop b
 parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
 parser.add_argument("--global-beta", type=float, default=1.5, help='Globale Beta for quantization')
 parser.add_argument("--init-factor", type=float, default=2, help='Init factor for quantization')
-parser.add_argument("--std-scale", type=int, default=3, help='Scaling by how many standard deviations (e.g. how many big values will be cut off: 1std = 65%, 2std = 95%)')
+parser.add_argument("--std-scale", type=int, default=2, help='Scaling by how many standard deviations (e.g. how many big values will be cut off: 1std = 65%, 2std = 95%)')
 
 parser.add_argument("--noise-injection", type=float, default=0.1, help='Percentage of noise injected to weights')
 parser.add_argument("--quant-act", type=int, default=32, help='Bits available for activations/state')
