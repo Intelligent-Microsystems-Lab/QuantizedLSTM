@@ -306,7 +306,7 @@ print(model_uuid)
 print("Start Training:")
 print("Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)")
 for e, ((x_data, y_label),(x_vali, y_vali)) in enumerate(zip(islice(train_dataloader, args.epochs), islice(validation_dataloader, args.epochs))):
-    if e%10000 == 0:
+    if e%args.lr_divide == 0:
         optimizer.param_groups[-1]['lr'] /= 2
     # train
     start_time = time.time()
