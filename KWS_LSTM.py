@@ -361,27 +361,27 @@ print("Test Accuracy: {0:.4f}".format(test_acc))
 
 
 
-# histogram
-import matplotlib.pyplot as plt
+# # histogram
+# import matplotlib.pyplot as plt
 
-plt.clf()
-n, bins, patches = plt.hist( model.lstmL.cy_hist , 50, density=True, facecolor='g', alpha=0.75)
-plt.xlabel('CY value')
-plt.ylabel('Count')
-plt.title('Histogram of CY')
-plt.grid(True)
-plt.savefig("figures/CY.png")
-plt.close()
+# plt.clf()
+# n, bins, patches = plt.hist( model.lstmL.cy_hist , 50, density=True, facecolor='g', alpha=0.75)
+# plt.xlabel('CY value')
+# plt.ylabel('Count')
+# plt.title('Histogram of CY')
+# plt.grid(True)
+# plt.savefig("figures/CY.png")
+# plt.close()
 
 
 
-plt.clf()
-n, bins, patches = plt.hist( model.lstmL.hy_hist , 50, density=True, facecolor='g', alpha=0.75)
-plt.xlabel('HY value')
-plt.ylabel('Count')
-plt.title('Histogram of HY')
-plt.grid(True)
-plt.savefig("figures/HY.png")
-plt.close()
+# plt.clf()
+# n, bins, patches = plt.hist( model.lstmL.hy_hist , 50, density=True, facecolor='g', alpha=0.75)
+# plt.xlabel('HY value')
+# plt.ylabel('Count')
+# plt.title('Histogram of HY')
+# plt.grid(True)
+# plt.savefig("figures/HY.png")
+# plt.close()
 
 
