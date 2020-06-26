@@ -42,10 +42,10 @@ parser.add_argument("--init-factor", type=float, default=2, help='Init factor fo
 parser.add_argument("--std-scale", type=int, default=2, help='Scaling by how many standard deviations (e.g. how many big values will be cut off: 1std = 65%, 2std = 95%)')
 
 parser.add_argument("--noise-injection", type=float, default=0.1, help='Percentage of noise injected to weights')
-parser.add_argument("--quant-act", type=int, default=16, help='Bits available for activations/state')
-parser.add_argument("--quant-inp", type=int, default=16, help='Bits available for inputs')
+parser.add_argument("--quant-act", type=int, default=32, help='Bits available for activations/state')
+parser.add_argument("--quant-inp", type=int, default=32, help='Bits available for inputs')
 
-parser.add_argument("--cy-scale", type=int, default=2, help='Scaling CY')
+parser.add_argument("--cy-scale", type=int, default=6, help='Scaling CY')
 
 # parser.add_argument("--ab1", type=int, default=32, help='Bits available for weights')
 # parser.add_argument("--ab2", type=int, default=32, help='Bits available for weights')
@@ -384,4 +384,4 @@ print("Test Accuracy: {0:.4f}".format(test_acc))
 # plt.savefig("figures/HY.png")
 # plt.close()
 
-
+checkpoint_dict = torch.load('./checkpoints/0f451c2b-fb18-4ddb-aa18-32df3a6576a0.pkl')
