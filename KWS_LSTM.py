@@ -21,11 +21,13 @@ else:
 
 
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+# general config
 parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speech_commands_v0.02', help='Path to Dataset')
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
 parser.add_argument("--batch-size", type=int, default=512, help='Batch Size')
 parser.add_argument("--validation-size", type=int, default=1000, help='Number of batches used for validation')
-parser.add_argument("--epochs", type=int, default=20000, help='Epochs')
+parser.add_argument("--epochs", type=int, default=60000, help='Epochs')
 parser.add_argument("--lr-divide", type=int, default=10000, help='Learning Rate divide')
 parser.add_argument("--hidden", type=int, default=200, help='Number of hidden LSTM units') 
 parser.add_argument("--learning-rate", type=float, default=0.0005, help='Dropout Percentage')
@@ -42,11 +44,10 @@ parser.add_argument("--init-factor", type=float, default=2, help='Init factor fo
 parser.add_argument("--std-scale", type=int, default=2, help='Scaling by how many standard deviations (e.g. how many big values will be cut off: 1std = 65%, 2std = 95%)')
 
 parser.add_argument("--noise-injection", type=float, default=0.1, help='Percentage of noise injected to weights')
-parser.add_argument("--quant-act", type=int, default=32, help='Bits available for activations/state')
-parser.add_argument("--quant-inp", type=int, default=32, help='Bits available for inputs')
+parser.add_argument("--quant-act", type=int, default=4, help='Bits available for activations/state')
+parser.add_argument("--quant-inp", type=int, default=4, help='Bits available for inputs')
 
-parser.add_argument("--cy-scale", type=int, default=6, help='Scaling CY')
-
+parser.add_argument("--cy-scale", type=int, default=1, help='Scaling CY')
 # parser.add_argument("--ab1", type=int, default=32, help='Bits available for weights')
 # parser.add_argument("--ab2", type=int, default=32, help='Bits available for weights')
 # parser.add_argument("--ab3", type=int, default=32, help='Bits available for weights')
@@ -57,9 +58,49 @@ parser.add_argument("--cy-scale", type=int, default=6, help='Scaling CY')
 # parser.add_argument("--ab8", type=int, default=None, help='Bits available for weights')
 # parser.add_argument("--ab9", type=int, default=None, help='Bits available for weights')
 # parser.add_argument("--ab10", type=int, default=32, help='Bits available for weights')
-
 parser.add_argument("--quant-w", type=int, default=None, help='Bits available for weights')
-args = parser.parse_args()
+
+
+
+
+# # cough config
+# parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speech_commands_test_set_v0.02_cough', help='Path to Dataset')
+# parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02_cough', help='Path to Dataset')
+# parser.add_argument("--batch-size", type=int, default=512, help='Batch Size')
+# parser.add_argument("--validation-size", type=int, default=1000, help='Number of batches used for validation')
+# parser.add_argument("--epochs", type=int, default=20000, help='Epochs')
+# parser.add_argument("--lr-divide", type=int, default=10000, help='Learning Rate divide')
+# parser.add_argument("--hidden", type=int, default=200, help='Number of hidden LSTM units') 
+# parser.add_argument("--learning-rate", type=float, default=0.0005, help='Dropout Percentage')
+# parser.add_argument("--dataloader-num-workers", type=int, default=4, help='Number Workers Dataloader')
+# parser.add_argument("--validation-percentage", type=int, default=10, help='Validation Set Percentage')
+# parser.add_argument("--testing-percentage", type=int, default=10, help='Testing Set Percentage')
+# parser.add_argument("--sample-rate", type=int, default=16000, help='Audio Sample Rate')
+# parser.add_argument("--n-mfcc", type=int, default=40, help='Number of mfc coefficients to retain')
+# parser.add_argument("--win-length", type=int, default=400, help='Window size in ms')
+# parser.add_argument("--hop-length", type=int, default=320, help='Length of hop between STFT windows')
+# parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
+# parser.add_argument("--global-beta", type=float, default=1.5, help='Globale Beta for quantization')
+# parser.add_argument("--init-factor", type=float, default=2, help='Init factor for quantization')
+# parser.add_argument("--std-scale", type=int, default=2, help='Scaling by how many standard deviations (e.g. how many big values will be cut off: 1std = 65%, 2std = 95%)')
+
+# parser.add_argument("--noise-injection", type=float, default=0, help='Percentage of noise injected to weights')
+# parser.add_argument("--quant-act", type=int, default=None, help='Bits available for activations/state')
+# parser.add_argument("--quant-inp", type=int, default=None, help='Bits available for inputs')
+
+# parser.add_argument("--cy-scale", type=int, default=6, help='Scaling CY')
+# # parser.add_argument("--ab1", type=int, default=32, help='Bits available for weights')
+# # parser.add_argument("--ab2", type=int, default=32, help='Bits available for weights')
+# # parser.add_argument("--ab3", type=int, default=32, help='Bits available for weights')
+# # parser.add_argument("--ab4", type=int, default=32, help='Bits available for weights')
+# # parser.add_argument("--ab5", type=int, default=None, help='Bits available for weights')
+# # parser.add_argument("--ab6", type=int, default=None, help='Bits available for weights')
+# # parser.add_argument("--ab7", type=int, default=None, help='Bits available for weights')
+# # parser.add_argument("--ab8", type=int, default=None, help='Bits available for weights')
+# # parser.add_argument("--ab9", type=int, default=None, help='Bits available for weights')
+# # parser.add_argument("--ab10", type=int, default=32, help='Bits available for weights')
+# parser.add_argument("--quant-w", type=int, default=None, help='Bits available for weights')
+# args = parser.parse_args()
 
 
 def step_d(bits):
@@ -182,11 +223,10 @@ class LSTMCell(nn.Module):
         outgate = quant_pass(torch.sigmoid(outgate), self.ab, False)
         
 
-        #quantize state
-        cy = quant_pass( (quant_pass(forgetgate * cx, self.ab, True) + quant_pass(ingate * cellgate, self.ab, True)) * 1/args.cy_scale, self.ab, True)
+        #quantize state / how about we give cy some scale
+        #cy = quant_pass( (quant_pass(forgetgate * cx, self.ab, True) + quant_pass(ingate * cellgate, self.ab, True)) * 1/args.cy_scale, self.ab, True)
 
-        # how about we give cy some scale
-        # cy = forgetgate * cx + ingate * cellgate
+        cy = forgetgate * cx + ingate * cellgate
         hy = quant_pass(outgate * quant_pass(torch.tanh(cy * args.cy_scale), self.ab, True), self.ab, True)
 
         
@@ -384,4 +424,4 @@ print("Test Accuracy: {0:.4f}".format(test_acc))
 # plt.savefig("figures/HY.png")
 # plt.close()
 
-checkpoint_dict = torch.load('./checkpoints/0f451c2b-fb18-4ddb-aa18-32df3a6576a0.pkl')
+#checkpoint_dict = torch.load('./checkpoints/0f451c2b-fb18-4ddb-aa18-32df3a6576a0.pkl')
