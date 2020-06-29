@@ -100,7 +100,8 @@ parser.add_argument("--quant-w", type=int, default=None, help='Bits available fo
 # # parser.add_argument("--ab9", type=int, default=None, help='Bits available for weights')
 # # parser.add_argument("--ab10", type=int, default=32, help='Bits available for weights')
 # parser.add_argument("--quant-w", type=int, default=None, help='Bits available for weights')
-# args = parser.parse_args()
+
+args = parser.parse_args()
 
 
 def step_d(bits):
