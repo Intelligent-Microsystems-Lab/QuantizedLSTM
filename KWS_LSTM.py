@@ -43,11 +43,13 @@ parser.add_argument("--global-beta", type=float, default=1.5, help='Globale Beta
 parser.add_argument("--init-factor", type=float, default=2, help='Init factor for quantization')
 parser.add_argument("--std-scale", type=int, default=2, help='Scaling by how many standard deviations (e.g. how many big values will be cut off: 1std = 65%, 2std = 95%)')
 
+parser.add_argument("--fp-train", type=int, default=0, help='Epochs of Floating Point Training')
 parser.add_argument("--noise-injection", type=float, default=0.1, help='Percentage of noise injected to weights')
 parser.add_argument("--quant-act", type=int, default=4, help='Bits available for activations/state')
 parser.add_argument("--quant-inp", type=int, default=4, help='Bits available for inputs')
 
-parser.add_argument("--cy-scale", type=int, default=1, help='Scaling CY')
+parser.add_argument("--cy-div", type=int, default=2, help='CY division')
+parser.add_argument("--cy-scale", type=int, default=3, help='Scaling CY')
 # parser.add_argument("--ab1", type=int, default=32, help='Bits available for weights')
 # parser.add_argument("--ab2", type=int, default=32, help='Bits available for weights')
 # parser.add_argument("--ab3", type=int, default=32, help='Bits available for weights')
@@ -226,7 +228,7 @@ class LSTMCell(nn.Module):
 
         #quantize state / how about we give cy some scale
         #cy = quant_pass( (quant_pass(forgetgate * cx, self.ab, True) + quant_pass(ingate * cellgate, self.ab, True)) * 1/args.cy_scale, self.ab, True)
-        cy = quant_pass( (quant_pass(forgetgate * cx, None, True) + quant_pass(ingate * cellgate, self.ab, True)) * 1/args.cy_scale, None, True)
+        cy = quant_pass( (quant_pass(forgetgate * cx, self.ab, True) + quant_pass(ingate * cellgate, self.ab, True)) * 1/args.cy_div, self.ab, True)
 
         #cy = forgetgate * cx + ingate * cellgate
         hy = quant_pass(outgate * quant_pass(torch.tanh(cy * args.cy_scale), self.ab, True), self.ab, True)
@@ -322,6 +324,11 @@ def pre_processing(x, y, device, mfcc_cuda, std_scale):
     return x,y
 
 
+args_backup = args
+args.noise_injection = 0
+args.quant_act = None
+args.inp_act = None
+
 mfcc_cuda = torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, melkwargs = {'win_length' : args.win_length, 'hop_length':args.hop_length}).to(device)
 
 speech_dataset_train = SpeechCommandsGoogle(args.dataset_path_train, 'training', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, args.epochs, device = device)
@@ -348,6 +355,9 @@ print(model_uuid)
 print("Start Training:")
 print("Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)")
 for e, ((x_data, y_label),(x_vali, y_vali)) in enumerate(zip(islice(train_dataloader, args.epochs), islice(validation_dataloader, args.epochs))):
+    if e == args.fp_train:
+        args = args_backup
+
     if e%args.lr_divide == 0:
         optimizer.param_groups[-1]['lr'] /= 2
     # train
