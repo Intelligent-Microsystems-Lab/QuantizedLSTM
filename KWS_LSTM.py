@@ -226,8 +226,9 @@ class LSTMCell(nn.Module):
 
         #quantize state / how about we give cy some scale
         #cy = quant_pass( (quant_pass(forgetgate * cx, self.ab, True) + quant_pass(ingate * cellgate, self.ab, True)) * 1/args.cy_scale, self.ab, True)
+        cy = quant_pass( (quant_pass(forgetgate * cx, None, True) + quant_pass(ingate * cellgate, self.ab, True)) * 1/args.cy_scale, None, True)
 
-        cy = forgetgate * cx + ingate * cellgate
+        #cy = forgetgate * cx + ingate * cellgate
         hy = quant_pass(outgate * quant_pass(torch.tanh(cy * args.cy_scale), self.ab, True), self.ab, True)
 
         
