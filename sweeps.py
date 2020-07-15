@@ -1,10 +1,12 @@
 import os
 
+ident_word = "cough"
+
 part1 = "#!/bin/csh \n#$ -M cschaef6@nd.edu \n#$ -m abe\n#$ -q gpu@@joshi\n#$ -l gpu_card=1\n#$ -N "
 
-part2 = "\n#$ -o ./logs/output_"
+part2 = "\n#$ -o ./logs/output_"+ident_word+"_"
 
-part3 = ".txt\n#$ -e ./logs/error_"
+part3 = ".txt\n#$ -e ./logs/error_"+ident_word+"_"
 
 part4 = ".txt\nmodule load python\nsetenv OMP_NUM_THREADS $NSLOTS\npython KWS_LSTM.py"
 
@@ -20,7 +22,7 @@ trials = 1
 for i in range(trials):
     for variable in sweep_parameters:
         for value in sweep_parameters[variable]:
-            name = variable + "_" + str(value) + "_" + str(i)
+            name = ident_word + "_" +variable + "_" + str(value) + "_" + str(i)
             with open('jobscripts/'+name+'.script', 'w') as f:
                 f.write(part1 + name + part2 + name + part3 + name + part4 + " --" + variable + " " + str(value))
             os.system("qsub "+ 'jobscripts/'+name+'.script')
