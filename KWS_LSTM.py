@@ -27,7 +27,7 @@ parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speec
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
 parser.add_argument("--batch-size", type=int, default=512, help='Batch Size')
 parser.add_argument("--validation-size", type=int, default=1000, help='Number of batches used for validation')
-parser.add_argument("--epochs", type=int, default=60000, help='Epochs')
+parser.add_argument("--epochs", type=int, default=40000, help='Epochs')
 parser.add_argument("--lr-divide", type=int, default=10000, help='Learning Rate divide')
 parser.add_argument("--hidden", type=int, default=200, help='Number of hidden LSTM units') 
 parser.add_argument("--learning-rate", type=float, default=0.0005, help='Dropout Percentage')
@@ -43,23 +43,13 @@ parser.add_argument("--global-beta", type=float, default=1.5, help='Globale Beta
 parser.add_argument("--init-factor", type=float, default=2, help='Init factor for quantization')
 parser.add_argument("--std-scale", type=int, default=2, help='Scaling by how many standard deviations (e.g. how many big values will be cut off: 1std = 65%, 2std = 95%)')
 
-parser.add_argument("--fp-train", type=int, default=40000, help='Epochs of Floating Point Training')
+parser.add_argument("--fp-train", type=int, default=0, help='Epochs of Floating Point Training')
 parser.add_argument("--noise-injection", type=float, default=0.1, help='Percentage of noise injected to weights')
-parser.add_argument("--quant-act", type=int, default=4, help='Bits available for activations/state')
-parser.add_argument("--quant-inp", type=int, default=4, help='Bits available for inputs')
+parser.add_argument("--quant-act", type=int, default=8, help='Bits available for activations/state')
+parser.add_argument("--quant-inp", type=int, default=8, help='Bits available for inputs')
 
 parser.add_argument("--cy-div", type=int, default=2, help='CY division')
-parser.add_argument("--cy-scale", type=int, default=3, help='Scaling CY')
-# parser.add_argument("--ab1", type=int, default=32, help='Bits available for weights')
-# parser.add_argument("--ab2", type=int, default=32, help='Bits available for weights')
-# parser.add_argument("--ab3", type=int, default=32, help='Bits available for weights')
-# parser.add_argument("--ab4", type=int, default=32, help='Bits available for weights')
-# parser.add_argument("--ab5", type=int, default=None, help='Bits available for weights')
-# parser.add_argument("--ab6", type=int, default=None, help='Bits available for weights')
-# parser.add_argument("--ab7", type=int, default=None, help='Bits available for weights')
-# parser.add_argument("--ab8", type=int, default=None, help='Bits available for weights')
-# parser.add_argument("--ab9", type=int, default=None, help='Bits available for weights')
-# parser.add_argument("--ab10", type=int, default=32, help='Bits available for weights')
+parser.add_argument("--cy-scale", type=int, default=2, help='Scaling CY')
 parser.add_argument("--quant-w", type=int, default=None, help='Bits available for weights')
 
 
@@ -323,11 +313,11 @@ def pre_processing(x, y, device, mfcc_cuda, std_scale):
 
     return x,y
 
-
-args_backup = args
-args.noise_injection = 0
-args.quant_act = None
-args.inp_act = None
+if args.fp_train > 0: 
+    args_backup = args
+    args.noise_injection = 0
+    args.quant_act = None
+    args.inp_act = None
 
 mfcc_cuda = torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, melkwargs = {'win_length' : args.win_length, 'hop_length':args.hop_length}).to(device)
 
@@ -340,7 +330,8 @@ train_dataloader = torch.utils.data.DataLoader(speech_dataset_train, batch_size=
 test_dataloader = torch.utils.data.DataLoader(speech_dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
 validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_size=args.validation_size, shuffle=True, num_workers=args.dataloader_num_workers)
 
-model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = args.init_factor, quant_beta = args.global_beta, wb = args.quant_w, ab = args.quant_act, ib = args.quant_inp, noise_level = args.noise_injection).to(device)
+# dont forget to change input quant back
+model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = args.init_factor, quant_beta = args.global_beta, wb = args.quant_w, ab = args.quant_act, ib = args.quant_act, noise_level = args.noise_injection).to(device)
 model.to(device)
 loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)  
@@ -355,7 +346,7 @@ print(model_uuid)
 print("Start Training:")
 print("Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)")
 for e, ((x_data, y_label),(x_vali, y_vali)) in enumerate(zip(islice(train_dataloader, args.epochs), islice(validation_dataloader, args.epochs))):
-    if e == args.fp_train:
+    if (args.fp_train > 0) and (e == args.fp_train):
         args = args_backup
 
     if e%args.lr_divide == 0:

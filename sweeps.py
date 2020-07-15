@@ -13,7 +13,7 @@ part4 = ".txt\nmodule load python\nsetenv OMP_NUM_THREADS $NSLOTS\npython KWS_LS
 
 #sweep_parameters = {'cy-scale': [5,6,7]}
 
-sweep_parameters = {'quant-act':[3, 4, 6, 8, 16]}
+sweep_parameters = {'quant-act':[2,3,4,5,6,7,8,9,10,11,12,13]}
 
 trials = 1
 
