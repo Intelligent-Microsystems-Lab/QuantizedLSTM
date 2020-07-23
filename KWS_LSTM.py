@@ -343,6 +343,7 @@ for e, ((x_data, y_label),(x_vali, y_vali)) in enumerate(zip(islice(train_datalo
             'best_vali'  : best_acc, 
             'arguments'  : args,
             'train_loss' : loss_val
+            # add history for curves!
         }
         torch.save(checkpoint_dict, './checkpoints/'+model_uuid+'.pkl')
         del checkpoint_dict
