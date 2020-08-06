@@ -1,0 +1,8 @@
+Loading python/3.7.3
+  Loading requirement: tcl/8.6.8 gcc/8.3.0
+Traceback (most recent call last):
+  File "KWS_LSTM.py", line 288, in <module>
+    mfcc_cuda = torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, melkwargs = {'win_length' : args.win_length, 'hop_length':args.hop_length}).to(device)
+  File "/afs/crc.nd.edu/user/c/cschaef6/.local/lib/python3.7/site-packages/torchaudio/transforms.py", line 470, in __init__
+    raise ValueError('Cannot select more MFCC coefficients than # mel bins')
+ValueError: Cannot select more MFCC coefficients than # mel bins
