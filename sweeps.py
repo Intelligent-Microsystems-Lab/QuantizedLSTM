@@ -1,6 +1,6 @@
 import os
 
-ident_word = "cough"
+ident_word = "inputVar"
 
 part1 = "#!/bin/csh \n#$ -M cschaef6@nd.edu \n#$ -m abe\n#$ -q gpu@@joshi\n#$ -l gpu_card=1\n#$ -N "
 
@@ -17,7 +17,7 @@ part4 = ".txt\nmodule load python\nsetenv OMP_NUM_THREADS $NSLOTS\npython KWS_LS
 
 # sweep_parameters = {'quant-act':[2,3,4,5,6,7,8,9,10,11,12,13]}
 
-sweep_parameters = {'n-mfcc':[40, 80, 120, 180]}
+sweep_parameters = {'n-mfcc':[60, 90, 100, 110]}
 
 trials = 1
 
