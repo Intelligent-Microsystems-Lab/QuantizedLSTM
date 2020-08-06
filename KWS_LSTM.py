@@ -263,7 +263,7 @@ class KWS_LSTM(nn.Module):
         # read out layer - quantized
         outputFC = self.outputL(lstm_out[-1,:,:]) 
         # activation function here?
-        output = quant_pass(torch.nn.ReLU(outputFC), self.ab, True)
+        output = quant_pass(torch.relu(outputFC), self.ab, True)
         #output = quant_pass(torch.sigmoid(outputFC), self.ab, False)
         return output
 
