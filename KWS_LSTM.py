@@ -264,7 +264,8 @@ class KWS_LSTM(nn.Module):
         outputFC = self.outputL(lstm_out[-1,:,:]) 
         # activation function here?
         #output = quant_pass(torch.relu(outputFC), self.ab, True)
-        output = quant_pass(torch.sigmoid(outputFC), self.ab, False)
+        #output = quant_pass(torch.sigmoid(outputFC), self.ab, False)
+        output = quant_pass(torch.softmax(outputFC), self.ab, False)
         return output
 
 
