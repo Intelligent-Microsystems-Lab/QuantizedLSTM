@@ -30,7 +30,7 @@ parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speec
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
 parser.add_argument("--batch-size", type=int, default=512, help='Batch Size')
 parser.add_argument("--validation-size", type=int, default=1000, help='Number of batches used for validation')
-parser.add_argument("--epochs", type=int, default=20000, help='Epochs')
+parser.add_argument("--epochs", type=int, default=40000, help='Epochs')
 parser.add_argument("--lr-divide", type=int, default=10000, help='Learning Rate divide')
 parser.add_argument("--hidden", type=int, default=200, help='Number of hidden LSTM units') 
 parser.add_argument("--learning-rate", type=float, default=0.0005, help='Dropout Percentage')
@@ -49,7 +49,7 @@ parser.add_argument("--std-scale", type=int, default=2, help='Scaling by how man
 
 parser.add_argument("--fp-train", type=int, default=0, help='Epochs of Floating Point Training')
 parser.add_argument("--noise-injection", type=float, default=0.1, help='Percentage of noise injected to weights')
-parser.add_argument("--quant-act", type=int, default=None, help='Bits available for activations/state')
+parser.add_argument("--quant-act", type=int, default=4, help='Bits available for activations/state')
 parser.add_argument("--quant-inp", type=int, default=4, help='Bits available for inputs')
 
 parser.add_argument("--cy-div", type=int, default=2, help='CY division')
@@ -128,20 +128,6 @@ class QuantFunc(torch.autograd.Function):
         """
         return grad_output, None, None
 
-class CustomMM(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, input, weight, b_input):
-        ctx.save_for_backward(input, weight, b_input)
-        output = input.mm(weight.t())
-        return output
-    @staticmethod
-    def backward(ctx, grad_output):
-        _, weight, b_input = ctx.saved_tensors
-        grad_input = grad_output.mm(weight)
-        grad_weight = grad_output.t().mm(b_input)
-        return grad_input, grad_weight
-
-
 quant_pass = QuantFunc.apply
 
 def limit_scale(shape, factor, beta, wb):
@@ -157,6 +143,22 @@ def limit_scale(shape, factor, beta, wb):
     limit = Wm if Wm > limit else limit
 
     return scale, limit.item()
+
+
+class CustomMM(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, input, weight, hp_inp):
+        ctx.save_for_backward(input, weight, hp_inp)
+        output = input.mm(weight)
+        return output
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        input, weight, hp_inp = ctx.saved_tensors
+        grad_input = grad_output.mm(weight.t())
+        # here we use the high precision input
+        grad_weight = grad_output.t().mm(hp_inp)
+        return grad_input, grad_weight.t(), None
 
 #https://github.com/pytorch/benchmark/blob/master/rnns/fastrnns/custom_lstms.py#L32
 class LSTMCell(nn.Module):
@@ -184,7 +186,9 @@ class LSTMCell(nn.Module):
         noise_bias_hh = torch.randn(self.bias_hh.t().shape, device = self.device) * self.bias_hh.max() * self.noise_level
 
 
-        gates = (torch.mm(input, self.weight_ih.t() + noise_ih) + self.bias_ih + noise_bias_ih + torch.mm(hx, self.weight_hh.t() + noise_hh) + self.bias_hh + noise_bias_hh)
+        #gates = (torch.mm(input, self.weight_ih.t() + noise_ih) + self.bias_ih + noise_bias_ih + torch.mm(hx, self.weight_hh.t() + noise_hh) + self.bias_hh + noise_bias_hh)
+        # high precision backward pass
+        gates = (torch.mm(input, self.weight_ih.t() + noise_ih) + self.bias_ih + noise_bias_ih + CustomMM.apply(hx, self.weight_hh.t() + noise_hh, hp_hx) + self.bias_hh + noise_bias_hh)
         ingate, forgetgate, cellgate, outgate = gates.chunk(4, 1)
 
         # quantize activations -> step functions
