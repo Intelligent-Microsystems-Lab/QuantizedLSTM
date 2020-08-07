@@ -49,7 +49,7 @@ parser.add_argument("--std-scale", type=int, default=2, help='Scaling by how man
 
 parser.add_argument("--fp-train", type=int, default=0, help='Epochs of Floating Point Training')
 parser.add_argument("--noise-injection", type=float, default=0.1, help='Percentage of noise injected to weights')
-parser.add_argument("--quant-act", type=int, default=4, help='Bits available for activations/state')
+parser.add_argument("--quant-act", type=int, default=None, help='Bits available for activations/state')
 parser.add_argument("--quant-inp", type=int, default=4, help='Bits available for inputs')
 
 parser.add_argument("--cy-div", type=int, default=2, help='CY division')
@@ -128,6 +128,20 @@ class QuantFunc(torch.autograd.Function):
         """
         return grad_output, None, None
 
+class CustomMM(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, input, weight, b_input):
+        ctx.save_for_backward(input, weight, b_input)
+        output = input.mm(weight.t())
+        return output
+    @staticmethod
+    def backward(ctx, grad_output):
+        _, weight, b_input = ctx.saved_tensors
+        grad_input = grad_output.mm(weight)
+        grad_weight = grad_output.t().mm(b_input)
+        return grad_input, grad_weight
+
+
 quant_pass = QuantFunc.apply
 
 def limit_scale(shape, factor, beta, wb):
@@ -161,7 +175,7 @@ class LSTMCell(nn.Module):
 
     def forward(self, input, state):
         # type: (Tensor, Tuple[Tensor, Tensor]) -> Tuple[Tensor, Tuple[Tensor, Tensor]]
-        hx, cx = state
+        hx, cx, hp_hx, hp_cx = state
 
         # noise injection
         noise_ih = torch.randn(self.weight_ih.t().shape, device = self.device) * self.weight_ih.max() * self.noise_level
@@ -187,8 +201,17 @@ class LSTMCell(nn.Module):
         #cy = forgetgate * cx + ingate * cellgate
         hy = quant_pass(outgate * quant_pass(torch.tanh(cy * args.cy_scale), self.ab, True), self.ab, True)
 
+
+        # high precision copy of hy and cy for backward pass
+        hp_ingate = torch.sigmoid(ingate)
+        hp_forgetgate = torch.sigmoid(forgetgate)
+        hp_cellgate = torch.tanh(cellgate)
+        hp_outgate = torch.sigmoid(outgate)
+        hp_cy = (hp_forgetgate * hp_cx) +(ingate * cellgate) * 1/args.cy_div
+        hp_hy = outgate * torch.tanh(hp_cy * args.cy_scale)
+
         
-        return hy, (hy, cy)
+        return hy, (hy, cy, hp_hy, hp_cy)
 
 
 class LSTMLayer(nn.Module):
@@ -254,8 +277,7 @@ class KWS_LSTM(nn.Module):
 
     def forward(self, inputs):
         # init states with zero
-        self.hidden_state = (torch.zeros( inputs.shape[1], self.hidden_dim, device = self.device),
-                      torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device))
+        self.hidden_state = (torch.zeros( inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros( inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device))
         # input - quantized
         q_inputs = quant_pass(inputs, self.ib, True)
         # pass throug LSTM units - quantized
@@ -263,9 +285,9 @@ class KWS_LSTM(nn.Module):
         # read out layer - quantized
         outputFC = self.outputL(lstm_out[-1,:,:]) 
         # activation function here?
-        #output = quant_pass(torch.relu(outputFC), self.ab, True)
+        output = quant_pass(torch.relu(outputFC), self.ab, True)
         #output = quant_pass(torch.sigmoid(outputFC), self.ab, False)
-        output = quant_pass(torch.softmax(outputFC, 0), self.ab, False)
+        #output = quant_pass(torch.softmax(outputFC, 0), self.ab, False)
         return output
 
 
