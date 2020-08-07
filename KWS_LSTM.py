@@ -38,7 +38,7 @@ parser.add_argument("--dataloader-num-workers", type=int, default=4, help='Numbe
 parser.add_argument("--validation-percentage", type=int, default=10, help='Validation Set Percentage')
 parser.add_argument("--testing-percentage", type=int, default=10, help='Testing Set Percentage')
 parser.add_argument("--sample-rate", type=int, default=16000, help='Audio Sample Rate')
-parser.add_argument("--n-mfcc", type=int, default=40, help='Number of mfc coefficients to retain')
+parser.add_argument("--n-mfcc", type=int, default=100, help='Number of mfc coefficients to retain')
 parser.add_argument("--win-length", type=int, default=400, help='Window size in ms')
 parser.add_argument("--hop-length", type=int, default=320, help='Length of hop between STFT windows')
 parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
@@ -265,7 +265,7 @@ class KWS_LSTM(nn.Module):
         # activation function here?
         #output = quant_pass(torch.relu(outputFC), self.ab, True)
         #output = quant_pass(torch.sigmoid(outputFC), self.ab, False)
-        output = quant_pass(torch.softmax(outputFC), self.ab, False)
+        output = quant_pass(torch.softmax(outputFC, 0), self.ab, False)
         return output
 
 
