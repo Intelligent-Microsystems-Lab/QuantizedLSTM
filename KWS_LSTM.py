@@ -30,27 +30,31 @@ parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.A
 parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speech_commands_v0.02', help='Path to Dataset')
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
 parser.add_argument("--batch-size", type=int, default=512, help='Batch Size')
-parser.add_argument("--validation-size", type=int, default=1000, help='Number of batches used for validation')
-parser.add_argument("--epochs", type=int, default=40000, help='Epochs')
+parser.add_argument("--validation-size", type=int, default=4000, help='Number of samples used for validation')
+parser.add_argument("--epochs", type=int, default=20000, help='Epochs')
+#parser.add_argument("--CE-train", type=int, default=300, help='Epochs of Cross Entropy Training')
 parser.add_argument("--lr-divide", type=int, default=10000, help='Learning Rate divide')
-parser.add_argument("--hidden", type=int, default=200, help='Number of hidden LSTM units') 
+parser.add_argument("--hidden", type=int, default=256, help='Number of hidden LSTM units') 
 parser.add_argument("--learning-rate", type=float, default=0.0005, help='Dropout Percentage')
 parser.add_argument("--dataloader-num-workers", type=int, default=4, help='Number Workers Dataloader')
 parser.add_argument("--validation-percentage", type=int, default=10, help='Validation Set Percentage')
 parser.add_argument("--testing-percentage", type=int, default=10, help='Testing Set Percentage')
 parser.add_argument("--sample-rate", type=int, default=16000, help='Audio Sample Rate')
-parser.add_argument("--n-mfcc", type=int, default=100, help='Number of mfc coefficients to retain')
+
+#could be ramped up to 128 -> explore optimal input
+parser.add_argument("--n-mfcc", type=int, default=40, help='Number of mfc coefficients to retain') 
 parser.add_argument("--win-length", type=int, default=400, help='Window size in ms')
 parser.add_argument("--hop-length", type=int, default=320, help='Length of hop between STFT windows')
+parser.add_argument("--std-scale", type=int, default=2, help='Scaling by how many standard deviations (e.g. how many big values will be cut off: 1std = 65%, 2std = 95%)')
+
 parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
 # parser.add_argument("--word-list", nargs='+', type=str, default=['cough', 'unknown', 'silence'], help='Keywords to be learned')
 parser.add_argument("--global-beta", type=float, default=1.5, help='Globale Beta for quantization')
 parser.add_argument("--init-factor", type=float, default=2, help='Init factor for quantization')
-parser.add_argument("--std-scale", type=int, default=2, help='Scaling by how many standard deviations (e.g. how many big values will be cut off: 1std = 65%, 2std = 95%)')
 
-parser.add_argument("--fp-train", type=int, default=0, help='Epochs of Floating Point Training')
 parser.add_argument("--noise-injection", type=float, default=0.1, help='Percentage of noise injected to weights')
-parser.add_argument("--quant-act", type=int, default=4, help='Bits available for activations/state')
+parser.add_argument("--quant-actMVM", type=int, default=6, help='Bits available for MVM activations/state')
+parser.add_argument("--quant-actNM", type=int, default=8, help='Bits available for non-MVM activations/state')
 parser.add_argument("--quant-inp", type=int, default=4, help='Bits available for inputs')
 
 parser.add_argument("--cy-div", type=int, default=2, help='CY division')
@@ -152,7 +156,8 @@ def limit_scale(shape, factor, beta, wb):
 # noise free weights in backward pass/ optional high precision inputs in backward pass
 class CustomMM(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, input, weight, hp_inp, nl):
+    def forward(ctx, input, weight, hp_inp, nl, hp_bw):
+        ctx.hp_bw = hp_bw
         noise_w = torch.randn(weight.shape, device = input.device) * weight.max() * nl
 
         ctx.save_for_backward(input, weight, hp_inp)
@@ -163,20 +168,24 @@ class CustomMM(torch.autograd.Function):
     def backward(ctx, grad_output):
         input, weight, hp_inp = ctx.saved_tensors
         grad_input = grad_output.mm(weight.t())
-        # here we use the high precision input
-        if args.hp_bw:
+        
+        if ctx.hp_bw:
+            # use the high precision input
             grad_weight = grad_output.t().mm(hp_inp)
         else:
             grad_weight = grad_output.t().mm(input)
-        return grad_input, grad_weight.t(), None, None
+        return grad_input, grad_weight.t(), None, None, None
 
 #https://github.com/pytorch/benchmark/blob/master/rnns/fastrnns/custom_lstms.py#L32
 class LSTMCell(nn.Module):
-    def __init__(self, input_size, hidden_size, wb, ab, noise_level, device):
+    def __init__(self, input_size, hidden_size, wb, ib, abMVM, abNM, noise_level, hp_bw, device):
         super(LSTMCell, self).__init__()
         self.device = device
+        self.hp_bw = hp_bw
         self.wb = wb
-        self.ab = ab
+        self.ib = ib
+        self.abMVM = abMVM
+        self.abNM  = abNM
         self.noise_level = noise_level
         self.input_size = input_size
         self.hidden_size = hidden_size
@@ -190,38 +199,32 @@ class LSTMCell(nn.Module):
         hx, cx, hp_hx, hp_cx = state
 
         # noise injection - for bias
+        noise_ih = torch.randn(self.weight_ih.t().shape, device = self.device) * self.weight_ih.max() * self.noise_level
+        noise_hh = torch.randn(self.weight_hh.t().shape, device = self.device) * self.weight_hh.max() * self.noise_level
         noise_bias_ih = torch.randn(self.bias_ih.t().shape, device = self.device) * self.bias_ih.max() * self.noise_level
         noise_bias_hh = torch.randn(self.bias_hh.t().shape, device = self.device) * self.bias_hh.max() * self.noise_level
 
-        #gates = (torch.mm(input, self.weight_ih.t() + noise_ih) + self.bias_ih + noise_bias_ih + torch.mm(hx, self.weight_hh.t() + noise_hh) + self.bias_hh + noise_bias_hh)
-        # high precision backward pass
-        gates = (CustomMM.apply(input, self.weight_ih.t(), input, self.noise_level) + self.bias_ih + noise_bias_ih + CustomMM.apply(hx, self.weight_hh.t(), hp_hx, self.noise_level) + self.bias_hh + noise_bias_hh)
-
+        gates = (CustomMM.apply(quant_pass(input, self.ib, True), self.weight_ih.t(), input, self.noise_level, self.hp_bw) + self.bias_ih + noise_bias_ih + CustomMM.apply(quant_pass(hx, self.ib, True), self.weight_hh.t(), hp_hx, self.noise_level, self.hp_bw) + self.bias_hh + noise_bias_hh)
 
         ingate, forgetgate, cellgate, outgate = gates.chunk(4, 1)
 
         # quantize activations -> step functions
-        ingate = quant_pass(torch.sigmoid(ingate), self.ab, False)
-        forgetgate = quant_pass(torch.sigmoid(forgetgate), self.ab, False) 
-        cellgate = quant_pass(torch.tanh(cellgate), self.ab, True)
-        outgate = quant_pass(torch.sigmoid(outgate), self.ab, False)
+        ingate = quant_pass(torch.sigmoid(ingate), self.abMVM, False)
+        forgetgate = quant_pass(torch.sigmoid(forgetgate), self.abMVM, False) 
+        cellgate = quant_pass(torch.tanh(cellgate), self.abMVM, True)
+        outgate = quant_pass(torch.sigmoid(outgate), self.abMVM, False)
         
-
-        #quantize state / how about we give cy some scale
-        #cy = quant_pass( (quant_pass(forgetgate * cx, self.ab, True) + quant_pass(ingate * cellgate, self.ab, True)) * 1/args.cy_scale, self.ab, True)
-        cy = quant_pass( (quant_pass(forgetgate * cx, self.ab, True) + quant_pass(ingate * cellgate, self.ab, True)) * 1/args.cy_div, self.ab, True)
-
-        #cy = forgetgate * cx + ingate * cellgate
-        hy = quant_pass(outgate * quant_pass(torch.tanh(cy * args.cy_scale), self.ab, True), self.ab, True)
-
+        #quantize state / cy scale
+        cy = quant_pass( (quant_pass(forgetgate * cx, self.abNM, True) + quant_pass(ingate * cellgate, self.abNM, True)) * 1/args.cy_div, self.abNM, True)
+        hy = quant_pass(outgate * quant_pass(torch.tanh(cy * args.cy_scale), self.abNM, True), self.abNM, True)
 
         # high precision copy of hy and cy in backward pass
-        if args.hp_bw:
+        if self.hp_bw:
             hp_ingate = torch.sigmoid(ingate)
             hp_forgetgate = torch.sigmoid(forgetgate)
             hp_cellgate = torch.tanh(cellgate)
             hp_outgate = torch.sigmoid(outgate)
-            hp_cy = (hp_forgetgate * hp_cx) +(ingate * cellgate) * 1/args.cy_div
+            hp_cy = (hp_forgetgate * hp_cx) + (ingate * cellgate) * 1/args.cy_div
             hp_hy = outgate * torch.tanh(hp_cy * args.cy_scale)
         else:
             hp_hy = None
@@ -250,13 +253,15 @@ class LSTMLayer(nn.Module):
 
 
 class KWS_LSTM(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, batch_size, device, quant_factor, quant_beta, wb, ab, ib, noise_level): 
+    def __init__(self, input_dim, hidden_dim, output_dim, batch_size, device, quant_factor, quant_beta, wb, abMVM, abNM, ib, noise_level, hp_bw): 
         super(KWS_LSTM, self).__init__()
         self.device = device
+        self.hp_bw = hp_bw
         self.batch_size = batch_size
         self.noise_level = noise_level
         self.wb = wb
-        self.ab = ab
+        self.abMVM = abMVM
+        self.abNM = abNM
         self.ib = ib
         self.hidden_dim = hidden_dim
         self.input_dim = input_dim
@@ -265,37 +270,45 @@ class KWS_LSTM(nn.Module):
         # LSTM units
         #self.lstmL = nn.LSTM(input_size = self.input_dim, hidden_size = self.hidden_dim, bias = True)
         # custom LSTM unit
-        self.lstmL = LSTMLayer(LSTMCell, self.input_dim, self.hidden_dim, self.wb, self.ab, self.noise_level, self.device)
+        self.lstmL = LSTMLayer(LSTMCell, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.hp_bw, self.device)
         self.LSTMState = collections.namedtuple('LSTMState', ['hx', 'cx'])
 
         # The linear layer that maps from hidden state space to tag space
-        self.outputL = nn.Linear(self.hidden_dim, self.output_dim)
+        self.weight_ro = nn.Parameter(torch.randn(self.hidden_dim, self.output_dim))
+        self.bias_ro = nn.Parameter(torch.randn(self.output_dim))
+        #self.outputL = nn.Linear(self.hidden_dim, self.output_dim)
 
         # init weights
         self.scale_out, self.limit_out = limit_scale(self.hidden_dim, quant_factor, quant_beta, wb)
         self.scale_hh, self.limit_hh  = limit_scale(self.input_dim, quant_factor, quant_beta, wb)
         self.scale_ih, self.limit_ih  = limit_scale(self.hidden_dim, quant_factor, quant_beta, wb)
-        torch.nn.init.uniform_(self.outputL.weight, a = -self.limit_out, b = self.limit_out)
+        torch.nn.init.uniform_(self.weight_ro, a = -self.limit_out, b = self.limit_out)
         torch.nn.init.uniform_(self.lstmL.cell.weight_ih, a = -self.limit_ih, b = self.limit_ih)
         torch.nn.init.uniform_(self.lstmL.cell.weight_hh, a = -self.limit_hh, b = self.limit_hh)
         # http://proceedings.mlr.press/v37/jozefowicz15.pdf
-        torch.nn.init.uniform_(self.outputL.bias, a = -0, b = 0)
+        torch.nn.init.uniform_(self.bias_ro, a = -0, b = 0)
         torch.nn.init.uniform_(self.lstmL.cell.bias_ih, a = -0, b = 0)
         torch.nn.init.uniform_(self.lstmL.cell.bias_hh, a = 1, b = 1)
 
     def forward(self, inputs):
+        noise_bias_ro = torch.randn(self.bias_ro.t().shape, device = self.device) * self.bias_ro.max() * self.noise_level
         # init states with zero
         self.hidden_state = (torch.zeros( inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros( inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device))
         # input - quantized
-        q_inputs = quant_pass(inputs, self.ib, True)
+        #q_inputs = quant_pass(inputs, self.ib, True)
         # pass throug LSTM units - quantized
-        lstm_out, self.hidden_state = self.lstmL(q_inputs, self.hidden_state)
+        lstm_out, self.hidden_state = self.lstmL(inputs, self.hidden_state)
         # read out layer - quantized
-        outputFC = self.outputL(lstm_out[-1,:,:]) 
-        # activation function here?
-        output = quant_pass(torch.relu(outputFC), self.ab, True)
+        #outputFC = self.outputL(lstm_out[-1,:,:])
+
+        #outputFC = self.outputL(lstm_out.view((-1,self.hidden_dim))).view((inputs.shape[0],self.batch_size, self.output_dim))
+        # is the reshaping okay?
+        #outputFC = (CustomMM.apply(lstm_out.view((-1,self.hidden_dim)), self.weight_ro, None, self.noise_level, self.hp_bw) + self.bias_ro + noise_bias_ro).view((inputs.shape[0], inputs.shape[1], self.output_dim))
+        outputFC = (CustomMM.apply(quant_pass(lstm_out[-1,:,:], self.ib, True), self.weight_ro, None, self.noise_level, self.hp_bw) + self.bias_ro + noise_bias_ro)
+        output = quant_pass(torch.relu(outputFC), self.abMVM, True)
         #output = quant_pass(torch.sigmoid(outputFC), self.ab, False)
-        #output = quant_pass(torch.softmax(outputFC, 0), self.ab, False)
+        #output = quant_pass(torch.softmax(outputFC, 2), self.ab, False)
+
         return output
 
 
@@ -310,11 +323,6 @@ def pre_processing(x, y, device, mfcc_cuda, std_scale):
 
     return x,y
 
-if args.fp_train > 0: 
-    args_backup = args
-    args.noise_injection = 0
-    args.quant_act = None
-    args.inp_act = None
 
 mfcc_cuda = torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, melkwargs = {'win_length' : args.win_length, 'hop_length':args.hop_length}).to(device)
 
@@ -328,7 +336,7 @@ test_dataloader = torch.utils.data.DataLoader(speech_dataset_test, batch_size=ar
 validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_size=args.validation_size, shuffle=True, num_workers=args.dataloader_num_workers)
 
 
-model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = args.init_factor, quant_beta = args.global_beta, wb = args.quant_w, ab = args.quant_act, ib = args.quant_inp, noise_level = args.noise_injection).to(device)
+model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = args.init_factor, quant_beta = args.global_beta, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = args.noise_injection, hp_bw = args.hp_bw).to(device)
 model.to(device)
 loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)  
@@ -351,9 +359,16 @@ for e, ((x_data, y_label),(x_vali, y_vali)) in enumerate(zip(islice(train_datalo
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale)
 
     output = model(x_data)
+    # cross entropy loss
+    # if e < args.CE_train:
+    #     loss_val = loss_fn(output.view(-1, output.shape[-1]), torch.tensor(y_label.tolist()*output.shape[0]).to(device))
+    # # max pooling loss
+    # else:
+    #     loss_val = loss_fn(output[(output.max(dim=2)[0]).max(dim=0)[1], torch.tensor(range(args.batch_size)), :], y_label)
+    # train_acc.append((output.max(dim=0)[0].argmax(dim =1) == y_label).float().mean().item())
     loss_val = loss_fn(output, y_label)
     train_acc.append((output.argmax(dim=1) == y_label).float().mean().item())
-        
+
     loss_val.backward()
     optimizer.step()
     optimizer.zero_grad()
@@ -364,6 +379,7 @@ for e, ((x_data, y_label),(x_vali, y_vali)) in enumerate(zip(islice(train_datalo
 
     output = model(x_data)
     val_acc.append((output.argmax(dim=1) == y_label).float().mean().item())
+    #val_acc.append((output.max(dim=0)[0].argmax(dim=1) == y_label).float().mean().item())
 
     if best_acc < val_acc[-1]:
         best_acc = val_acc[-1]
@@ -396,6 +412,7 @@ for i_batch, sample_batch in enumerate(test_dataloader):
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale)
 
     output = model(x_data)
+    #acc_aux.append((output.max(dim=0)[0].argmax(dim=1) == y_label))
     acc_aux.append((output.argmax(dim=1) == y_label))
 
 test_acc = torch.cat(acc_aux).float().mean().item()
