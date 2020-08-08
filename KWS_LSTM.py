@@ -11,6 +11,7 @@ import torch.optim as optim
 import numpy as np
 
 from dataloader import SpeechCommandsGoogle
+from figure_scripts import plot_curves
 
 torch.manual_seed(42)
 if torch.cuda.is_available():
@@ -55,6 +56,8 @@ parser.add_argument("--quant-inp", type=int, default=4, help='Bits available for
 parser.add_argument("--cy-div", type=int, default=2, help='CY division')
 parser.add_argument("--cy-scale", type=int, default=2, help='Scaling CY')
 parser.add_argument("--quant-w", type=int, default=None, help='Bits available for weights')
+parser.add_argument("--hp-bw", type=bool, default=False, help='High precision backward pass')
+
 
 
 args = parser.parse_args()
@@ -145,11 +148,15 @@ def limit_scale(shape, factor, beta, wb):
     return scale, limit.item()
 
 
+
+# noise free weights in backward pass/ optional high precision inputs in backward pass
 class CustomMM(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, input, weight, hp_inp):
+    def forward(ctx, input, weight, hp_inp, nl):
+        noise_w = torch.randn(weight.shape, device = input.device) * weight.max() * nl
+
         ctx.save_for_backward(input, weight, hp_inp)
-        output = input.mm(weight)
+        output = input.mm(weight + noise_w)
         return output
 
     @staticmethod
@@ -157,8 +164,11 @@ class CustomMM(torch.autograd.Function):
         input, weight, hp_inp = ctx.saved_tensors
         grad_input = grad_output.mm(weight.t())
         # here we use the high precision input
-        grad_weight = grad_output.t().mm(hp_inp)
-        return grad_input, grad_weight.t(), None
+        if args.hp_bw:
+            grad_weight = grad_output.t().mm(hp_inp)
+        else:
+            grad_weight = grad_output.t().mm(input)
+        return grad_input, grad_weight.t(), None, None
 
 #https://github.com/pytorch/benchmark/blob/master/rnns/fastrnns/custom_lstms.py#L32
 class LSTMCell(nn.Module):
@@ -179,16 +189,15 @@ class LSTMCell(nn.Module):
         # type: (Tensor, Tuple[Tensor, Tensor]) -> Tuple[Tensor, Tuple[Tensor, Tensor]]
         hx, cx, hp_hx, hp_cx = state
 
-        # noise injection
-        noise_ih = torch.randn(self.weight_ih.t().shape, device = self.device) * self.weight_ih.max() * self.noise_level
-        noise_hh = torch.randn(self.weight_hh.t().shape, device = self.device) * self.weight_hh.max() * self.noise_level
+        # noise injection - for bias
         noise_bias_ih = torch.randn(self.bias_ih.t().shape, device = self.device) * self.bias_ih.max() * self.noise_level
         noise_bias_hh = torch.randn(self.bias_hh.t().shape, device = self.device) * self.bias_hh.max() * self.noise_level
 
-
         #gates = (torch.mm(input, self.weight_ih.t() + noise_ih) + self.bias_ih + noise_bias_ih + torch.mm(hx, self.weight_hh.t() + noise_hh) + self.bias_hh + noise_bias_hh)
         # high precision backward pass
-        gates = (torch.mm(input, self.weight_ih.t() + noise_ih) + self.bias_ih + noise_bias_ih + CustomMM.apply(hx, self.weight_hh.t() + noise_hh, hp_hx) + self.bias_hh + noise_bias_hh)
+        gates = (CustomMM.apply(input, self.weight_ih.t(), input, self.noise_level) + self.bias_ih + noise_bias_ih + CustomMM.apply(hx, self.weight_hh.t(), hp_hx, self.noise_level) + self.bias_hh + noise_bias_hh)
+
+
         ingate, forgetgate, cellgate, outgate = gates.chunk(4, 1)
 
         # quantize activations -> step functions
@@ -206,13 +215,17 @@ class LSTMCell(nn.Module):
         hy = quant_pass(outgate * quant_pass(torch.tanh(cy * args.cy_scale), self.ab, True), self.ab, True)
 
 
-        # high precision copy of hy and cy for backward pass
-        hp_ingate = torch.sigmoid(ingate)
-        hp_forgetgate = torch.sigmoid(forgetgate)
-        hp_cellgate = torch.tanh(cellgate)
-        hp_outgate = torch.sigmoid(outgate)
-        hp_cy = (hp_forgetgate * hp_cx) +(ingate * cellgate) * 1/args.cy_div
-        hp_hy = outgate * torch.tanh(hp_cy * args.cy_scale)
+        # high precision copy of hy and cy in backward pass
+        if args.hp_bw:
+            hp_ingate = torch.sigmoid(ingate)
+            hp_forgetgate = torch.sigmoid(forgetgate)
+            hp_cellgate = torch.tanh(cellgate)
+            hp_outgate = torch.sigmoid(outgate)
+            hp_cy = (hp_forgetgate * hp_cx) +(ingate * cellgate) * 1/args.cy_div
+            hp_hy = outgate * torch.tanh(hp_cy * args.cy_scale)
+        else:
+            hp_hy = None
+            hp_cy = None
 
         
         return hy, (hy, cy, hp_hy, hp_cy)
@@ -227,19 +240,10 @@ class LSTMLayer(nn.Module):
         inputs = input.unbind(0)
         outputs = []
 
-        #####
-        #self.cy_hist = np.array([])
-        #self.hy_hist = np.array([])
-        #####
-
         for i in range(len(inputs)):
             out, state = self.cell(inputs[i], state)
-
-            ######
-            #self.hy_hist = np.concatenate((self.hy_hist, state[0].detach().cpu().numpy().flatten()))
-            #self.cy_hist = np.concatenate((self.cy_hist, state[1].detach().cpu().numpy().flatten()))
-            ######
             outputs += [out]
+
         return torch.stack(outputs), state
 
 
@@ -323,8 +327,8 @@ train_dataloader = torch.utils.data.DataLoader(speech_dataset_train, batch_size=
 test_dataloader = torch.utils.data.DataLoader(speech_dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
 validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_size=args.validation_size, shuffle=True, num_workers=args.dataloader_num_workers)
 
-# dont forget to change input quant back
-model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = args.init_factor, quant_beta = args.global_beta, wb = args.quant_w, ab = args.quant_act, ib = args.quant_act, noise_level = args.noise_injection).to(device)
+
+model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = args.init_factor, quant_beta = args.global_beta, wb = args.quant_w, ab = args.quant_act, ib = args.quant_inp, noise_level = args.noise_injection).to(device)
 model.to(device)
 loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)  
@@ -339,11 +343,9 @@ print(model_uuid)
 print("Start Training:")
 print("Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)")
 for e, ((x_data, y_label),(x_vali, y_vali)) in enumerate(zip(islice(train_dataloader, args.epochs), islice(validation_dataloader, args.epochs))):
-    if (args.fp_train > 0) and (e == args.fp_train):
-        args = args_backup
-
     if e%args.lr_divide == 0:
         optimizer.param_groups[-1]['lr'] /= 2
+
     # train
     start_time = time.time()
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale)
@@ -371,14 +373,18 @@ for e, ((x_data, y_label),(x_vali, y_vali)) in enumerate(zip(islice(train_datalo
             'epoch'      : e, 
             'best_vali'  : best_acc, 
             'arguments'  : args,
-            'train_loss' : loss_val
-            # add history for curves!
+            'train_loss' : loss_val,
+            'train_curve': train_acc,
+            'val_curve'  : val_acc
         }
         torch.save(checkpoint_dict, './checkpoints/'+model_uuid+'.pkl')
         del checkpoint_dict
 
     if e%100 == 0:
         print("{0:05d}     {1:.4f}      {2:.4f}     {3:.4f}     {4:.4f}".format(e, loss_val, train_acc[-1], best_acc, train_time))
+        plot_curves(train_acc, val_acc, model_uuid)
+
+
 
 # Testing
 print("Start Testing:")
@@ -395,30 +401,5 @@ for i_batch, sample_batch in enumerate(test_dataloader):
 test_acc = torch.cat(acc_aux).float().mean().item()
 print("Test Accuracy: {0:.4f}".format(test_acc))
 
-
-
-
-# # histogram
-# import matplotlib.pyplot as plt
-
-# plt.clf()
-# n, bins, patches = plt.hist( model.lstmL.cy_hist , 50, density=True, facecolor='g', alpha=0.75)
-# plt.xlabel('CY value')
-# plt.ylabel('Count')
-# plt.title('Histogram of CY')
-# plt.grid(True)
-# plt.savefig("figures/CY.png")
-# plt.close()
-
-
-
-# plt.clf()
-# n, bins, patches = plt.hist( model.lstmL.hy_hist , 50, density=True, facecolor='g', alpha=0.75)
-# plt.xlabel('HY value')
-# plt.ylabel('Count')
-# plt.title('Histogram of HY')
-# plt.grid(True)
-# plt.savefig("figures/HY.png")
-# plt.close()
 
 #checkpoint_dict = torch.load('./checkpoints/0f451c2b-fb18-4ddb-aa18-32df3a6576a0.pkl')
