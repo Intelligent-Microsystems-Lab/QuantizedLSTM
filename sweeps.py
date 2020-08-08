@@ -1,6 +1,6 @@
 import os
 
-ident_word = "surrogate"
+ident_word = "win_length"
 
 part1 = "#!/bin/csh \n#$ -M cschaef6@nd.edu \n#$ -m abe\n#$ -q gpu@@joshi\n#$ -l gpu_card=1\n#$ -N "
 
