@@ -1,0 +1,21 @@
+Loading python/3.7.3
+  Loading requirement: tcl/8.6.8 gcc/8.3.0
+usage: KWS_LSTM.py [-h] [--dataset-path-train DATASET_PATH_TRAIN]
+                   [--dataset-path-test DATASET_PATH_TEST]
+                   [--batch-size BATCH_SIZE]
+                   [--validation-size VALIDATION_SIZE] [--epochs EPOCHS]
+                   [--lr-divide LR_DIVIDE] [--hidden HIDDEN]
+                   [--learning-rate LEARNING_RATE]
+                   [--dataloader-num-workers DATALOADER_NUM_WORKERS]
+                   [--validation-percentage VALIDATION_PERCENTAGE]
+                   [--testing-percentage TESTING_PERCENTAGE]
+                   [--sample-rate SAMPLE_RATE] [--n-mfcc N_MFCC]
+                   [--win-length WIN_LENGTH] [--hop-length HOP_LENGTH]
+                   [--std-scale STD_SCALE]
+                   [--word-list WORD_LIST [WORD_LIST ...]]
+                   [--global-beta GLOBAL_BETA] [--init-factor INIT_FACTOR]
+                   [--noise-injection NOISE_INJECTION]
+                   [--quant-actMVM QUANT_ACTMVM] [--quant-actNM QUANT_ACTNM]
+                   [--quant-inp QUANT_INP] [--cy-div CY_DIV]
+                   [--cy-scale CY_SCALE] [--quant-w QUANT_W] [--hp-bw HP_BW]
+KWS_LSTM.py: error: argument --quant-inp: invalid int value: 'None'
