@@ -21,7 +21,7 @@ part4 = ".txt\nmodule load python\nsetenv OMP_NUM_THREADS $NSLOTS\npython KWS_LS
 
 # sweep_parameters = {'hop-length':[150, 200, 250, 300, 350]}
 
-sweep_parameters = {'noise-injection':[0], 'quant-actMVM':[None], 'quant-actNM':[None], 'quant-inp':[None]}
+sweep_parameters = {'quant-actMVM':['None'], 'quant-actNM':['None'], 'quant-inp':['None']}
 
 trials = 3
 
