@@ -19,7 +19,7 @@ part4 = ".txt\nmodule load python\nsetenv OMP_NUM_THREADS $NSLOTS\npython KWS_LS
 
 #sweep_parameters = {'n-mfcc':[40, 50, 60, 80, 100]}
 
-sweep_parameters = {'win-length':[200, 300, 400]}
+sweep_parameters = {'hop-length':[150, 200, 250, 300, 350]}
 
 
 trials = 3

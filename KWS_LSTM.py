@@ -43,8 +43,8 @@ parser.add_argument("--sample-rate", type=int, default=16000, help='Audio Sample
 
 #could be ramped up to 128 -> explore optimal input
 parser.add_argument("--n-mfcc", type=int, default=40, help='Number of mfc coefficients to retain') 
-parser.add_argument("--win-length", type=int, default=400, help='Window size in ms')
-parser.add_argument("--hop-length", type=int, default=320, help='Length of hop between STFT windows')
+parser.add_argument("--win-length", type=int, default=400, help='Window size in ms') # 400
+parser.add_argument("--hop-length", type=int, default=320, help='Length of hop between STFT windows') #320
 parser.add_argument("--std-scale", type=int, default=2, help='Scaling by how many standard deviations (e.g. how many big values will be cut off: 1std = 65%, 2std = 95%)')
 
 parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
@@ -199,8 +199,8 @@ class LSTMCell(nn.Module):
         hx, cx, hp_hx, hp_cx = state
 
         # noise injection - for bias
-        noise_ih = torch.randn(self.weight_ih.t().shape, device = self.device) * self.weight_ih.max() * self.noise_level
-        noise_hh = torch.randn(self.weight_hh.t().shape, device = self.device) * self.weight_hh.max() * self.noise_level
+        # noise_ih = torch.randn(self.weight_ih.t().shape, device = self.device) * self.weight_ih.max() * self.noise_level
+        # noise_hh = torch.randn(self.weight_hh.t().shape, device = self.device) * self.weight_hh.max() * self.noise_level
         noise_bias_ih = torch.randn(self.bias_ih.t().shape, device = self.device) * self.bias_ih.max() * self.noise_level
         noise_bias_hh = torch.randn(self.bias_hh.t().shape, device = self.device) * self.bias_hh.max() * self.noise_level
 
@@ -271,7 +271,6 @@ class KWS_LSTM(nn.Module):
         #self.lstmL = nn.LSTM(input_size = self.input_dim, hidden_size = self.hidden_dim, bias = True)
         # custom LSTM unit
         self.lstmL = LSTMLayer(LSTMCell, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.hp_bw, self.device)
-        self.LSTMState = collections.namedtuple('LSTMState', ['hx', 'cx'])
 
         # The linear layer that maps from hidden state space to tag space
         self.weight_ro = nn.Parameter(torch.randn(self.hidden_dim, self.output_dim))
@@ -294,9 +293,7 @@ class KWS_LSTM(nn.Module):
         noise_bias_ro = torch.randn(self.bias_ro.t().shape, device = self.device) * self.bias_ro.max() * self.noise_level
         # init states with zero
         self.hidden_state = (torch.zeros( inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros( inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device))
-        # input - quantized
-        #q_inputs = quant_pass(inputs, self.ib, True)
-        # pass throug LSTM units - quantized
+
         lstm_out, self.hidden_state = self.lstmL(inputs, self.hidden_state)
         # read out layer - quantized
         #outputFC = self.outputL(lstm_out[-1,:,:])
@@ -324,7 +321,7 @@ def pre_processing(x, y, device, mfcc_cuda, std_scale):
     return x,y
 
 
-mfcc_cuda = torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, melkwargs = {'win_length' : args.win_length}).to(device) #, 'hop_length':args.hop_length
+mfcc_cuda = torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, melkwargs = {'win_length' : args.win_length, 'hop_length':args.hop_length}).to(device)
 
 speech_dataset_train = SpeechCommandsGoogle(args.dataset_path_train, 'training', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, args.epochs, device = device)
 speech_dataset_val = SpeechCommandsGoogle(args.dataset_path_train, 'validation', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.validation_size, args.epochs, device = device)
