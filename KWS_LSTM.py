@@ -112,7 +112,7 @@ class QuantFunc(torch.autograd.Function):
         """
 
         # no quantizaton, if x is None or no bits given
-        if (x is None) or (wb is None):
+        if (x is None) or (wb is None) or (wb == 0):
             return x 
 
         # clipping
