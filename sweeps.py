@@ -1,6 +1,6 @@
 import os
 
-ident_word = "hop_length"
+ident_word = "None"
 
 part1 = "#!/bin/csh \n#$ -M cschaef6@nd.edu \n#$ -m abe\n#$ -q gpu@@joshi\n#$ -l gpu_card=1\n#$ -N "
 
@@ -19,8 +19,9 @@ part4 = ".txt\nmodule load python\nsetenv OMP_NUM_THREADS $NSLOTS\npython KWS_LS
 
 #sweep_parameters = {'n-mfcc':[40, 50, 60, 80, 100]}
 
-sweep_parameters = {'hop-length':[150, 200, 250, 300, 350]}
+# sweep_parameters = {'hop-length':[150, 200, 250, 300, 350]}
 
+sweep_parameters = {'noise-injection':[0], 'quant-actMVM':[None], 'quant-actNM':[None], 'quant-inp':[None]}
 
 trials = 3
 
