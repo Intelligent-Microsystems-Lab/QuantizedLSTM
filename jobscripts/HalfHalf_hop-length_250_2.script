@@ -1,0 +1,11 @@
+#!/bin/csh 
+#$ -M cschaef6@nd.edu 
+#$ -m abe
+#$ -q gpu@@joshi
+#$ -l gpu_card=1
+#$ -N HalfHalf_hop-length_250_2
+#$ -o ./logs/output_HalfHalf_HalfHalf_hop-length_250_2.txt
+#$ -e ./logs/error_HalfHalf_HalfHalf_hop-length_250_2.txt
+module load python
+setenv OMP_NUM_THREADS $NSLOTS
+python KWS_LSTM.py --hop-length 250
