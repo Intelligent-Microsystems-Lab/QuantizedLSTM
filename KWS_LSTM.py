@@ -103,18 +103,20 @@ class QuantFunc(torch.autograd.Function):
     """
 
     @staticmethod
-    def forward(ctx, x, wb, sign):
+    def forward(ctx, x, wb, sign, train):
         """
         In the forward pass we receive a Tensor containing the input and return
         a Tensor containing the output. ctx is a context object that can be used
         to stash information for backward computation. You can cache arbitrary
         objects for use in the backward pass using the ctx.save_for_backward method.
         """
-
+        ctx.wb = wb
         # no quantizaton, if x is None or no bits given
         if (x is None) or (wb is None) or (wb == 0):
             return x 
 
+
+        ctx.save_for_backward(x)
         # clipping
         if sign:
             x = clip(x, wb)
@@ -122,7 +124,12 @@ class QuantFunc(torch.autograd.Function):
             x = torch.clamp(x, 0, 1)
 
         # quantization
-        return quant(x, wb, sign)
+
+        # new experimental approach 
+        if train:
+            return .5 * quant(x, wb, sign) + .5 * x
+        else:
+            return quant(x, wb, sign)
 
     @staticmethod
     def backward(ctx, grad_output):
@@ -133,7 +140,11 @@ class QuantFunc(torch.autograd.Function):
 
         STE estimator, no quantization on the backward pass
         """
-        return grad_output, None, None
+        input, = ctx.saved_tensors
+        if (input is None) or (ctx.wb is None) or (ctx.wb == 0):
+            return grad_output, None, None
+
+        return grad_output, None, None, None
 
 quant_pass = QuantFunc.apply
 
@@ -194,7 +205,7 @@ class LSTMCell(nn.Module):
         self.bias_ih = nn.Parameter(torch.randn(4 * hidden_size))
         self.bias_hh = nn.Parameter(torch.randn(4 * hidden_size))
 
-    def forward(self, input, state):
+    def forward(self, input, state, train):
         # type: (Tensor, Tuple[Tensor, Tensor]) -> Tuple[Tensor, Tuple[Tensor, Tensor]]
         hx, cx, hp_hx, hp_cx = state
 
@@ -204,19 +215,19 @@ class LSTMCell(nn.Module):
         noise_bias_ih = torch.randn(self.bias_ih.t().shape, device = self.device) * self.bias_ih.max() * self.noise_level
         noise_bias_hh = torch.randn(self.bias_hh.t().shape, device = self.device) * self.bias_hh.max() * self.noise_level
 
-        gates = (CustomMM.apply(quant_pass(input, self.ib, True), self.weight_ih.t(), input, self.noise_level, self.hp_bw) + self.bias_ih + noise_bias_ih + CustomMM.apply(quant_pass(hx, self.ib, True), self.weight_hh.t(), hp_hx, self.noise_level, self.hp_bw) + self.bias_hh + noise_bias_hh)
+        gates = (CustomMM.apply(quant_pass(input, self.ib, True, train), self.weight_ih.t(), input, self.noise_level, self.hp_bw) + self.bias_ih + noise_bias_ih + CustomMM.apply(quant_pass(hx, self.ib, True, train), self.weight_hh.t(), hp_hx, self.noise_level, self.hp_bw) + self.bias_hh + noise_bias_hh)
 
         ingate, forgetgate, cellgate, outgate = gates.chunk(4, 1)
 
         # quantize activations -> step functions
-        ingate = quant_pass(torch.sigmoid(ingate), self.abMVM, False)
-        forgetgate = quant_pass(torch.sigmoid(forgetgate), self.abMVM, False) 
-        cellgate = quant_pass(torch.tanh(cellgate), self.abMVM, True)
-        outgate = quant_pass(torch.sigmoid(outgate), self.abMVM, False)
+        ingate = quant_pass(torch.sigmoid(ingate), self.abMVM, False, train)
+        forgetgate = quant_pass(torch.sigmoid(forgetgate), self.abMVM, False, train) 
+        cellgate = quant_pass(torch.tanh(cellgate), self.abMVM, True, train)
+        outgate = quant_pass(torch.sigmoid(outgate), self.abMVM, False, train)
         
         #quantize state / cy scale
-        cy = quant_pass( (quant_pass(forgetgate * cx, self.abNM, True) + quant_pass(ingate * cellgate, self.abNM, True)) * 1/args.cy_div, self.abNM, True)
-        hy = quant_pass(outgate * quant_pass(torch.tanh(cy * args.cy_scale), self.abNM, True), self.abNM, True)
+        cy = quant_pass( (quant_pass(forgetgate * cx, self.abNM, True, train) + quant_pass(ingate * cellgate, self.abNM, True, train)) * 1/args.cy_div, self.abNM, True, train)
+        hy = quant_pass(outgate * quant_pass(torch.tanh(cy * args.cy_scale), self.abNM, True, train), self.abNM, True, train)
 
         # high precision copy of hy and cy in backward pass
         if self.hp_bw:
@@ -239,12 +250,12 @@ class LSTMLayer(nn.Module):
         super(LSTMLayer, self).__init__()
         self.cell = cell(*cell_args)
 
-    def forward(self, input, state):
+    def forward(self, input, state, train):
         inputs = input.unbind(0)
         outputs = []
 
         for i in range(len(inputs)):
-            out, state = self.cell(inputs[i], state)
+            out, state = self.cell(inputs[i], state, train)
             outputs += [out]
 
         return torch.stack(outputs), state
@@ -289,20 +300,20 @@ class KWS_LSTM(nn.Module):
         torch.nn.init.uniform_(self.lstmL.cell.bias_ih, a = -0, b = 0)
         torch.nn.init.uniform_(self.lstmL.cell.bias_hh, a = 1, b = 1)
 
-    def forward(self, inputs):
+    def forward(self, inputs, train):
         noise_bias_ro = torch.randn(self.bias_ro.t().shape, device = self.device) * self.bias_ro.max() * self.noise_level
         # init states with zero
         self.hidden_state = (torch.zeros( inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros( inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device))
 
-        lstm_out, self.hidden_state = self.lstmL(inputs, self.hidden_state)
+        lstm_out, self.hidden_state = self.lstmL(inputs, self.hidden_state, train)
         # read out layer - quantized
         #outputFC = self.outputL(lstm_out[-1,:,:])
 
         #outputFC = self.outputL(lstm_out.view((-1,self.hidden_dim))).view((inputs.shape[0],self.batch_size, self.output_dim))
         # is the reshaping okay?
         #outputFC = (CustomMM.apply(lstm_out.view((-1,self.hidden_dim)), self.weight_ro, None, self.noise_level, self.hp_bw) + self.bias_ro + noise_bias_ro).view((inputs.shape[0], inputs.shape[1], self.output_dim))
-        outputFC = (CustomMM.apply(quant_pass(lstm_out[-1,:,:], self.ib, True), self.weight_ro, None, self.noise_level, self.hp_bw) + self.bias_ro + noise_bias_ro)
-        output = quant_pass(torch.relu(outputFC), self.abMVM, True)
+        outputFC = (CustomMM.apply(quant_pass(lstm_out[-1,:,:], self.ib, True, train), self.weight_ro, None, self.noise_level, self.hp_bw) + self.bias_ro + noise_bias_ro)
+        output = quant_pass(torch.relu(outputFC), self.abMVM, True, train)
         #output = quant_pass(torch.sigmoid(outputFC), self.ab, False)
         #output = quant_pass(torch.softmax(outputFC, 2), self.ab, False)
 
@@ -355,7 +366,7 @@ for e, ((x_data, y_label),(x_vali, y_vali)) in enumerate(zip(islice(train_datalo
     start_time = time.time()
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale)
 
-    output = model(x_data)
+    output = model(x_data, train = True)
     # cross entropy loss
     # if e < args.CE_train:
     #     loss_val = loss_fn(output.view(-1, output.shape[-1]), torch.tensor(y_label.tolist()*output.shape[0]).to(device))
@@ -374,7 +385,7 @@ for e, ((x_data, y_label),(x_vali, y_vali)) in enumerate(zip(islice(train_datalo
     # validation
     x_data, y_label = pre_processing(x_vali, y_vali, device, mfcc_cuda, args.std_scale)
 
-    output = model(x_data)
+    output = model(x_data, train = False)
     val_acc.append((output.argmax(dim=1) == y_label).float().mean().item())
     #val_acc.append((output.max(dim=0)[0].argmax(dim=1) == y_label).float().mean().item())
 
@@ -408,7 +419,7 @@ for i_batch, sample_batch in enumerate(test_dataloader):
     x_data, y_label = sample_batch
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale)
 
-    output = model(x_data)
+    output = model(x_data, train = False)
     #acc_aux.append((output.max(dim=0)[0].argmax(dim=1) == y_label))
     acc_aux.append((output.argmax(dim=1) == y_label))
 
