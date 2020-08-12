@@ -1,6 +1,6 @@
 import os
 
-ident_word = "HalfHalf"
+ident_word = "QSigmoid"
 
 part1 = "#!/bin/csh \n#$ -M cschaef6@nd.edu \n#$ -m abe\n#$ -q gpu@@joshi\n#$ -l gpu_card=1\n#$ -N "
 
@@ -21,7 +21,7 @@ part4 = ".txt\nmodule load python\nsetenv OMP_NUM_THREADS $NSLOTS\npython KWS_LS
 
 # sweep_parameters = {'hop-length':[150, 200, 250, 300, 350]}
 
-sweep_parameters = {'quant-actMVM':[0], 'n-mfcc':[40, 60, 100], 'hop-length':[250]}
+sweep_parameters = {'n-mfcc':[40, 70, 100], 'hop-length':[200, 270], 'std-scale':[1,3,4]}
 
 trials = 3
 

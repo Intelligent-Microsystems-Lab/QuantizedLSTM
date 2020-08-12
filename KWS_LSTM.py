@@ -29,9 +29,9 @@ parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.A
 # parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02_cough', help='Path to Dataset')
 parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speech_commands_v0.02', help='Path to Dataset')
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
-parser.add_argument("--batch-size", type=int, default=512, help='Batch Size')
-parser.add_argument("--validation-size", type=int, default=4000, help='Number of samples used for validation')
-parser.add_argument("--epochs", type=int, default=20000, help='Epochs')
+parser.add_argument("--batch-size", type=int, default=256, help='Batch Size')
+parser.add_argument("--validation-size", type=int, default=6000, help='Number of samples used for validation')
+parser.add_argument("--epochs", type=int, default=30000, help='Epochs')
 #parser.add_argument("--CE-train", type=int, default=300, help='Epochs of Cross Entropy Training')
 parser.add_argument("--lr-divide", type=int, default=10000, help='Learning Rate divide')
 parser.add_argument("--hidden", type=int, default=256, help='Number of hidden LSTM units') 
@@ -111,12 +111,11 @@ class QuantFunc(torch.autograd.Function):
         objects for use in the backward pass using the ctx.save_for_backward method.
         """
         ctx.wb = wb
+        ctx.save_for_backward(x)
         # no quantizaton, if x is None or no bits given
         if (x is None) or (wb is None) or (wb == 0):
             return x 
-
-
-        ctx.save_for_backward(x)
+        
         # clipping
         if sign:
             x = clip(x, wb)
@@ -126,10 +125,10 @@ class QuantFunc(torch.autograd.Function):
         # quantization
 
         # new experimental approach 
-        if train:
-            return .5 * quant(x, wb, sign) + .5 * x
-        else:
-            return quant(x, wb, sign)
+        # if train:
+        #     return .5 * quant(x, wb, sign) + .5 * x
+        # else:
+        return quant(x, wb, sign)
 
     @staticmethod
     def backward(ctx, grad_output):
@@ -142,7 +141,7 @@ class QuantFunc(torch.autograd.Function):
         """
         input, = ctx.saved_tensors
         if (input is None) or (ctx.wb is None) or (ctx.wb == 0):
-            return grad_output, None, None
+            return grad_output, None, None, None
 
         return grad_output, None, None, None
 
@@ -277,6 +276,8 @@ class KWS_LSTM(nn.Module):
         self.hidden_dim = hidden_dim
         self.input_dim = input_dim
         self.output_dim = output_dim
+        self.output_scale = 1
+        self.output_scale_hist = []
         
         # LSTM units
         #self.lstmL = nn.LSTM(input_size = self.input_dim, hidden_size = self.hidden_dim, bias = True)
@@ -289,16 +290,21 @@ class KWS_LSTM(nn.Module):
         #self.outputL = nn.Linear(self.hidden_dim, self.output_dim)
 
         # init weights
-        self.scale_out, self.limit_out = limit_scale(self.hidden_dim, quant_factor, quant_beta, wb)
-        self.scale_hh, self.limit_hh  = limit_scale(self.input_dim, quant_factor, quant_beta, wb)
-        self.scale_ih, self.limit_ih  = limit_scale(self.hidden_dim, quant_factor, quant_beta, wb)
-        torch.nn.init.uniform_(self.weight_ro, a = -self.limit_out, b = self.limit_out)
-        torch.nn.init.uniform_(self.lstmL.cell.weight_ih, a = -self.limit_ih, b = self.limit_ih)
-        torch.nn.init.uniform_(self.lstmL.cell.weight_hh, a = -self.limit_hh, b = self.limit_hh)
+        # self.scale_out, self.limit_out = limit_scale(self.hidden_dim, quant_factor, quant_beta, wb)
+        # self.scale_hh, self.limit_hh  = limit_scale(self.input_dim, quant_factor, quant_beta, wb)
+        # self.scale_ih, self.limit_ih  = limit_scale(self.hidden_dim, quant_factor, quant_beta, wb)
+        # torch.nn.init.uniform_(self.weight_ro, a = -self.limit_out, b = self.limit_out)
+        # torch.nn.init.uniform_(self.lstmL.cell.weight_ih, a = -self.limit_ih, b = self.limit_ih)
+        # torch.nn.init.uniform_(self.lstmL.cell.weight_hh, a = -self.limit_hh, b = self.limit_hh)
+
+        torch.nn.init.uniform_(self.weight_ro, a = -np.sqrt(6/self.hidden_dim), b = np.sqrt(6/self.hidden_dim))
+        torch.nn.init.uniform_(self.lstmL.cell.weight_ih, a = -np.sqrt(6/self.hidden_dim), b = np.sqrt(6/self.hidden_dim))
+        torch.nn.init.uniform_(self.lstmL.cell.weight_hh, a = -np.sqrt(6/self.input_dim), b = np.sqrt(6/self.input_dim))
         # http://proceedings.mlr.press/v37/jozefowicz15.pdf
         torch.nn.init.uniform_(self.bias_ro, a = -0, b = 0)
         torch.nn.init.uniform_(self.lstmL.cell.bias_ih, a = -0, b = 0)
         torch.nn.init.uniform_(self.lstmL.cell.bias_hh, a = 1, b = 1)
+
 
     def forward(self, inputs, train):
         noise_bias_ro = torch.randn(self.bias_ro.t().shape, device = self.device) * self.bias_ro.max() * self.noise_level
@@ -313,8 +319,18 @@ class KWS_LSTM(nn.Module):
         # is the reshaping okay?
         #outputFC = (CustomMM.apply(lstm_out.view((-1,self.hidden_dim)), self.weight_ro, None, self.noise_level, self.hp_bw) + self.bias_ro + noise_bias_ro).view((inputs.shape[0], inputs.shape[1], self.output_dim))
         outputFC = (CustomMM.apply(quant_pass(lstm_out[-1,:,:], self.ib, True, train), self.weight_ro, None, self.noise_level, self.hp_bw) + self.bias_ro + noise_bias_ro)
-        output = quant_pass(torch.relu(outputFC), self.abMVM, True, train)
-        #output = quant_pass(torch.sigmoid(outputFC), self.ab, False)
+        #print('----')
+        #print("{0:.4f} {1:.4f} {2:.4f}".format(outputFC.min().item(), outputFC.mean().item(),outputFC.max().item()))
+        #print("{0:.4f} {1:.4f} {2:.4f}".format(self.weight_ro.min().item(), self.weight_ro.mean().item(),self.weight_ro.max().item()))
+
+
+        # if train:
+        #     self.output_scale_hist.append(outputFC.max().item())
+        #     outputFC = outputFC / outputFC.max()
+        # else:
+        #     outputFC = outputFC / np.mean(self.output_scale_hist[-4:]) # if it works let this be a parameter
+        #output = quant_pass(torch.relu(outputFC), self.abMVM, True, train)
+        output = quant_pass(torch.sigmoid(outputFC), self.abMVM, True, train)
         #output = quant_pass(torch.softmax(outputFC, 2), self.ab, False)
 
         return output
@@ -366,7 +382,7 @@ for e, ((x_data, y_label),(x_vali, y_vali)) in enumerate(zip(islice(train_datalo
     start_time = time.time()
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale)
 
-    output = model(x_data, train = True)
+    output = model(x_data, train = False)
     # cross entropy loss
     # if e < args.CE_train:
     #     loss_val = loss_fn(output.view(-1, output.shape[-1]), torch.tensor(y_label.tolist()*output.shape[0]).to(device))
