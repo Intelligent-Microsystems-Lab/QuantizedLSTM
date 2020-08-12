@@ -331,7 +331,7 @@ class KWS_LSTM(nn.Module):
         #     outputFC = outputFC / np.mean(self.output_scale_hist[-4:]) # if it works let this be a parameter
         #output = quant_pass(torch.relu(outputFC), self.abMVM, True, train)
         #output = quant_pass(torch.sigmoid(outputFC), self.abMVM, True, train)
-        output = quant_pass(torch.tanh(outputFC), 0, True, train)
+        output = quant_pass(torch.tanh(outputFC), self.abMVM, True, train)
         #output = quant_pass(torch.softmax(outputFC, 2), self.ab, False)
 
         return output
