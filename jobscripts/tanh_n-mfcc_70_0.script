@@ -1,0 +1,11 @@
+#!/bin/csh 
+#$ -M cschaef6@nd.edu 
+#$ -m abe
+#$ -q gpu@@joshi
+#$ -l gpu_card=1
+#$ -N tanh_n-mfcc_70_0
+#$ -o ./logs/output_tanh_tanh_n-mfcc_70_0.txt
+#$ -e ./logs/error_tanh_tanh_n-mfcc_70_0.txt
+module load python
+setenv OMP_NUM_THREADS $NSLOTS
+python KWS_LSTM.py --n-mfcc 70
