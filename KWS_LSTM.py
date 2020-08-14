@@ -383,7 +383,7 @@ for e, ((x_data, y_label),(x_vali, y_vali)) in enumerate(zip(islice(train_datalo
     start_time = time.time()
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale)
 
-    output = model(x_data, train = False)
+    output = model(x_data, train = True)
     # cross entropy loss
     # if e < args.CE_train:
     #     loss_val = loss_fn(output.view(-1, output.shape[-1]), torch.tensor(y_label.tolist()*output.shape[0]).to(device))
