@@ -1,7 +1,7 @@
 #!/bin/csh 
 #$ -M cschaef6@nd.edu 
 #$ -m abe
-#$ -q gpu@@joshi
+#$ -q gpu@qa-rtx6k-040.crc.nd.edu
 #$ -l gpu_card=1
 #$ -N HH_n-mfcc_40_0
 #$ -o ./logs/output_HH_HH_n-mfcc_40_0.txt
