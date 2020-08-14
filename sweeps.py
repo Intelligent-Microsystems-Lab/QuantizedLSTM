@@ -41,5 +41,5 @@ for i in range(trials):
                 f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " " + str(value))
             os.system("qsub "+ 'jobscripts/'+name+'.script')
             q_counter += 1
-            if q_counter > len(avail_q):
+            if q_counter >= len(avail_q):
                 q_counter = 0
