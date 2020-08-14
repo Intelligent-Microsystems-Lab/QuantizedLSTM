@@ -30,7 +30,7 @@ parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.A
 parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speech_commands_v0.02', help='Path to Dataset')
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
 parser.add_argument("--batch-size", type=int, default=256, help='Batch Size')
-parser.add_argument("--validation-size", type=int, default=10000, help='Number of samples used for validation')
+parser.add_argument("--validation-size", type=int, default=50, help='Number of samples used for validation')
 parser.add_argument("--epochs", type=int, default=50000, help='Epochs')
 #parser.add_argument("--CE-train", type=int, default=300, help='Epochs of Cross Entropy Training')
 parser.add_argument("--lr-divide", type=int, default=15000, help='Learning Rate divide')
@@ -352,13 +352,13 @@ def pre_processing(x, y, device, mfcc_cuda, std_scale):
 mfcc_cuda = torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, melkwargs = {'win_length' : args.win_length, 'hop_length':args.hop_length}).to(device)
 
 speech_dataset_train = SpeechCommandsGoogle(args.dataset_path_train, 'training', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, args.epochs, device = device)
-speech_dataset_val = SpeechCommandsGoogle(args.dataset_path_train, 'validation', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.validation_size, args.epochs, device = device)
+speech_dataset_val = SpeechCommandsGoogle(args.dataset_path_train, 'validation', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, args.epochs, device = device)
 speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_test, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, args.epochs, device = device)
 
 
 train_dataloader = torch.utils.data.DataLoader(speech_dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
 test_dataloader = torch.utils.data.DataLoader(speech_dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
-validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_size=args.validation_size, shuffle=True, num_workers=args.dataloader_num_workers)
+validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
 
 
 model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = args.init_factor, quant_beta = args.global_beta, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = args.noise_injection, hp_bw = args.hp_bw).to(device)
@@ -375,7 +375,7 @@ print(args)
 print(model_uuid)
 print("Start Training:")
 print("Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)")
-for e, ((x_data, y_label),(x_vali, y_vali)) in enumerate(zip(islice(train_dataloader, args.epochs), islice(validation_dataloader, args.epochs))):
+for e, (x_data, y_label) in enumerate(islice(train_dataloader, args.epochs)):
     if e%args.lr_divide == 0:
         optimizer.param_groups[-1]['lr'] /= 2
 
@@ -400,14 +400,15 @@ for e, ((x_data, y_label),(x_vali, y_vali)) in enumerate(zip(islice(train_datalo
     train_time = time.time() - start_time
 
     # validation
-    x_data, y_label = pre_processing(x_vali, y_vali, device, mfcc_cuda, args.std_scale)
+    for val_e, (x_vali, y_vali) in enumerate(islice(train_dataloader, args.validation_size)):
+        x_data, y_label = pre_processing(x_vali, y_vali, device, mfcc_cuda, args.std_scale)
 
-    output = model(x_data, train = False)
-    val_acc.append((output.argmax(dim=1) == y_label).float().mean().item())
+        output = model(x_data, train = False)
+        val_acc.append((output.argmax(dim=1) == y_label).float().mean().item())
     #val_acc.append((output.max(dim=0)[0].argmax(dim=1) == y_label).float().mean().item())
 
-    if best_acc < val_acc[-1]:
-        best_acc = val_acc[-1]
+    if best_acc < np.mean(val_acc[-args.validation_size:]):
+        best_acc = np.mean(val_acc[-args.validation_size:])
         checkpoint_dict = {
             'model_dict' : model.state_dict(), 
             'optimizer'  : optimizer.state_dict(),
@@ -423,7 +424,7 @@ for e, ((x_data, y_label),(x_vali, y_vali)) in enumerate(zip(islice(train_datalo
 
     if e%100 == 0:
         print("{0:05d}     {1:.4f}      {2:.4f}     {3:.4f}     {4:.4f}".format(e, loss_val, train_acc[-1], best_acc, train_time))
-        plot_curves(train_acc, val_acc, model_uuid)
+        plot_curves(train_acc, np.mean(val_acc[-args.validation_size:]), model_uuid)
 
 
 

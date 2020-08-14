@@ -30,7 +30,8 @@ sweep_parameters = {'n-mfcc':[40]}
 
 trials = 3
 
-avail_q = ['gpu@qa-rtx6k-040.crc.nd.edu', 'gpu@qa-rtx6k-041.crc.nd.edu']
+#avail_q = ['gpu@qa-rtx6k-040.crc.nd.edu', 'gpu@qa-rtx6k-041.crc.nd.edu']
+avail_q = ['gpu@@joshi']
 q_counter = 0
 
 for i in range(trials):
