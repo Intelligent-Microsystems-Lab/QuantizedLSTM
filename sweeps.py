@@ -1,6 +1,6 @@
 import os
 
-ident_word = "HH"
+ident_word = "Thurs"
 
 part1 = "#!/bin/csh \n#$ -M cschaef6@nd.edu \n#$ -m abe\n#$ -q " 
 part11 = "\n#$ -l gpu_card=1\n#$ -N "
