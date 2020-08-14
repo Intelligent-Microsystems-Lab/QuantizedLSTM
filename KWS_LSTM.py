@@ -30,10 +30,10 @@ parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.A
 parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speech_commands_v0.02', help='Path to Dataset')
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
 parser.add_argument("--batch-size", type=int, default=256, help='Batch Size')
-parser.add_argument("--validation-size", type=int, default=6000, help='Number of samples used for validation')
-parser.add_argument("--epochs", type=int, default=30000, help='Epochs')
+parser.add_argument("--validation-size", type=int, default=10000, help='Number of samples used for validation')
+parser.add_argument("--epochs", type=int, default=50000, help='Epochs')
 #parser.add_argument("--CE-train", type=int, default=300, help='Epochs of Cross Entropy Training')
-parser.add_argument("--lr-divide", type=int, default=10000, help='Learning Rate divide')
+parser.add_argument("--lr-divide", type=int, default=15000, help='Learning Rate divide')
 parser.add_argument("--hidden", type=int, default=256, help='Number of hidden LSTM units') 
 parser.add_argument("--learning-rate", type=float, default=0.0005, help='Dropout Percentage')
 parser.add_argument("--dataloader-num-workers", type=int, default=4, help='Number Workers Dataloader')
@@ -42,7 +42,7 @@ parser.add_argument("--testing-percentage", type=int, default=10, help='Testing 
 parser.add_argument("--sample-rate", type=int, default=16000, help='Audio Sample Rate')
 
 #could be ramped up to 128 -> explore optimal input
-parser.add_argument("--n-mfcc", type=int, default=70, help='Number of mfc coefficients to retain') # 40 before
+parser.add_argument("--n-mfcc", type=int, default=40, help='Number of mfc coefficients to retain') # 40 before
 parser.add_argument("--win-length", type=int, default=400, help='Window size in ms') # 400
 parser.add_argument("--hop-length", type=int, default=320, help='Length of hop between STFT windows') #320
 parser.add_argument("--std-scale", type=int, default=3, help='Scaling by how many standard deviations (e.g. how many big values will be cut off: 1std = 65%, 2std = 95%), 3std=99%')
@@ -383,7 +383,7 @@ for e, ((x_data, y_label),(x_vali, y_vali)) in enumerate(zip(islice(train_datalo
     start_time = time.time()
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale)
 
-    output = model(x_data, train = True)
+    output = model(x_data, train = False)
     # cross entropy loss
     # if e < args.CE_train:
     #     loss_val = loss_fn(output.view(-1, output.shape[-1]), torch.tensor(y_label.tolist()*output.shape[0]).to(device))
