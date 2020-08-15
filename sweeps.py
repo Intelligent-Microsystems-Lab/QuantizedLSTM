@@ -26,12 +26,12 @@ part4 = ".txt\nmodule load python\nsetenv OMP_NUM_THREADS $NSLOTS\npython KWS_LS
 
 #sweep_parameters = {'n-mfcc':[70], 'std-scale':[1,4]}
 
-sweep_parameters = {'n-mfcc':[40]}
+sweep_parameters = {'n-mfcc':[70]}
 
 trials = 3
 
-#avail_q = ['gpu@qa-rtx6k-040.crc.nd.edu', 'gpu@qa-rtx6k-041.crc.nd.edu']
-avail_q = ['gpu@@joshi']
+avail_q = ['gpu@qa-rtx6k-040.crc.nd.edu', 'gpu@qa-rtx6k-041.crc.nd.edu']
+#avail_q = ['gpu@@joshi']
 q_counter = 0
 
 for i in range(trials):
