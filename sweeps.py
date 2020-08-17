@@ -1,6 +1,6 @@
 import os
 
-ident_word = "Quantized"
+ident_word = "UnQuantized"
 
 part1 = "#!/bin/csh \n#$ -M cschaef6@nd.edu \n#$ -m abe\n#$ -q " 
 part11 = "\n#$ -l gpu_card=1\n#$ -N "
@@ -30,8 +30,8 @@ sweep_parameters = {'noise-injection':[0.1]}
 
 trials = 3
 
-avail_q = ['gpu@qa-rtx6k-040.crc.nd.edu', 'gpu@qa-rtx6k-041.crc.nd.edu']
-#avail_q = ['gpu@@joshi']
+#avail_q = ['gpu@qa-rtx6k-040.crc.nd.edu', 'gpu@qa-rtx6k-041.crc.nd.edu']
+avail_q = ['gpu@@joshi']
 q_counter = 0
 
 for i in range(trials):
