@@ -26,7 +26,7 @@ part4 = ".txt\nmodule load python\nsetenv OMP_NUM_THREADS $NSLOTS\npython KWS_LS
 
 #sweep_parameters = {'n-mfcc':[70], 'std-scale':[1,4]}
 
-sweep_parameters = {'n-mfcc':[70]}
+sweep_parameters = {'noise-injection':[0.1]}
 
 trials = 3
 
