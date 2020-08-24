@@ -32,7 +32,7 @@ parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech
 parser.add_argument("--batch-size", type=int, default=256, help='Batch Size')
 parser.add_argument("--validation-size", type=int, default=3, help='Number of samples used for validation')
 parser.add_argument("--validation-batch", type=int, default=8192, help='Number of samples used for validation')
-parser.add_argument("--epochs", type=int, default=60000, help='Epochs')
+parser.add_argument("--epochs", type=int, default=45000, help='Epochs')
 #parser.add_argument("--CE-train", type=int, default=300, help='Epochs of Cross Entropy Training')
 parser.add_argument("--lr-divide", type=int, default=15000, help='Learning Rate divide')
 parser.add_argument("--hidden", type=int, default=256, help='Number of hidden LSTM units') 
