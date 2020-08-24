@@ -1,6 +1,6 @@
 import os
 
-ident_word = "UnQuantized"
+ident_word = "NoiseInfTrain"
 
 part1 = "#!/bin/csh \n#$ -M cschaef6@nd.edu \n#$ -m abe\n#$ -q " 
 part11 = "\n#$ -l gpu_card=1\n#$ -N "
@@ -24,11 +24,10 @@ part4 = ".txt\nmodule load python\nsetenv OMP_NUM_THREADS $NSLOTS\npython KWS_LS
 
 #sweep_parameters = {'n-mfcc':[40, 70, 100], 'hop-length':[200, 270], 'std-scale':[1,3,4]}
 
-#sweep_parameters = {'n-mfcc':[70], 'std-scale':[1,4]}
+sweep_parameters = {'n-mfcc':[70]}
 
-sweep_parameters = {'noise-injection':[0.1]}
 
-trials = 3
+trials = 4
 
 #avail_q = ['gpu@qa-rtx6k-040.crc.nd.edu', 'gpu@qa-rtx6k-041.crc.nd.edu']
 avail_q = ['gpu@@joshi']
@@ -44,3 +43,6 @@ for i in range(trials):
             q_counter += 1
             if q_counter >= len(avail_q):
                 q_counter = 0
+
+
+

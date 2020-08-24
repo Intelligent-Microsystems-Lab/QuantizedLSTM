@@ -53,10 +53,11 @@ parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'u
 parser.add_argument("--global-beta", type=float, default=1.5, help='Globale Beta for quantization')
 parser.add_argument("--init-factor", type=float, default=2, help='Init factor for quantization')
 
-parser.add_argument("--noise-injection", type=float, default=0, help='Percentage of noise injected to weights')
-parser.add_argument("--quant-actMVM", type=int, default=0, help='Bits available for MVM activations/state')
-parser.add_argument("--quant-actNM", type=int, default=0, help='Bits available for non-MVM activations/state')
-parser.add_argument("--quant-inp", type=int, default=0, help='Bits available for inputs')
+parser.add_argument("--noise-injectionT", type=float, default=0.2, help='Percentage of noise injected to weights')
+parser.add_argument("--noise-injectionI", type=float, default=0.1, help='Percentage of noise injected to weights')
+parser.add_argument("--quant-actMVM", type=int, default=6, help='Bits available for MVM activations/state')
+parser.add_argument("--quant-actNM", type=int, default=8, help='Bits available for non-MVM activations/state')
+parser.add_argument("--quant-inp", type=int, default=4, help='Bits available for inputs')
 
 parser.add_argument("--cy-div", type=int, default=2, help='CY division')
 parser.add_argument("--cy-scale", type=int, default=2, help='Scaling CY')
@@ -362,7 +363,7 @@ test_dataloader = torch.utils.data.DataLoader(speech_dataset_test, batch_size=ar
 validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_size=args.validation_batch, shuffle=True, num_workers=args.dataloader_num_workers)
 
 
-model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = args.init_factor, quant_beta = args.global_beta, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = args.noise_injection, hp_bw = args.hp_bw).to(device)
+model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = args.init_factor, quant_beta = args.global_beta, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = args.noise_injectionT, hp_bw = args.hp_bw).to(device)
 model.to(device)
 loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)  
@@ -434,6 +435,8 @@ print("Start Testing:")
 checkpoint_dict = torch.load('./checkpoints/'+model_uuid+'.pkl')
 model.load_state_dict(checkpoint_dict['model_dict'])
 acc_aux = []
+
+model.noise_level = args.args.noise_injectionI
 for i_batch, sample_batch in enumerate(test_dataloader):
     x_data, y_label = sample_batch
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale)
