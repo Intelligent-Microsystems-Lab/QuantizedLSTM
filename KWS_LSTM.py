@@ -55,9 +55,9 @@ parser.add_argument("--init-factor", type=float, default=2, help='Init factor fo
 
 parser.add_argument("--noise-injectionT", type=float, default=0.1, help='Percentage of noise injected to weights')
 parser.add_argument("--noise-injectionI", type=float, default=0.1, help='Percentage of noise injected to weights')
-parser.add_argument("--quant-actMVM", type=int, default=6, help='Bits available for MVM activations/state')
-parser.add_argument("--quant-actNM", type=int, default=8, help='Bits available for non-MVM activations/state')
-parser.add_argument("--quant-inp", type=int, default=4, help='Bits available for inputs')
+parser.add_argument("--quant-actMVM", type=int, default=0, help='Bits available for MVM activations/state')
+parser.add_argument("--quant-actNM", type=int, default=0, help='Bits available for non-MVM activations/state')
+parser.add_argument("--quant-inp", type=int, default=0, help='Bits available for inputs')
 
 parser.add_argument("--cy-div", type=int, default=2, help='CY division')
 parser.add_argument("--cy-scale", type=int, default=2, help='Scaling CY')
