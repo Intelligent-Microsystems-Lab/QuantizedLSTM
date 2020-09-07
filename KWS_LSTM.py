@@ -35,7 +35,7 @@ parser.add_argument("--validation-batch", type=int, default=8192, help='Number o
 parser.add_argument("--epochs", type=int, default=45000, help='Epochs')
 #parser.add_argument("--CE-train", type=int, default=300, help='Epochs of Cross Entropy Training')
 parser.add_argument("--lr-divide", type=int, default=15000, help='Learning Rate divide')
-parser.add_argument("--hidden", type=int, default=256, help='Number of hidden LSTM units') 
+parser.add_argument("--hidden", type=int, default=100, help='Number of hidden LSTM units') 
 parser.add_argument("--learning-rate", type=float, default=0.0005, help='Dropout Percentage')
 parser.add_argument("--dataloader-num-workers", type=int, default=4, help='Number Workers Dataloader')
 parser.add_argument("--validation-percentage", type=int, default=10, help='Validation Set Percentage')
@@ -43,7 +43,7 @@ parser.add_argument("--testing-percentage", type=int, default=10, help='Testing 
 parser.add_argument("--sample-rate", type=int, default=16000, help='Audio Sample Rate')
 
 #could be ramped up to 128 -> explore optimal input
-parser.add_argument("--n-mfcc", type=int, default=70, help='Number of mfc coefficients to retain') # 40 before
+parser.add_argument("--n-mfcc", type=int, default=64, help='Number of mfc coefficients to retain') # 40 before
 parser.add_argument("--win-length", type=int, default=400, help='Window size in ms') # 400
 parser.add_argument("--hop-length", type=int, default=320, help='Length of hop between STFT windows') #320
 parser.add_argument("--std-scale", type=int, default=3, help='Scaling by how many standard deviations (e.g. how many big values will be cut off: 1std = 65%, 2std = 95%), 3std=99%')
@@ -53,7 +53,7 @@ parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'u
 parser.add_argument("--global-beta", type=float, default=1.5, help='Globale Beta for quantization')
 parser.add_argument("--init-factor", type=float, default=2, help='Init factor for quantization')
 
-parser.add_argument("--noise-injectionT", type=float, default=0.2, help='Percentage of noise injected to weights')
+parser.add_argument("--noise-injectionT", type=float, default=0.1, help='Percentage of noise injected to weights')
 parser.add_argument("--noise-injectionI", type=float, default=0.1, help='Percentage of noise injected to weights')
 parser.add_argument("--quant-actMVM", type=int, default=6, help='Bits available for MVM activations/state')
 parser.add_argument("--quant-actNM", type=int, default=8, help='Bits available for non-MVM activations/state')
@@ -430,13 +430,14 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, args.epochs)):
         print("{0:05d}     {1:.4f}      {2:.4f}     {3:.4f}     {4:.4f}".format(e, loss_val, train_acc[-1], best_acc, train_time))
         plot_curves(train_acc, val_acc, model_uuid)
 
+
 # Testing
 print("Start Testing:")
 checkpoint_dict = torch.load('./checkpoints/'+model_uuid+'.pkl')
 model.load_state_dict(checkpoint_dict['model_dict'])
 acc_aux = []
 
-model.noise_level = args.args.noise_injectionI
+model.noise_level = args.noise_injectionI
 for i_batch, sample_batch in enumerate(test_dataloader):
     x_data, y_label = sample_batch
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale)
