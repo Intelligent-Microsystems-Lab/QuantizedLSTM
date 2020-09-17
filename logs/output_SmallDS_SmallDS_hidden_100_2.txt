@@ -1,0 +1,8 @@
+Loading python/3.7.3
+  Loading requirement: tcl/8.6.8 gcc/8.3.0
+Traceback (most recent call last):
+  File "KWS_LSTM.py", line 357, in <module>
+    speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_test, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, args.epochs, device = device)
+  File "/afs/crc.nd.edu/user/c/cschaef6/QuantizedLSTM/dataloader.py", line 107, in __init__
+    self.list_of_y.append(words.index(cur_dir))
+ValueError: 'down' is not in list
