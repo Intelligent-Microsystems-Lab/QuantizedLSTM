@@ -48,23 +48,22 @@ parser.add_argument("--win-length", type=int, default=400, help='Window size in 
 parser.add_argument("--hop-length", type=int, default=320, help='Length of hop between STFT windows') #320
 parser.add_argument("--std-scale", type=int, default=3, help='Scaling by how many standard deviations (e.g. how many big values will be cut off: 1std = 65%, 2std = 95%), 3std=99%')
 
-parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
+#parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
+parser.add_argument("--word-list", nargs='+', type=str, default=['stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
 # parser.add_argument("--word-list", nargs='+', type=str, default=['cough', 'unknown', 'silence'], help='Keywords to be learned')
 parser.add_argument("--global-beta", type=float, default=1.5, help='Globale Beta for quantization')
 parser.add_argument("--init-factor", type=float, default=2, help='Init factor for quantization')
 
-parser.add_argument("--noise-injectionT", type=float, default=0., help='Percentage of noise injected to weights')
-parser.add_argument("--noise-injectionI", type=float, default=0., help='Percentage of noise injected to weights')
-parser.add_argument("--quant-actMVM", type=int, default=0, help='Bits available for MVM activations/state')
-parser.add_argument("--quant-actNM", type=int, default=0, help='Bits available for non-MVM activations/state')
-parser.add_argument("--quant-inp", type=int, default=0, help='Bits available for inputs')
+parser.add_argument("--noise-injectionT", type=float, default=0.1, help='Percentage of noise injected to weights')
+parser.add_argument("--noise-injectionI", type=float, default=0.1, help='Percentage of noise injected to weights')
+parser.add_argument("--quant-actMVM", type=int, default=6, help='Bits available for MVM activations/state')
+parser.add_argument("--quant-actNM", type=int, default=8, help='Bits available for non-MVM activations/state')
+parser.add_argument("--quant-inp", type=int, default=4, help='Bits available for inputs')
 
 parser.add_argument("--cy-div", type=int, default=2, help='CY division')
 parser.add_argument("--cy-scale", type=int, default=2, help='Scaling CY')
 parser.add_argument("--quant-w", type=int, default=None, help='Bits available for weights')
 parser.add_argument("--hp-bw", type=bool, default=False, help='High precision backward pass')
-
-
 
 args = parser.parse_args()
 

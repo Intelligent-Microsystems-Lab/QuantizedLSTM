@@ -1,6 +1,6 @@
 import os
 
-ident_word = "FullP"
+ident_word = "SmallDS"
 
 part1 = "#!/bin/csh \n#$ -M cschaef6@nd.edu \n#$ -m abe\n#$ -q " 
 part11 = "\n#$ -l gpu_card=1\n#$ -N "
@@ -24,7 +24,7 @@ part4 = ".txt\nmodule load python\nsetenv OMP_NUM_THREADS $NSLOTS\npython KWS_LS
 
 #sweep_parameters = {'n-mfcc':[40, 70, 100], 'hop-length':[200, 270], 'std-scale':[1,3,4]}
 
-sweep_parameters = {'hidden':[100,200]}
+sweep_parameters = {'hidden':[100]}
 
 
 trials = 3
