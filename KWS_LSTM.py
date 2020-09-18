@@ -49,8 +49,8 @@ parser.add_argument("--win-length", type=int, default=400, help='Window size in 
 parser.add_argument("--hop-length", type=int, default=320, help='Length of hop between STFT windows') #320
 parser.add_argument("--std-scale", type=int, default=3, help='Scaling by how many standard deviations (e.g. how many big values will be cut off: 1std = 65%, 2std = 95%), 3std=99%')
 
-#parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
-parser.add_argument("--word-list", nargs='+', type=str, default=['stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
+parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
+#parser.add_argument("--word-list", nargs='+', type=str, default=['stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
 # parser.add_argument("--word-list", nargs='+', type=str, default=['cough', 'unknown', 'silence'], help='Keywords to be learned')
 parser.add_argument("--global-beta", type=float, default=1.5, help='Globale Beta for quantization')
 parser.add_argument("--init-factor", type=float, default=2, help='Init factor for quantization')
@@ -265,7 +265,7 @@ class LSTMLayer(nn.Module):
 
 
 class KWS_LSTM(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, batch_size, device, quant_factor, quant_beta, wb, abMVM, abNM, ib, noise_level, hp_bw): 
+    def __init__(self, input_dim, hidden_dim, output_dim, batch_size, device, quant_factor, quant_beta, wb, abMVM, abNM, blocks, ib, noise_level, hp_bw): 
         super(KWS_LSTM, self).__init__()
         self.device = device
         self.hp_bw = hp_bw
@@ -280,14 +280,21 @@ class KWS_LSTM(nn.Module):
         self.output_dim = output_dim
         self.output_scale = 1
         self.output_scale_hist = []
-        
+        self.n_blocks = blocks
+
         # LSTM units
         #self.lstmL = nn.LSTM(input_size = self.input_dim, hidden_size = self.hidden_dim, bias = True)
         # custom LSTM unit
-        self.lstmL = LSTMLayer(LSTMCell, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.hp_bw, self.device)
+        self.lstmBlocks = []
+        for i in range(blocks):
+            self.lstmBlocks.append(LSTMLayer(LSTMCell, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.hp_bw, self.device))
+            
+        self.lstmS = nn.ModuleList(self.lstmBlocks)
+        del self.lstmBlocks
+        #self.lstmL = LSTMLayer(LSTMCell, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.hp_bw, self.device)
 
         # The linear layer that maps from hidden state space to tag space
-        self.weight_ro = nn.Parameter(torch.randn(self.hidden_dim, self.output_dim))
+        self.weight_ro = nn.Parameter(torch.randn(self.hidden_dim*blocks, self.output_dim))
         self.bias_ro = nn.Parameter(torch.randn(self.output_dim))
         #self.outputL = nn.Linear(self.hidden_dim, self.output_dim)
 
@@ -300,12 +307,16 @@ class KWS_LSTM(nn.Module):
         # torch.nn.init.uniform_(self.lstmL.cell.weight_hh, a = -self.limit_hh, b = self.limit_hh)
 
         torch.nn.init.uniform_(self.weight_ro, a = -np.sqrt(6/self.hidden_dim), b = np.sqrt(6/self.hidden_dim))
-        torch.nn.init.uniform_(self.lstmL.cell.weight_ih, a = -np.sqrt(6/self.hidden_dim), b = np.sqrt(6/self.hidden_dim))
-        torch.nn.init.uniform_(self.lstmL.cell.weight_hh, a = -np.sqrt(6/self.input_dim), b = np.sqrt(6/self.input_dim))
-        # http://proceedings.mlr.press/v37/jozefowicz15.pdf
         torch.nn.init.uniform_(self.bias_ro, a = -0, b = 0)
-        torch.nn.init.uniform_(self.lstmL.cell.bias_ih, a = -0, b = 0)
-        torch.nn.init.uniform_(self.lstmL.cell.bias_hh, a = 1, b = 1)
+
+
+        for i in range(blocks):
+            torch.nn.init.uniform_(self.lstmS[i].cell.weight_ih, a = -np.sqrt(6/self.hidden_dim), b = np.sqrt(6/self.hidden_dim))
+            torch.nn.init.uniform_(self.lstmS[i].cell.weight_hh, a = -np.sqrt(6/self.input_dim), b = np.sqrt(6/self.input_dim))
+
+            # http://proceedings.mlr.press/v37/jozefowicz15.pdf
+            torch.nn.init.uniform_(self.lstmS[i].cell.bias_ih, a = -0, b = 0)
+            torch.nn.init.uniform_(self.lstmS[i].cell.bias_hh, a = 1, b = 1)
 
 
     def forward(self, inputs, train):
@@ -313,14 +324,20 @@ class KWS_LSTM(nn.Module):
         # init states with zero
         self.hidden_state = (torch.zeros( inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros( inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device))
 
-        lstm_out, self.hidden_state = self.lstmL(inputs, self.hidden_state, train)
+        lstm_out = []
+        for i in range(self.n_blocks):
+            temp_out, _ = self.lstmS[i](inputs, self.hidden_state, train)
+            lstm_out.append(temp_out)
+            del temp_out
+        #lstm_out, self.hidden_state = self.lstmL(inputs, self.hidden_state, train)
+        
         # read out layer - quantized
         #outputFC = self.outputL(lstm_out[-1,:,:])
 
         #outputFC = self.outputL(lstm_out.view((-1,self.hidden_dim))).view((inputs.shape[0],self.batch_size, self.output_dim))
         # is the reshaping okay?
         #outputFC = (CustomMM.apply(lstm_out.view((-1,self.hidden_dim)), self.weight_ro, None, self.noise_level, self.hp_bw) + self.bias_ro + noise_bias_ro).view((inputs.shape[0], inputs.shape[1], self.output_dim))
-        outputFC = (CustomMM.apply(quant_pass(lstm_out[-1,:,:], self.ib, True, train), self.weight_ro, None, self.noise_level, self.hp_bw) + self.bias_ro + noise_bias_ro)
+        outputFC = (CustomMM.apply(quant_pass(torch.cat(lstm_out, 2)[-1,:,:], self.ib, True, train), self.weight_ro, None, self.noise_level, self.hp_bw) + self.bias_ro + noise_bias_ro)
         #print('----')
         #print("{0:.4f} {1:.4f} {2:.4f}".format(outputFC.min().item(), outputFC.mean().item(),outputFC.max().item()))
         #print("{0:.4f} {1:.4f} {2:.4f}".format(self.weight_ro.min().item(), self.weight_ro.mean().item(),self.weight_ro.max().item()))
@@ -355,8 +372,8 @@ mfcc_cuda = torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = 
 
 speech_dataset_train = SpeechCommandsGoogle(args.dataset_path_train, 'training', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, args.epochs, device = device)
 speech_dataset_val = SpeechCommandsGoogle(args.dataset_path_train, 'validation', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.validation_batch, args.epochs, device = device)
-speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_train, 'testing1', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, args.epochs, device = device)
-#speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_test, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, args.epochs, device = device)
+#speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_train, 'testing1', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, args.epochs, device = device)
+speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_test, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, args.epochs, device = device)
 
 
 train_dataloader = torch.utils.data.DataLoader(speech_dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
@@ -364,7 +381,7 @@ test_dataloader = torch.utils.data.DataLoader(speech_dataset_test, batch_size=ar
 validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_size=args.validation_batch, shuffle=True, num_workers=args.dataloader_num_workers)
 
 
-model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = args.init_factor, quant_beta = args.global_beta, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = args.noise_injectionT, hp_bw = args.hp_bw).to(device)
+model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = args.init_factor, quant_beta = args.global_beta, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = args.noise_injectionT, blocks = args.lstm_blocks, hp_bw = args.hp_bw).to(device)
 model.to(device)
 loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)  
