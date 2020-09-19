@@ -132,7 +132,7 @@ class SpeechCommandsGoogle(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        if (self.train_test_val == 'testing') and (self.non_canonical_test) and ('cough' not in self.root_dir):
+        if (self.train_test_val == 'testing') and (not self.non_canonical_test) and ('cough' not in self.root_dir):
             # usig canonical testing set which is already balanced     
             waveform = self.list_of_x[idx]
         else:
