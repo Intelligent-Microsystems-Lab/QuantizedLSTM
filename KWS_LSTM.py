@@ -35,7 +35,7 @@ parser.add_argument("--validation-batch", type=int, default=8192, help='Number o
 parser.add_argument("--epochs", type=int, default=45000, help='Epochs')
 #parser.add_argument("--CE-train", type=int, default=300, help='Epochs of Cross Entropy Training')
 parser.add_argument("--lr-divide", type=int, default=15000, help='Learning Rate divide')
-parser.add_argument("--lstm-blocks", type=int, default=3, help='How many parallel LSTM blocks') 
+parser.add_argument("--lstm-blocks", type=int, default=6, help='How many parallel LSTM blocks') 
 parser.add_argument("--pool-method", type=str, default="max", help='Pooling method [max/avg]') 
 parser.add_argument("--hidden", type=int, default=100, help='Number of hidden LSTM units') 
 parser.add_argument("--learning-rate", type=float, default=0.0005, help='Dropout Percentage')
