@@ -36,6 +36,7 @@ parser.add_argument("--epochs", type=int, default=45000, help='Epochs')
 #parser.add_argument("--CE-train", type=int, default=300, help='Epochs of Cross Entropy Training')
 parser.add_argument("--lr-divide", type=int, default=15000, help='Learning Rate divide')
 parser.add_argument("--lstm-blocks", type=int, default=3, help='How many parallel LSTM blocks') 
+parser.add_argument("--pool-method", type=str, default="max", help='Pooling method [max/avg]') 
 parser.add_argument("--hidden", type=int, default=100, help='Number of hidden LSTM units') 
 parser.add_argument("--learning-rate", type=float, default=0.0005, help='Dropout Percentage')
 parser.add_argument("--dataloader-num-workers", type=int, default=4, help='Number Workers Dataloader')
@@ -265,7 +266,7 @@ class LSTMLayer(nn.Module):
 
 
 class KWS_LSTM(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, batch_size, device, quant_factor, quant_beta, wb, abMVM, abNM, blocks, ib, noise_level, hp_bw): 
+    def __init__(self, input_dim, hidden_dim, output_dim, batch_size, device, quant_factor, quant_beta, wb, abMVM, abNM, blocks, ib, noise_level, pool_method, hp_bw): 
         super(KWS_LSTM, self).__init__()
         self.device = device
         self.hp_bw = hp_bw
@@ -281,6 +282,14 @@ class KWS_LSTM(nn.Module):
         self.output_scale = 1
         self.output_scale_hist = []
         self.n_blocks = blocks
+        self.pool_method = pool_method
+
+        if pool_method == 'max':
+            self.poolL = nn.MaxPool1d(kernel_size = blocks)
+        elif pool_method == 'avg':
+            self.poolL = nn.AvgPool1d(kernel_size = blocks)
+        else:
+            raise ValueError('Unknown Pooling Method')
 
         # LSTM units
         #self.lstmL = nn.LSTM(input_size = self.input_dim, hidden_size = self.hidden_dim, bias = True)
@@ -294,7 +303,7 @@ class KWS_LSTM(nn.Module):
         #self.lstmL = LSTMLayer(LSTMCell, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.hp_bw, self.device)
 
         # The linear layer that maps from hidden state space to tag space
-        self.weight_ro = nn.Parameter(torch.randn(self.hidden_dim*blocks, self.output_dim))
+        self.weight_ro = nn.Parameter(torch.randn(self.hidden_dim, self.output_dim))
         self.bias_ro = nn.Parameter(torch.randn(self.output_dim))
         #self.outputL = nn.Linear(self.hidden_dim, self.output_dim)
 
@@ -337,7 +346,9 @@ class KWS_LSTM(nn.Module):
         #outputFC = self.outputL(lstm_out.view((-1,self.hidden_dim))).view((inputs.shape[0],self.batch_size, self.output_dim))
         # is the reshaping okay?
         #outputFC = (CustomMM.apply(lstm_out.view((-1,self.hidden_dim)), self.weight_ro, None, self.noise_level, self.hp_bw) + self.bias_ro + noise_bias_ro).view((inputs.shape[0], inputs.shape[1], self.output_dim))
-        outputFC = (CustomMM.apply(quant_pass(torch.cat(lstm_out, 2)[-1,:,:], self.ib, True, train), self.weight_ro, None, self.noise_level, self.hp_bw) + self.bias_ro + noise_bias_ro)
+        lin_layer_inp = quant_pass(self.poolL(torch.unsqueeze(torch.cat(lstm_out, 2)[-1,:,:], 1))[:,0,:], self.ib, True, train)
+
+        outputFC = (CustomMM.apply(lin_layer_inp, self.weight_ro, None, self.noise_level, self.hp_bw) + self.bias_ro + noise_bias_ro)
         #print('----')
         #print("{0:.4f} {1:.4f} {2:.4f}".format(outputFC.min().item(), outputFC.mean().item(),outputFC.max().item()))
         #print("{0:.4f} {1:.4f} {2:.4f}".format(self.weight_ro.min().item(), self.weight_ro.mean().item(),self.weight_ro.max().item()))
@@ -380,7 +391,7 @@ test_dataloader = torch.utils.data.DataLoader(speech_dataset_test, batch_size=ar
 validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_size=args.validation_batch, shuffle=True, num_workers=args.dataloader_num_workers)
 
 
-model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = args.init_factor, quant_beta = args.global_beta, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = args.noise_injectionT, blocks = args.lstm_blocks, hp_bw = args.hp_bw).to(device)
+model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = args.init_factor, quant_beta = args.global_beta, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = args.noise_injectionT, blocks = args.lstm_blocks, pool_method = args.pool_method, hp_bw = args.hp_bw).to(device)
 model.to(device)
 loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)  
@@ -467,4 +478,4 @@ test_acc = torch.cat(acc_aux).float().mean().item()
 print("Test Accuracy: {0:.4f}".format(test_acc))
 
 
-#checkpoint_dict = torch.load('./checkpoints/7e0c9f68-5f15-4080-87db-052cad588913.pkl')
+#checkpoint_dict = torch.load('./checkpoints/b90af0bb-d27b-40ef-80b1-992b9d69b561.pkl')
