@@ -65,7 +65,7 @@ def which_set(filename, validation_percentage, testing_percentage):
 class SpeechCommandsGoogle(Dataset):
     """Google Speech Command Dataset configured from Hello Edge"""
 
-    def __init__(self, root_dir, train_test_val, val_perc, test_perc, words, sample_rate, batch_size, epochs, device, transform=None):
+    def __init__(self, root_dir, train_test_val, val_perc, test_perc, words, sample_rate, batch_size, epochs, device, non_canonical_test = False, transform=None):
         """
         Args:
             root_dir (string): Directory with all the recording.
@@ -86,6 +86,7 @@ class SpeechCommandsGoogle(Dataset):
         self.device = device
         self.batch_size = batch_size
         self.epochs = epochs
+        self.non_canonical_test = non_canonical_test
 
 
         self.list_of_x = []
@@ -100,10 +101,12 @@ class SpeechCommandsGoogle(Dataset):
                     self.list_of_y.append(words.index('silence'))
                     self.list_of_labels.append('silence')
                 elif which_set(cur_f, val_perc, test_perc) == train_test_val:
-                    if (cur_dir not in words) and (train_test_val != 'testing'):
+                    #if (cur_dir not in words) and (train_test_val != 'testing'):
+                    if (cur_dir not in words) and ( not ((train_test_val == 'testing') and not non_canonical_test)):
                         self.list_of_y.append(words.index('unknown'))
                         self.list_of_labels.append('unknown')
                     else:
+                        #thats for canonical testing
                         self.list_of_y.append(words.index(cur_dir))
                         self.list_of_labels.append(cur_dir)
                 else:
@@ -129,7 +132,7 @@ class SpeechCommandsGoogle(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        if (self.train_test_val == 'testing') and ('cough' not in self.root_dir):
+        if (self.train_test_val == 'testing') and (self.non_canonical_test) and ('cough' not in self.root_dir):
             # usig canonical testing set which is already balanced     
             waveform = self.list_of_x[idx]
         else:

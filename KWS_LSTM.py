@@ -372,7 +372,6 @@ mfcc_cuda = torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = 
 
 speech_dataset_train = SpeechCommandsGoogle(args.dataset_path_train, 'training', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, args.epochs, device = device)
 speech_dataset_val = SpeechCommandsGoogle(args.dataset_path_train, 'validation', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.validation_batch, args.epochs, device = device)
-#speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_train, 'testing1', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, args.epochs, device = device)
 speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_test, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, args.epochs, device = device)
 
 
@@ -468,4 +467,4 @@ test_acc = torch.cat(acc_aux).float().mean().item()
 print("Test Accuracy: {0:.4f}".format(test_acc))
 
 
-#checkpoint_dict = torch.load('./checkpoints/0f451c2b-fb18-4ddb-aa18-32df3a6576a0.pkl')
+#checkpoint_dict = torch.load('./checkpoints/7e0c9f68-5f15-4080-87db-052cad588913.pkl')
