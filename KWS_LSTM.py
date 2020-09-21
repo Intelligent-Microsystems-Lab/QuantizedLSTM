@@ -35,8 +35,9 @@ parser.add_argument("--validation-batch", type=int, default=8192, help='Number o
 parser.add_argument("--epochs", type=int, default=45000, help='Epochs')
 #parser.add_argument("--CE-train", type=int, default=300, help='Epochs of Cross Entropy Training')
 parser.add_argument("--lr-divide", type=int, default=15000, help='Learning Rate divide')
-parser.add_argument("--lstm-blocks", type=int, default=6, help='How many parallel LSTM blocks') 
-parser.add_argument("--pool-method", type=str, default="max", help='Pooling method [max/avg]') 
+parser.add_argument("--lstm-blocks", type=int, default=8, help='How many parallel LSTM blocks') 
+parser.add_argument("--fc-blocks", type=int, default=8, help='How many parallel LSTM blocks') 
+parser.add_argument("--pool-method", type=str, default="avg", help='Pooling method [max/avg]') 
 parser.add_argument("--hidden", type=int, default=100, help='Number of hidden LSTM units') 
 parser.add_argument("--learning-rate", type=float, default=0.0005, help='Dropout Percentage')
 parser.add_argument("--dataloader-num-workers", type=int, default=4, help='Number Workers Dataloader')
@@ -252,6 +253,13 @@ class LSTMLayer(nn.Module):
         super(LSTMLayer, self).__init__()
         self.cell = cell(*cell_args)
 
+        torch.nn.init.uniform_(self.cell.weight_ih, a = -np.sqrt(6/cell_args[1]), b = np.sqrt(6/cell_args[1]))
+        torch.nn.init.uniform_(self.cell.weight_hh, a = -np.sqrt(6/cell_args[0]), b = np.sqrt(6/cell_args[0]))
+
+        # http://proceedings.mlr.press/v37/jozefowicz15.pdf
+        torch.nn.init.uniform_(self.cell.bias_ih, a = -0, b = 0)
+        torch.nn.init.uniform_(self.cell.bias_hh, a = 1, b = 1)
+
     def forward(self, input, state, train):
         inputs = input.unbind(0)
         outputs = []
@@ -262,11 +270,29 @@ class LSTMLayer(nn.Module):
 
         return torch.stack(outputs), state
 
+class LinLayer(nn.Module):
+    def __init__(self, inp_dim, out_dim, hp_bw, noise_level, abMVM):
+        super(LinLayer, self).__init__()
+        self.hp_bw = hp_bw 
+        self.abMVM = abMVM
+        self.noise_level = noise_level
 
+        self.weights = nn.Parameter(torch.randn(inp_dim, out_dim))
+        self.bias = nn.Parameter(torch.randn(out_dim))
+
+        torch.nn.init.uniform_(self.weights, a = -np.sqrt(6/inp_dim), b = np.sqrt(6/inp_dim))
+        torch.nn.init.uniform_(self.bias, a = -0, b = 0)
+
+
+    def forward(self, input, train):
+        noise_bias_ro = torch.randn(self.bias.t().shape, device = input.device) * self.bias.max() * self.noise_level
+
+        # what activation?
+        return quant_pass(torch.tanh((CustomMM.apply(input, self.weights, None, self.noise_level, self.hp_bw) + self.bias + noise_bias_ro)), self.abMVM, True, train)
 
 
 class KWS_LSTM(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, batch_size, device, quant_factor, quant_beta, wb, abMVM, abNM, blocks, ib, noise_level, pool_method, hp_bw): 
+    def __init__(self, input_dim, hidden_dim, output_dim, batch_size, device, quant_factor, quant_beta, wb, abMVM, abNM, blocks, ib, noise_level, pool_method, fc_blocks, hp_bw):
         super(KWS_LSTM, self).__init__()
         self.device = device
         self.hp_bw = hp_bw
@@ -282,87 +308,71 @@ class KWS_LSTM(nn.Module):
         self.output_scale = 1
         self.output_scale_hist = []
         self.n_blocks = blocks
+        self.fc_blocks = fc_blocks
         self.pool_method = pool_method
 
+        # Pooling Layer
         if pool_method == 'max':
-            self.poolL = nn.MaxPool1d(kernel_size = blocks)
+            if self.n_blocks > fc_blocks:
+                self.poolL = nn.MaxPool1d(kernel_size = int(np.ceil(self.n_blocks/fc_blocks)))
+            elif self.n_blocks < fc_blocks:
+                raise ValueError('More FC Layer than LSTM Layer')
+            else:
+                self.poolL = None
+            self.poolL2 = nn.MaxPool1d(kernel_size = int(np.ceil(64*fc_blocks/100)))
         elif pool_method == 'avg':
-            self.poolL = nn.AvgPool1d(kernel_size = blocks)
+            if self.n_blocks > fc_blocks:
+                self.poolL = nn.AvgPool1d(kernel_size = int(np.ceil(self.n_blocks/fc_blocks)))
+            elif self.n_blocks < fc_blocks:
+                raise ValueError('More FC Layer than LSTM Layer')
+            else:
+                self.poolL = None
+            self.poolL2 = nn.AvgPool1d(kernel_size = int(np.ceil(64*fc_blocks/100)))
         else:
             raise ValueError('Unknown Pooling Method')
 
-        # LSTM units
-        #self.lstmL = nn.LSTM(input_size = self.input_dim, hidden_size = self.hidden_dim, bias = True)
-        # custom LSTM unit
+        # LSTM blocks
         self.lstmBlocks = []
         for i in range(blocks):
             self.lstmBlocks.append(LSTMLayer(LSTMCell, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.hp_bw, self.device))
-            
-        self.lstmS = nn.ModuleList(self.lstmBlocks)
-        del self.lstmBlocks
-        #self.lstmL = LSTMLayer(LSTMCell, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.hp_bw, self.device)
+        self.lstmBlocks = nn.ModuleList(self.lstmBlocks)
 
-        # The linear layer that maps from hidden state space to tag space
-        self.weight_ro = nn.Parameter(torch.randn(self.hidden_dim, self.output_dim))
-        self.bias_ro = nn.Parameter(torch.randn(self.output_dim))
-        #self.outputL = nn.Linear(self.hidden_dim, self.output_dim)
+        # FC blocks
+        self.fcBlocks = []
+        for i in range(self.fc_blocks):
+            self.fcBlocks.append(LinLayer(self.hidden_dim, 64, hp_bw, noise_level, abMVM))
+        self.fcBlocks = nn.ModuleList(self.fcBlocks)
 
-        # init weights
-        # self.scale_out, self.limit_out = limit_scale(self.hidden_dim, quant_factor, quant_beta, wb)
-        # self.scale_hh, self.limit_hh  = limit_scale(self.input_dim, quant_factor, quant_beta, wb)
-        # self.scale_ih, self.limit_ih  = limit_scale(self.hidden_dim, quant_factor, quant_beta, wb)
-        # torch.nn.init.uniform_(self.weight_ro, a = -self.limit_out, b = self.limit_out)
-        # torch.nn.init.uniform_(self.lstmL.cell.weight_ih, a = -self.limit_ih, b = self.limit_ih)
-        # torch.nn.init.uniform_(self.lstmL.cell.weight_hh, a = -self.limit_hh, b = self.limit_hh)
+        # final FC layer
+        self.finFC = LinLayer(self.hidden_dim, self.output_dim, hp_bw, noise_level, abMVM)
 
-        torch.nn.init.uniform_(self.weight_ro, a = -np.sqrt(6/self.hidden_dim), b = np.sqrt(6/self.hidden_dim))
-        torch.nn.init.uniform_(self.bias_ro, a = -0, b = 0)
-
-
-        for i in range(blocks):
-            torch.nn.init.uniform_(self.lstmS[i].cell.weight_ih, a = -np.sqrt(6/self.hidden_dim), b = np.sqrt(6/self.hidden_dim))
-            torch.nn.init.uniform_(self.lstmS[i].cell.weight_hh, a = -np.sqrt(6/self.input_dim), b = np.sqrt(6/self.input_dim))
-
-            # http://proceedings.mlr.press/v37/jozefowicz15.pdf
-            torch.nn.init.uniform_(self.lstmS[i].cell.bias_ih, a = -0, b = 0)
-            torch.nn.init.uniform_(self.lstmS[i].cell.bias_hh, a = 1, b = 1)
 
 
     def forward(self, inputs, train):
-        noise_bias_ro = torch.randn(self.bias_ro.t().shape, device = self.device) * self.bias_ro.max() * self.noise_level
         # init states with zero
         self.hidden_state = (torch.zeros( inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros( inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device))
 
+        # LSTM blocks
         lstm_out = []
         for i in range(self.n_blocks):
-            temp_out, _ = self.lstmS[i](inputs, self.hidden_state, train)
+            temp_out, _ = self.lstmBlocks[i](inputs, self.hidden_state, train)
             lstm_out.append(temp_out)
             del temp_out
-        #lstm_out, self.hidden_state = self.lstmL(inputs, self.hidden_state, train)
-        
-        # read out layer - quantized
-        #outputFC = self.outputL(lstm_out[-1,:,:])
+        lstm_out = torch.cat(lstm_out, 2)[-1,:,:]
+        if self.poolL:
+            lstm_out = self.poolL(torch.unsqueeze(lstm_out, 1))[:,0,:]
+        lstm_out = quant_pass(lstm_out, self.ib, True, train)
+        lstm_out = F.pad(lstm_out, (0, self.fc_blocks*100 - lstm_out.shape[1]))
 
-        #outputFC = self.outputL(lstm_out.view((-1,self.hidden_dim))).view((inputs.shape[0],self.batch_size, self.output_dim))
-        # is the reshaping okay?
-        #outputFC = (CustomMM.apply(lstm_out.view((-1,self.hidden_dim)), self.weight_ro, None, self.noise_level, self.hp_bw) + self.bias_ro + noise_bias_ro).view((inputs.shape[0], inputs.shape[1], self.output_dim))
-        lin_layer_inp = quant_pass(self.poolL(torch.unsqueeze(torch.cat(lstm_out, 2)[-1,:,:], 1))[:,0,:], self.ib, True, train)
+        # FC blocks
+        fc_out = []
+        for i in range(self.fc_blocks):
+            fc_out.append(self.fcBlocks[i](lstm_out[:,i*100:(i+1)*100], train))
+        fc_out = quant_pass(self.poolL2(torch.unsqueeze(torch.cat(fc_out,1),1))[:,0,:], self.ib, True, train)
+        fc_out = F.pad(fc_out, (0, 100 - fc_out.shape[1]))
 
-        outputFC = (CustomMM.apply(lin_layer_inp, self.weight_ro, None, self.noise_level, self.hp_bw) + self.bias_ro + noise_bias_ro)
-        #print('----')
-        #print("{0:.4f} {1:.4f} {2:.4f}".format(outputFC.min().item(), outputFC.mean().item(),outputFC.max().item()))
-        #print("{0:.4f} {1:.4f} {2:.4f}".format(self.weight_ro.min().item(), self.weight_ro.mean().item(),self.weight_ro.max().item()))
-
-
-        # if train:
-        #     self.output_scale_hist.append(outputFC.max().item())
-        #     outputFC = outputFC / outputFC.max()
-        # else:
-        #     outputFC = outputFC / np.mean(self.output_scale_hist[-4:]) # if it works let this be a parameter
-        #output = quant_pass(torch.relu(outputFC), self.abMVM, True, train)
-        #output = quant_pass(torch.sigmoid(outputFC), self.abMVM, True, train)
-        output = quant_pass(torch.tanh(outputFC), self.abMVM, True, train)
-        #output = quant_pass(torch.softmax(outputFC, 2), self.ab, False)
+        # final FC block
+        output = self.finFC(fc_out, train)
 
         return output
 
@@ -391,7 +401,7 @@ test_dataloader = torch.utils.data.DataLoader(speech_dataset_test, batch_size=ar
 validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_size=args.validation_batch, shuffle=True, num_workers=args.dataloader_num_workers)
 
 
-model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = args.init_factor, quant_beta = args.global_beta, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = args.noise_injectionT, blocks = args.lstm_blocks, pool_method = args.pool_method, hp_bw = args.hp_bw).to(device)
+model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = args.init_factor, quant_beta = args.global_beta, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = args.noise_injectionT, blocks = args.lstm_blocks, pool_method = args.pool_method, fc_blocks = args.fc_blocks, hp_bw = args.hp_bw).to(device)
 model.to(device)
 loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)  
@@ -478,4 +488,4 @@ test_acc = torch.cat(acc_aux).float().mean().item()
 print("Test Accuracy: {0:.4f}".format(test_acc))
 
 
-#checkpoint_dict = torch.load('./checkpoints/b90af0bb-d27b-40ef-80b1-992b9d69b561.pkl')
+#checkpoint_dict = torch.load('./checkpoints/9c8bf1f3-58e5-4527-8742-2964941cbae1.pkl')
