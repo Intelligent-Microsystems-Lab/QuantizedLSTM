@@ -145,6 +145,7 @@ class SpeechCommandsGoogle(Dataset):
             selector = idx/(self.batch_size * self.epochs)
 
             if selector < self.silence_percentage:
+                idx = np.random.choice(np.argwhere(self.list_of_y == 11)[:,0],1)
                 waveform = torch.zeros(1,self.sample_rate)
             elif (selector >= self.silence_percentage) and (selector < (self.silence_percentage + self.unknown_percentage)):
                 idx = np.random.choice(np.argwhere(self.list_of_y == 10)[:,0],1)
