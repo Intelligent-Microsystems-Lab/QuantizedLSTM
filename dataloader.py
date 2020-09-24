@@ -134,7 +134,6 @@ class SpeechCommandsGoogle(Dataset):
             return self.batch_size * self.epochs
 
     def __getitem__(self, idx):
-        start_time = time.time()
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
@@ -191,6 +190,5 @@ class SpeechCommandsGoogle(Dataset):
         #waveform -= waveform.mean()
         #waveform /= waveform.std()
 
-        print(time.time() - start_time)
         return uniform_waveform[0].t(), self.list_of_y[idx]
 

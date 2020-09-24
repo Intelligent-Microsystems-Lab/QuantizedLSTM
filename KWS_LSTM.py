@@ -452,7 +452,7 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, args.epochs)):
     train_time = time.time() - start_time
 
 
-    if e%100 == 0:
+    if e%10 == 0:
         # validation
         temp_list = []
         for val_e, (x_vali, y_vali) in enumerate(islice(train_dataloader, args.validation_size)):
