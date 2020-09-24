@@ -146,7 +146,7 @@ class SpeechCommandsGoogle(Dataset):
 
             # sample noise
             import pdb; pdb.set_trace()
-            noise_sel = np.random.binomial(self.background_frequency,len(idx))
+            #noise_sel = np.random.binomial(self.background_frequency,len(idx))
 
             if selector < self.silence_percentage:
                 idx = np.random.choice(np.argwhere(self.list_of_y == 11)[:,0],1)
