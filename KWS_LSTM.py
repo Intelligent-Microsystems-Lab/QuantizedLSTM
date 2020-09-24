@@ -32,13 +32,13 @@ parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech
 parser.add_argument("--batch-size", type=int, default=256, help='Batch Size')
 parser.add_argument("--validation-size", type=int, default=3, help='Number of samples used for validation')
 parser.add_argument("--validation-batch", type=int, default=8192, help='Number of samples used for validation')
-parser.add_argument("--epochs", type=int, default=45000, help='Epochs')
+parser.add_argument("--epochs", type=int, default=20000, help='Epochs')
 #parser.add_argument("--CE-train", type=int, default=300, help='Epochs of Cross Entropy Training')
-parser.add_argument("--lr-divide", type=int, default=15000, help='Learning Rate divide')
-parser.add_argument("--lstm-blocks", type=int, default=8, help='How many parallel LSTM blocks') 
-parser.add_argument("--fc-blocks", type=int, default=8, help='How many parallel LSTM blocks') 
+parser.add_argument("--lr-divide", type=int, default=10000, help='Learning Rate divide')
+parser.add_argument("--lstm-blocks", type=int, default=0, help='How many parallel LSTM blocks') 
+parser.add_argument("--fc-blocks", type=int, default=0, help='How many parallel LSTM blocks') 
 parser.add_argument("--pool-method", type=str, default="avg", help='Pooling method [max/avg]') 
-parser.add_argument("--hidden", type=int, default=100, help='Number of hidden LSTM units') 
+parser.add_argument("--hidden", type=int, default=118, help='Number of hidden LSTM units') 
 parser.add_argument("--learning-rate", type=float, default=0.0005, help='Dropout Percentage')
 parser.add_argument("--dataloader-num-workers", type=int, default=4, help='Number Workers Dataloader')
 parser.add_argument("--validation-percentage", type=int, default=10, help='Validation Set Percentage')
@@ -46,7 +46,7 @@ parser.add_argument("--testing-percentage", type=int, default=10, help='Testing 
 parser.add_argument("--sample-rate", type=int, default=16000, help='Audio Sample Rate')
 
 #could be ramped up to 128 -> explore optimal input
-parser.add_argument("--n-mfcc", type=int, default=64, help='Number of mfc coefficients to retain') # 40 before
+parser.add_argument("--n-mfcc", type=int, default=40, help='Number of mfc coefficients to retain') # 40 before
 parser.add_argument("--win-length", type=int, default=400, help='Window size in ms') # 400
 parser.add_argument("--hop-length", type=int, default=320, help='Length of hop between STFT windows') #320
 parser.add_argument("--std-scale", type=int, default=3, help='Scaling by how many standard deviations (e.g. how many big values will be cut off: 1std = 65%, 2std = 95%), 3std=99%')
@@ -57,15 +57,15 @@ parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'u
 parser.add_argument("--global-beta", type=float, default=1.5, help='Globale Beta for quantization')
 parser.add_argument("--init-factor", type=float, default=2, help='Init factor for quantization')
 
-parser.add_argument("--noise-injectionT", type=float, default=0.1, help='Percentage of noise injected to weights')
-parser.add_argument("--noise-injectionI", type=float, default=0.1, help='Percentage of noise injected to weights')
-parser.add_argument("--quant-actMVM", type=int, default=6, help='Bits available for MVM activations/state')
+parser.add_argument("--noise-injectionT", type=float, default=0, help='Percentage of noise injected to weights')
+parser.add_argument("--noise-injectionI", type=float, default=0, help='Percentage of noise injected to weights')
+parser.add_argument("--quant-actMVM", type=int, default=8, help='Bits available for MVM activations/state')
 parser.add_argument("--quant-actNM", type=int, default=8, help='Bits available for non-MVM activations/state')
-parser.add_argument("--quant-inp", type=int, default=4, help='Bits available for inputs')
+parser.add_argument("--quant-inp", type=int, default=8, help='Bits available for inputs')
+parser.add_argument("--quant-w", type=int, default=0, help='Bits available for weights')
 
 parser.add_argument("--cy-div", type=int, default=2, help='CY division')
 parser.add_argument("--cy-scale", type=int, default=2, help='Scaling CY')
-parser.add_argument("--quant-w", type=int, default=None, help='Bits available for weights')
 parser.add_argument("--hp-bw", type=bool, default=False, help='High precision backward pass')
 
 args = parser.parse_args()
@@ -332,16 +332,21 @@ class KWS_LSTM(nn.Module):
             raise ValueError('Unknown Pooling Method')
 
         # LSTM blocks
-        self.lstmBlocks = []
-        for i in range(blocks):
-            self.lstmBlocks.append(LSTMLayer(LSTMCell, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.hp_bw, self.device))
-        self.lstmBlocks = nn.ModuleList(self.lstmBlocks)
+        if blocks != 0:
+            self.lstmBlocks = []
+            for i in range(blocks):
+                self.lstmBlocks.append(LSTMLayer(LSTMCell, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.hp_bw, self.device))
+            self.lstmBlocks = nn.ModuleList(self.lstmBlocks)
+        else:
+            self.lstmBlocks = LSTMLayer(LSTMCell, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.hp_bw, self.device)
 
         # FC blocks
-        self.fcBlocks = []
-        for i in range(self.fc_blocks):
-            self.fcBlocks.append(LinLayer(self.hidden_dim, 64, hp_bw, noise_level, abMVM))
-        self.fcBlocks = nn.ModuleList(self.fcBlocks)
+        if fc_blocks != 0:
+            self.fcBlocks = []
+            for i in range(self.fc_blocks):
+                self.fcBlocks.append(LinLayer(self.hidden_dim, 64, hp_bw, noise_level, abMVM))
+            self.fcBlocks = nn.ModuleList(self.fcBlocks)
+
 
         # final FC layer
         self.finFC = LinLayer(self.hidden_dim, self.output_dim, hp_bw, noise_level, abMVM)
@@ -353,23 +358,28 @@ class KWS_LSTM(nn.Module):
         self.hidden_state = (torch.zeros( inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros( inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device))
 
         # LSTM blocks
-        lstm_out = []
-        for i in range(self.n_blocks):
-            temp_out, _ = self.lstmBlocks[i](inputs, self.hidden_state, train)
-            lstm_out.append(temp_out)
-            del temp_out
-        lstm_out = torch.cat(lstm_out, 2)[-1,:,:]
-        if self.poolL:
-            lstm_out = self.poolL(torch.unsqueeze(lstm_out, 1))[:,0,:]
-        lstm_out = quant_pass(lstm_out, self.ib, True, train)
-        lstm_out = F.pad(lstm_out, (0, self.fc_blocks*100 - lstm_out.shape[1]))
+        if self.n_blocks != 0:
+            lstm_out = []
+            for i in range(self.n_blocks):
+                temp_out, _ = self.lstmBlocks[i](inputs, self.hidden_state, train)
+                lstm_out.append(temp_out)
+                del temp_out
+            lstm_out = torch.cat(lstm_out, 2)[-1,:,:]
+            if self.poolL:
+                lstm_out = self.poolL(torch.unsqueeze(lstm_out, 1))[:,0,:]
+            lstm_out = quant_pass(lstm_out, self.ib, True, train)
+            lstm_out = F.pad(lstm_out, (0, self.fc_blocks*100 - lstm_out.shape[1]))
+        else:
+            lstm_out, _ = self.lstmBlocks(inputs, self.hidden_state, train)
+            fc_out = quant_pass(lstm_out[-1,:,:], self.ib, True, train)
 
         # FC blocks
-        fc_out = []
-        for i in range(self.fc_blocks):
-            fc_out.append(self.fcBlocks[i](lstm_out[:,i*100:(i+1)*100], train))
-        fc_out = quant_pass(self.poolL2(torch.unsqueeze(torch.cat(fc_out,1),1))[:,0,:], self.ib, True, train)
-        fc_out = F.pad(fc_out, (0, 100 - fc_out.shape[1]))
+        if self.fc_blocks != 0:
+            fc_out = []
+            for i in range(self.fc_blocks):
+                fc_out.append(self.fcBlocks[i](lstm_out[:,i*100:(i+1)*100], train))
+            fc_out = quant_pass(self.poolL2(torch.unsqueeze(torch.cat(fc_out,1),1))[:,0,:], self.ib, True, train)
+            fc_out = F.pad(fc_out, (0, 100 - fc_out.shape[1]))
 
         # final FC block
         output = self.finFC(fc_out, train)
@@ -422,7 +432,6 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, args.epochs)):
     # train
     start_time = time.time()
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale)
-
     output = model(x_data, train = True)
     # cross entropy loss
     # if e < args.CE_train:
