@@ -32,7 +32,7 @@ parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech
 parser.add_argument("--batch-size", type=int, default=100, help='Batch Size')
 parser.add_argument("--validation-size", type=int, default=3, help='Number of samples used for validation')
 parser.add_argument("--validation-batch", type=int, default=8192, help='Number of samples used for validation')
-parser.add_argument("--epochs", type=int, default=20000, help='Epochs')
+parser.add_argument("--epochs", type=int, default=20001, help='Epochs')
 #parser.add_argument("--CE-train", type=int, default=300, help='Epochs of Cross Entropy Training')
 parser.add_argument("--lr-divide", type=int, default=10000, help='Learning Rate divide')
 parser.add_argument("--lstm-blocks", type=int, default=0, help='How many parallel LSTM blocks') 
@@ -460,7 +460,6 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, args.epochs)):
 
             output = model(x_data, train = False)
             temp_list.append((output.argmax(dim=1) == y_label).float().mean().item())
-        #val_acc.append((output.max(dim=0)[0].argmax(dim=1) == y_label).float().mean().item())
         val_acc.append(np.mean(temp_list))
 
         if best_acc < val_acc[-1]:
