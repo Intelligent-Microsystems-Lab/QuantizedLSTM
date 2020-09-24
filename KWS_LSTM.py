@@ -29,7 +29,7 @@ parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.A
 # parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02_cough', help='Path to Dataset')
 parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speech_commands_v0.02', help='Path to Dataset')
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
-parser.add_argument("--batch-size", type=int, default=256, help='Batch Size')
+parser.add_argument("--batch-size", type=int, default=100, help='Batch Size')
 parser.add_argument("--validation-size", type=int, default=3, help='Number of samples used for validation')
 parser.add_argument("--validation-batch", type=int, default=8192, help='Number of samples used for validation')
 parser.add_argument("--epochs", type=int, default=20000, help='Epochs')
@@ -40,14 +40,13 @@ parser.add_argument("--fc-blocks", type=int, default=0, help='How many parallel 
 parser.add_argument("--pool-method", type=str, default="avg", help='Pooling method [max/avg]') 
 parser.add_argument("--hidden", type=int, default=118, help='Number of hidden LSTM units') 
 parser.add_argument("--learning-rate", type=float, default=0.0005, help='Dropout Percentage')
-parser.add_argument("--dataloader-num-workers", type=int, default=0, help='Number Workers Dataloader')
+parser.add_argument("--dataloader-num-workers", type=int, default=8, help='Number Workers Dataloader')
 parser.add_argument("--validation-percentage", type=int, default=10, help='Validation Set Percentage')
 parser.add_argument("--testing-percentage", type=int, default=10, help='Testing Set Percentage')
 parser.add_argument("--sample-rate", type=int, default=16000, help='Audio Sample Rate')
 
 #could be ramped up to 128 -> explore optimal input
 parser.add_argument("--n-mfcc", type=int, default=40, help='Number of mfc coefficients to retain') # 40 before
-
 
 parser.add_argument("--background-volume", type=float, default=.1, help='How loud the background noise should be, between 0 and 1.') 
 parser.add_argument("--background-frequency", type=float, default=.8, help='How many of the training samples have background noise mixed in.') 
@@ -400,8 +399,8 @@ def pre_processing(x, y, device, mfcc_cuda, std_scale):
     batch_size = x.shape[0]
 
     x =  mfcc_cuda(x.to(device))
-    #x -= x.reshape((batch_size, -1 )).mean(axis=1)[:, None, None]
-    #x /= (x.reshape((batch_size, -1 )).std(axis=1)*std_scale)[:, None, None]
+    x -= x.reshape((batch_size, -1 )).mean(axis=1)[:, None, None]
+    x /= (x.reshape((batch_size, -1 )).std(axis=1)*std_scale)[:, None, None]
     x =  x.permute(2,0,1)
     y =  y.view((-1)).to(device)
 
@@ -423,7 +422,8 @@ validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_si
 model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = args.init_factor, quant_beta = args.global_beta, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = args.noise_injectionT, blocks = args.lstm_blocks, pool_method = args.pool_method, fc_blocks = args.fc_blocks, hp_bw = args.hp_bw).to(device)
 model.to(device)
 loss_fn = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)  
+#optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)  
+optimizer = torch.optim.SGD(model.parameters(), lr=args.learning_rate)  
 
 best_acc = 0
 train_acc = []
@@ -442,13 +442,7 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, args.epochs)):
     start_time = time.time()
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale)
     output = model(x_data, train = True)
-    # cross entropy loss
-    # if e < args.CE_train:
-    #     loss_val = loss_fn(output.view(-1, output.shape[-1]), torch.tensor(y_label.tolist()*output.shape[0]).to(device))
-    # # max pooling loss
-    # else:
-    #     loss_val = loss_fn(output[(output.max(dim=2)[0]).max(dim=0)[1], torch.tensor(range(args.batch_size)), :], y_label)
-    # train_acc.append((output.max(dim=0)[0].argmax(dim =1) == y_label).float().mean().item())
+    
     loss_val = loss_fn(output, y_label)
     train_acc.append((output.argmax(dim=1) == y_label).float().mean().item())
 
@@ -457,32 +451,34 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, args.epochs)):
     optimizer.zero_grad()
     train_time = time.time() - start_time
 
-    # validation
-    temp_list = []
-    for val_e, (x_vali, y_vali) in enumerate(islice(train_dataloader, args.validation_size)):
-        x_data, y_label = pre_processing(x_vali, y_vali, device, mfcc_cuda, args.std_scale)
-
-        output = model(x_data, train = False)
-        temp_list.append((output.argmax(dim=1) == y_label).float().mean().item())
-    #val_acc.append((output.max(dim=0)[0].argmax(dim=1) == y_label).float().mean().item())
-    val_acc.append(np.mean(temp_list))
-
-    if best_acc < val_acc[-1]:
-        best_acc = val_acc[-1]
-        checkpoint_dict = {
-            'model_dict' : model.state_dict(), 
-            'optimizer'  : optimizer.state_dict(),
-            'epoch'      : e, 
-            'best_vali'  : best_acc, 
-            'arguments'  : args,
-            'train_loss' : loss_val,
-            'train_curve': train_acc,
-            'val_curve'  : val_acc
-        }
-        torch.save(checkpoint_dict, './checkpoints/'+model_uuid+'.pkl')
-        del checkpoint_dict
 
     if e%100 == 0:
+        # validation
+        temp_list = []
+        for val_e, (x_vali, y_vali) in enumerate(islice(train_dataloader, args.validation_size)):
+            x_data, y_label = pre_processing(x_vali, y_vali, device, mfcc_cuda, args.std_scale)
+
+            output = model(x_data, train = False)
+            temp_list.append((output.argmax(dim=1) == y_label).float().mean().item())
+        #val_acc.append((output.max(dim=0)[0].argmax(dim=1) == y_label).float().mean().item())
+        val_acc.append(np.mean(temp_list))
+
+        if best_acc < val_acc[-1]:
+            best_acc = val_acc[-1]
+            checkpoint_dict = {
+                'model_dict' : model.state_dict(), 
+                'optimizer'  : optimizer.state_dict(),
+                'epoch'      : e, 
+                'best_vali'  : best_acc, 
+                'arguments'  : args,
+                'train_loss' : loss_val,
+                'train_curve': train_acc,
+                'val_curve'  : val_acc
+            }
+            torch.save(checkpoint_dict, './checkpoints/'+model_uuid+'.pkl')
+            del checkpoint_dict
+
+    
         print("{0:05d}     {1:.4f}      {2:.4f}     {3:.4f}     {4:.4f}".format(e, loss_val, train_acc[-1], best_acc, train_time))
         plot_curves(train_acc, val_acc, model_uuid)
 
