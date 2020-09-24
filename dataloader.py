@@ -93,6 +93,7 @@ class SpeechCommandsGoogle(Dataset):
         self.unknown_percentage = unknown_percentage
         self.time_shift_ms = time_shift_ms   
 
+        self.noise = torch.distributions.bernoulli.Bernoulli(torch.tensor([self.background_frequency]))
 
         self.list_of_x = []
         self.list_of_labels = []
@@ -111,7 +112,6 @@ class SpeechCommandsGoogle(Dataset):
                         self.list_of_y.append(words.index('unknown'))
                         self.list_of_labels.append('unknown')
                     else:
-                        #thats for canonical testing
                         self.list_of_y.append(words.index(cur_dir))
                         self.list_of_labels.append(cur_dir)
                 else:
@@ -144,20 +144,33 @@ class SpeechCommandsGoogle(Dataset):
             # balance training and validation samples
             selector = idx/(self.batch_size * self.epochs)
 
-            # sample noise
-            import pdb; pdb.set_trace()
-            #noise_sel = np.random.binomial(self.background_frequency,len(idx))
-
             if selector < self.silence_percentage:
-                idx = np.random.choice(np.argwhere(self.list_of_y == 11)[:,0],1)
+                waveform = torch.zeros(1,self.sample_rate)
             elif (selector >= self.silence_percentage) and (selector < (self.silence_percentage + self.unknown_percentage)):
                 idx = np.random.choice(np.argwhere(self.list_of_y == 10)[:,0],1)
+                waveform = self.list_of_x[idx.item()]
             else:
                 y_sel = int(np.round(((selector - .2)/.8 * (len(self.words)-2)),0))
                 idx = np.random.choice(np.argwhere(self.list_of_y == y_sel)[:,0],1)
+                waveform = self.list_of_x[idx.item()]
 
-            waveform = self.list_of_x[idx.item()]
+            # random time shift
+            start_idx = np.random.choice(np.arange(0, self.time_shift_ms))
+            if (waveform.shape[1] - start_idx) >= self.sample_rate:
+                waveform = waveform[0,start_idx:(waveform.shape[1] + start_idx)]
+            elif (waveform.shape[1] - start_idx) < self.sample_rate:
+                pad_size = int((self.sample_rate - (waveform.shape[1] - start_idx))/2)
+                zero_waveform = torch.zeros((1,self.sample_rate))
+                zero_waveform[0,pad_size:(pad_size+(waveform.shape[1] - start_idx))] = waveform[0,start_idx:]
 
+            # sample noise
+            if self.noise.sample():
+                noise = np.random.choice(np.argwhere(self.list_of_y == 11)[:,0],1)
+                start_noise = np.random.choice(np.arange(0, noise.shape[1] - (self.sample_rate+1)))
+                noise_mul = noise[0, start_noise:(start_noise+self.sample_rate)].view(1,-1) * self.background_volume
+                waveform += noise_mul
+
+        waveform = torch.clamp(waveform, min = -1., max = 1.)
 
         if waveform.shape[1] > self.sample_rate:
             # sample random 16000 from longer sequence
