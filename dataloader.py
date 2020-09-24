@@ -65,7 +65,7 @@ def which_set(filename, validation_percentage, testing_percentage):
 class SpeechCommandsGoogle(Dataset):
     """Google Speech Command Dataset configured from Hello Edge"""
 
-    def __init__(self, root_dir, train_test_val, val_perc, test_perc, words, sample_rate, batch_size, epochs, device, non_canonical_test = False, transform=None):
+    def __init__(self, root_dir, train_test_val, val_perc, test_perc, words, sample_rate, batch_size, epochs, device, background_volume, background_frequency, silence_percentage, unknown_percentage, time_shift_ms, non_canonical_test = False, transform=None):
         """
         Args:
             root_dir (string): Directory with all the recording.
@@ -87,6 +87,11 @@ class SpeechCommandsGoogle(Dataset):
         self.batch_size = batch_size
         self.epochs = epochs
         self.non_canonical_test = non_canonical_test
+        self.background_volume = background_volume
+        self.background_frequency = background_frequency
+        self.silence_percentage = silence_percentage
+        self.unknown_percentage = unknown_percentage
+        self.time_shift_ms = time_shift_ms   
 
 
         self.list_of_x = []
@@ -137,6 +142,11 @@ class SpeechCommandsGoogle(Dataset):
             waveform = self.list_of_x[idx]
         else:
             # balance training and validation samples
+
+            # sample noise
+            import pdb; pdb.set_trace()
+            noise_sel = np.random.binomial(self.background_frequency,len(idx))
+
             y_sel = int(idx/(self.batch_size * self.epochs) *len(self.words))
             idx = np.random.choice(np.argwhere(self.list_of_y == y_sel)[:,0],1)
             waveform = self.list_of_x[idx.item()]

@@ -47,6 +47,15 @@ parser.add_argument("--sample-rate", type=int, default=16000, help='Audio Sample
 
 #could be ramped up to 128 -> explore optimal input
 parser.add_argument("--n-mfcc", type=int, default=40, help='Number of mfc coefficients to retain') # 40 before
+
+
+parser.add_argument("--background-volume", type=float, default=.1, help='How loud the background noise should be, between 0 and 1.') 
+parser.add_argument("--background-frequency", type=float, default=.8, help='How many of the training samples have background noise mixed in.') 
+parser.add_argument('--silence-percentage', type=float, default=10.0, help='How much of the training data should be silence.')
+parser.add_argument('--unknown-percentage', type=float, default=10.0, help='How much of the training data should be unknown words.')
+parser.add_argument('--time-shift-ms', type=float, default=100.0, help='Range to randomly shift the training audio by in time.')
+
+
 parser.add_argument("--win-length", type=int, default=400, help='Window size in ms') # 400
 parser.add_argument("--hop-length", type=int, default=320, help='Length of hop between STFT windows') #320
 parser.add_argument("--std-scale", type=int, default=3, help='Scaling by how many standard deviations (e.g. how many big values will be cut off: 1std = 65%, 2std = 95%), 3std=99%')
@@ -401,9 +410,9 @@ def pre_processing(x, y, device, mfcc_cuda, std_scale):
 
 mfcc_cuda = torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, melkwargs = {'win_length' : args.win_length, 'hop_length':args.hop_length}).to(device)
 
-speech_dataset_train = SpeechCommandsGoogle(args.dataset_path_train, 'training', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, args.epochs, device = device)
-speech_dataset_val = SpeechCommandsGoogle(args.dataset_path_train, 'validation', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.validation_batch, args.epochs, device = device)
-speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_test, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, args.epochs, device = device)
+speech_dataset_train = SpeechCommandsGoogle(args.dataset_path_train, 'training', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, args.epochs, device, background_volume, background_frequency, silence_percentage, unknown_percentage, time_shift_ms,)
+speech_dataset_val = SpeechCommandsGoogle(args.dataset_path_train, 'validation', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.validation_batch, args.epochs, device, background_volume, background_frequency, silence_percentage, unknown_percentage, time_shift_ms,)
+speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_test, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, args.epochs, device, background_volume, background_frequency, silence_percentage, unknown_percentage, time_shift_ms,)
 
 
 train_dataloader = torch.utils.data.DataLoader(speech_dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
