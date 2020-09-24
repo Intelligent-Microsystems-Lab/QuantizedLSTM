@@ -158,7 +158,7 @@ class SpeechCommandsGoogle(Dataset):
             # random time shift
             start_idx = int(np.random.choice(np.arange(0, self.time_shift_ms)))
             if (waveform.shape[1] - start_idx) >= self.sample_rate:
-                waveform = waveform[0,start_idx:(waveform.shape[1] + start_idx)]
+                waveform = waveform[0,start_idx:(waveform.shape[1] + start_idx)].view(1,-1)
             elif (waveform.shape[1] - start_idx) < self.sample_rate:
                 pad_size = int((self.sample_rate - (waveform.shape[1] - start_idx))/2)
                 zero_waveform = torch.zeros((1,self.sample_rate))
@@ -170,7 +170,6 @@ class SpeechCommandsGoogle(Dataset):
                 noise_wave = self.list_of_x[np.random.choice(np.argwhere(self.list_of_y == 11)[:,0],1).item()]
                 start_noise = int(np.random.choice(np.arange(0, noise_wave.shape[1] - (self.sample_rate+1))))
                 noise_mul = noise_wave[0, start_noise:(start_noise+self.sample_rate)].view(1,-1) * self.background_volume
-                import pdb; pdb.set_trace()
                 waveform += noise_mul
 
         waveform = torch.clamp(waveform, min = -1., max = 1.)
