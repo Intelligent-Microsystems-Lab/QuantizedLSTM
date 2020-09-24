@@ -142,13 +142,20 @@ class SpeechCommandsGoogle(Dataset):
             waveform = self.list_of_x[idx]
         else:
             # balance training and validation samples
+            selector = idx/(self.batch_size * self.epochs)
 
             # sample noise
             import pdb; pdb.set_trace()
             noise_sel = np.random.binomial(self.background_frequency,len(idx))
 
-            y_sel = int(idx/(self.batch_size * self.epochs) *len(self.words))
-            idx = np.random.choice(np.argwhere(self.list_of_y == y_sel)[:,0],1)
+            if selector < self.silence_percentage:
+                idx = np.random.choice(np.argwhere(self.list_of_y == 11)[:,0],1)
+            elif (selector >= self.silence_percentage) and (selector < (self.silence_percentage + self.unknown_percentage))
+                idx = np.random.choice(np.argwhere(self.list_of_y == 10)[:,0],1)
+            else:
+                y_sel = int(np.round(((selector - .2)/.8 * (len(self.words)-2)),0))
+                idx = np.random.choice(np.argwhere(self.list_of_y == y_sel)[:,0],1)
+
             waveform = self.list_of_x[idx.item()]
 
 
