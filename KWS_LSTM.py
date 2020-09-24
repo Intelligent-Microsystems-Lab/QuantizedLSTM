@@ -51,8 +51,8 @@ parser.add_argument("--n-mfcc", type=int, default=40, help='Number of mfc coeffi
 
 parser.add_argument("--background-volume", type=float, default=.1, help='How loud the background noise should be, between 0 and 1.') 
 parser.add_argument("--background-frequency", type=float, default=.8, help='How many of the training samples have background noise mixed in.') 
-parser.add_argument('--silence-percentage', type=float, default=10.0, help='How much of the training data should be silence.')
-parser.add_argument('--unknown-percentage', type=float, default=10.0, help='How much of the training data should be unknown words.')
+parser.add_argument('--silence-percentage', type=float, default=.1, help='How much of the training data should be silence.')
+parser.add_argument('--unknown-percentage', type=float, default=.1, help='How much of the training data should be unknown words.')
 parser.add_argument('--time-shift-ms', type=float, default=100.0, help='Range to randomly shift the training audio by in time.')
 
 
@@ -68,9 +68,9 @@ parser.add_argument("--init-factor", type=float, default=2, help='Init factor fo
 
 parser.add_argument("--noise-injectionT", type=float, default=0, help='Percentage of noise injected to weights')
 parser.add_argument("--noise-injectionI", type=float, default=0, help='Percentage of noise injected to weights')
-parser.add_argument("--quant-actMVM", type=int, default=8, help='Bits available for MVM activations/state')
-parser.add_argument("--quant-actNM", type=int, default=8, help='Bits available for non-MVM activations/state')
-parser.add_argument("--quant-inp", type=int, default=8, help='Bits available for inputs')
+parser.add_argument("--quant-actMVM", type=int, default=0, help='Bits available for MVM activations/state')
+parser.add_argument("--quant-actNM", type=int, default=0, help='Bits available for non-MVM activations/state')
+parser.add_argument("--quant-inp", type=int, default=0, help='Bits available for inputs')
 parser.add_argument("--quant-w", type=int, default=0, help='Bits available for weights')
 
 parser.add_argument("--cy-div", type=int, default=2, help='CY division')
