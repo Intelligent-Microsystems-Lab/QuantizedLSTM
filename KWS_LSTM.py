@@ -30,6 +30,7 @@ parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.A
 parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speech_commands_v0.02', help='Path to Dataset')
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
 parser.add_argument("--batch-size", type=int, default=100, help='Batch Size')
+parser.add_argument("--validation-batch", type=int, default=8192, help='Number of samples used for validation')
 parser.add_argument("--training-steps", type=str, default='10000,10000,10000', help='Training Steps')
 parser.add_argument("--learning-rate", type=str, default='0.0005,0.0001,0.00002', help='Learning Rate')
 parser.add_argument("--lr-divide", type=int, default=10000, help='Learning Rate divide')
@@ -398,13 +399,13 @@ speech_dataset_train = SpeechCommandsGoogle(args.dataset_path_train, 'training',
 speech_dataset_val = SpeechCommandsGoogle(args.dataset_path_train, 'validation', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, epoch_list[-1], device, args.background_volume, args.background_frequency, args.silence_percentage, args.unknown_percentage, args.time_shift_ms)
 speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_test, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, epoch_list[-1], device, args.background_volume, args.background_frequency, args.silence_percentage, args.unknown_percentage, args.time_shift_ms, non_canonical_test = not args.canonical_testing)
 
-speech_dataset_val.size = np.sum(np.unique(speech_dataset_val.list_of_y, return_counts= True)[1][:10])/.8
+speech_dataset_val.size = int(np.sum(np.unique(speech_dataset_val.list_of_y, return_counts= True)[1][:10])/.8)
 if not args.canonical_testing:
     speech_dataset_test.size = np.sum(np.unique(speech_dataset_test.list_of_y, return_counts= True)[1][:10])/.8
 
 train_dataloader = torch.utils.data.DataLoader(speech_dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
 test_dataloader = torch.utils.data.DataLoader(speech_dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
-validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
+validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_size=args.validation_batch, shuffle=True, num_workers=args.dataloader_num_workers)
 
 model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = args.init_factor, quant_beta = args.global_beta, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = args.noise_injectionT, blocks = args.lstm_blocks, pool_method = args.pool_method, fc_blocks = args.fc_blocks).to(device)
 model.to(device)
@@ -440,7 +441,8 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
     optimizer.zero_grad()
 
     #print("Step {0:05d} Acc {1:.4f} Loss {1:.4f}".format(e,train_acc[-1],loss_val.item()))
-    if e%100 == 0 or e == epoch_list[-1]-1:
+    import pdb; pdb.set_trace()
+    if (e%100 == 0) or (e == epoch_list[-1]-1):
         # validation
         temp_list = []
         for val_e, (x_vali, y_vali) in enumerate(validation_dataloader):

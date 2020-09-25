@@ -127,7 +127,7 @@ class SpeechCommandsGoogle(Dataset):
         if self.train_test_val == 'testing':
             self.size = len(self.list_of_labels)
         else:
-            self.size =  self.batch_size * self.epochs
+            self.size = int(self.batch_size * self.epochs)
         
     def __len__(self):
         return self.size
@@ -141,7 +141,7 @@ class SpeechCommandsGoogle(Dataset):
             waveform = self.list_of_x[idx]
         else:
             # balance training and validation samples
-            selector = idx/(self.batch_size * self.epochs)
+            selector = idx/self.size
 
             if selector < self.silence_percentage:
                 idx = np.random.choice(np.argwhere(self.list_of_y == 11)[:,0],1)
