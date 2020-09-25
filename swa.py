@@ -23,8 +23,8 @@ else:
 
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("--checkpoint", type=str, default='a24af925-a6be-4338-81a0-a9522e3128be', help='checkpoint to perfrom SWA on')
-parser.add_argument("--training-cycles", type=int, default=10, help='Training Steps')
-parser.add_argument("--cycle-steps", type=int, default=20, help='Training Steps')
+parser.add_argument("--training-cycles", type=int, default=100, help='Training Steps')
+parser.add_argument("--cycle-steps", type=int, default=30, help='Training Steps')
 args_swa = parser.parse_args()
 
 
@@ -66,12 +66,15 @@ w_swa = model.state_dict()
 
 n_models = 1
 
+print("SWA Training")
+print(model_uuid)
+print("Collecting Models")
 for e, (x_data, y_label) in enumerate(train_dataloader):
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale)
     output = model(x_data, train = True)
     
     loss_val = loss_fn(output, y_label)
-    train_acc.append((output.argmax(dim=1) == y_label).float().mean().item())
+    train_acc = (output.argmax(dim=1) == y_label).float().mean().item()
 
     loss_val.backward()
     optimizer.step()
@@ -79,16 +82,17 @@ for e, (x_data, y_label) in enumerate(train_dataloader):
 
     scheduler.step()
 
-    if e%args_swa.cycle_steps == 0:
+    if (e%args_swa.cycle_steps == 0) or (e == len(train_dataloader)-1):
+        print("Cycle {0:03d}, Train Acc {1:.4f}".format(int(e/args_swa.cycle_steps), train_acc))
         new_w = model.state_dict()
         for w_name in w_swa:
             w_swa[w_name] = (w_swa[w_name] * n_models + new_w[w_name])/(n_models + 1)
         n_models += 1
 
-
 # set model to average
 model.load_state_dict(w_swa)
 
+# evaluate model
 acc_aux = []
 model.noise_level = args.noise_injectionI
 for i_batch, sample_batch in enumerate(test_dataloader):
@@ -100,3 +104,10 @@ for i_batch, sample_batch in enumerate(test_dataloader):
 
 test_acc = torch.cat(acc_aux).float().mean().item()
 print("Test Accuracy: {0:.4f}".format(test_acc))
+
+
+checkpoint_dict = {
+    'model_dict' : model.state_dict(), 
+    'arguments'  : args_swa
+}
+torch.save(checkpoint_dict, './checkpoints/'+model_uuid+'.pkl')
