@@ -286,8 +286,6 @@ class KWS_LSTM(nn.Module):
         self.finFC = torch.nn.Linear(in_features = self.hidden_dim, out_features = self.output_dim, bias = True)
 
 
-
-
     def forward(self, inputs, train):
         # init states with zero
 

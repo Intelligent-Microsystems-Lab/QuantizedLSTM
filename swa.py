@@ -60,7 +60,7 @@ model_uuid = str(uuid.uuid4())
 model.to(device)
 loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.SGD(model.parameters(), lr=0.0005)
-scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.0005, max_lr=0.00002, step_size_up = args_swa.cycle_steps, step_size_down = 1)
+scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.0001, max_lr=0.00002, step_size_up = args_swa.cycle_steps, step_size_down = 1)
 
 w_swa = model.state_dict()
 

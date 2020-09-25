@@ -6,9 +6,6 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 import numpy as np
 
-
-
-
 MAX_NUM_WAVS_PER_CLASS = 2**27 - 1  # ~134M
 
 def which_set(filename, validation_percentage, testing_percentage):
@@ -184,10 +181,6 @@ class SpeechCommandsGoogle(Dataset):
             uniform_waveform[0,pad_size:(pad_size+waveform.shape[1])] =  waveform[0,:]
         else:
             uniform_waveform = waveform
-
-        #waveform = self.transform(uniform_waveform)
-        #waveform -= waveform.mean()
-        #waveform /= waveform.std()
 
         return uniform_waveform[0].t(), self.list_of_y[idx]
 

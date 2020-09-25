@@ -44,14 +44,12 @@ parser.add_argument("--testing-percentage", type=int, default=10, help='Testing 
 parser.add_argument("--sample-rate", type=int, default=16000, help='Audio Sample Rate')
 parser.add_argument("--canonical-testing", type=bool, default=False, help='Whether to use the canoncial test data.')
 
-#could be ramped up to 128 -> explore optimal input
 parser.add_argument("--n-mfcc", type=int, default=10, help='Number of mfc coefficients to retain') # 40 before
 parser.add_argument("--background-volume", type=float, default=.1, help='How loud the background noise should be, between 0 and 1.') 
 parser.add_argument("--background-frequency", type=float, default=.8, help='How many of the training samples have background noise mixed in.') 
 parser.add_argument('--silence-percentage', type=float, default=.1, help='How much of the training data should be silence.')
 parser.add_argument('--unknown-percentage', type=float, default=.1, help='How much of the training data should be unknown words.')
 parser.add_argument('--time-shift-ms', type=float, default=100.0, help='Range to randomly shift the training audio by in time.')
-
 
 parser.add_argument("--win-length", type=int, default=400, help='Window size in ms') # 400
 parser.add_argument("--hop-length", type=int, default=330, help='Length of hop between STFT windows') #320
@@ -80,7 +78,7 @@ lr_list = [float(x) for x in args.learning_rate.split(',')]
 
 
 
-mfcc_cuda = torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, log_mels = True, melkwargs = {'win_length' : args.win_length, 'hop_length':args.hop_length}).to(device)
+mfcc_cuda = torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, log_mels = False, melkwargs = {'win_length' : args.win_length, 'hop_length':args.hop_length}).to(device)
 
 speech_dataset_train = SpeechCommandsGoogle(args.dataset_path_train, 'training', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, epoch_list[-1], device, args.background_volume, args.background_frequency, args.silence_percentage, args.unknown_percentage, args.time_shift_ms)
 
@@ -109,6 +107,7 @@ train_acc = []
 val_acc = []
 model_uuid = str(uuid.uuid4())
 
+
 print(args)
 print(model_uuid)
 print("Start Training:")
@@ -121,7 +120,6 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
             seg_count += 1
 
     # train
-    import pdb; pdb.set_trace()
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale)
     output = model(x_data, train = True)
     
