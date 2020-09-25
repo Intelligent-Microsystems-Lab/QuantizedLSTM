@@ -38,11 +38,14 @@ mfcc_cuda = torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = 
 
 speech_dataset_train = SpeechCommandsGoogle(args.dataset_path_train, 'training', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, int(args_swa.cycle_steps * args_swa.training_cycles), device, args.background_volume, args.background_frequency, args.silence_percentage, args.unknown_percentage, args.time_shift_ms)
 speech_dataset_val = SpeechCommandsGoogle(args.dataset_path_train, 'validation', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, int(args_swa.cycle_steps * args_swa.training_cycles), device, args.background_volume, args.background_frequency, args.silence_percentage, args.unknown_percentage, args.time_shift_ms)
-speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_test, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, int(args_swa.cycle_steps * args_swa.training_cycles), device, args.background_volume, args.background_frequency, args.silence_percentage, args.unknown_percentage, args.time_shift_ms, non_canonical_test = not args.canonical_testing)
+if not args.canonical_testing:
+    speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_train, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, int(args_swa.cycle_steps * args_swa.training_cycles), device, args.background_volume, args.background_frequency, args.silence_percentage, args.unknown_percentage, args.time_shift_ms, non_canonical_test = not args.canonical_testing)
+    speech_dataset_test.size = int(np.sum(np.unique(speech_dataset_test.list_of_y, return_counts= True)[1][:10])/.8)
+else:
+    speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_test, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, int(args_swa.cycle_steps * args_swa.training_cycles), device, args.background_volume, args.background_frequency, args.silence_percentage, args.unknown_percentage, args.time_shift_ms, non_canonical_test = not args.canonical_testing)
 
 speech_dataset_val.size = int(np.sum(np.unique(speech_dataset_val.list_of_y, return_counts= True)[1][:10])/.8)
-if not args.canonical_testing:
-    speech_dataset_test.size = int(np.sum(np.unique(speech_dataset_test.list_of_y, return_counts= True)[1][:10])/.8)
+
 
 train_dataloader = torch.utils.data.DataLoader(speech_dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
 test_dataloader = torch.utils.data.DataLoader(speech_dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
@@ -56,13 +59,14 @@ model_uuid = str(uuid.uuid4())
 
 model.to(device)
 loss_fn = nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD(model.parameters(), lr=lr_list[0])
+optimizer = torch.optim.SGD(model.parameters(), lr=0.0005)
 scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.0005, max_lr=0.00002, step_size_up = args_swa.cycle_steps, step_size_down = 1)
 
-w_swa = 
+w_swa = model.state_dict()
+
 n_models = 1
 
-for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
+for e, (x_data, y_label) in enumerate(train_dataloader):
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale)
     output = model(x_data, train = True)
     
@@ -73,17 +77,19 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
     optimizer.step()
     optimizer.zero_grad()
 
-	scheduler.step()
+    scheduler.step()
 
-	if e%args_swa.cycle_steps == 0:
-		w_swa = (w_swa * n_models + )/n_models
-		n_models += 1
+    if e%args_swa.cycle_steps == 0:
+        new_w = model.state_dict()
+        for w_name in w_swa:
+            w_swa[w_name] = (w_swa[w_name] * n_models + new_w[w_name])/(n_models + 1)
+        n_models += 1
 
 
 # set model to average
+model.load_state_dict(w_swa)
 
 acc_aux = []
-
 model.noise_level = args.noise_injectionI
 for i_batch, sample_batch in enumerate(test_dataloader):
     x_data, y_label = sample_batch

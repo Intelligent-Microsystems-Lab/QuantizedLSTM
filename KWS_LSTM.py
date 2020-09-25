@@ -11,6 +11,7 @@ import torch.optim as optim
 import numpy as np
 
 from dataloader import SpeechCommandsGoogle
+from models import KWS_LSTM, pre_processing
 from figure_scripts import plot_curves
 
 torch.manual_seed(42)
@@ -38,7 +39,7 @@ parser.add_argument("--lstm-blocks", type=int, default=0, help='How many paralle
 parser.add_argument("--fc-blocks", type=int, default=0, help='How many parallel LSTM blocks') 
 parser.add_argument("--pool-method", type=str, default="avg", help='Pooling method [max/avg]') 
 parser.add_argument("--hidden", type=int, default=118, help='Number of hidden LSTM units') 
-parser.add_argument("--dataloader-num-workers", type=int, default=8, help='Number Workers Dataloader')
+parser.add_argument("--dataloader-num-workers", type=int, default=0, help='Number Workers Dataloader')
 parser.add_argument("--validation-percentage", type=int, default=10, help='Validation Set Percentage')
 parser.add_argument("--testing-percentage", type=int, default=10, help='Testing Set Percentage')
 parser.add_argument("--sample-rate", type=int, default=16000, help='Audio Sample Rate')
@@ -85,11 +86,15 @@ mfcc_cuda = torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = 
 
 speech_dataset_train = SpeechCommandsGoogle(args.dataset_path_train, 'training', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, epoch_list[-1], device, args.background_volume, args.background_frequency, args.silence_percentage, args.unknown_percentage, args.time_shift_ms)
 speech_dataset_val = SpeechCommandsGoogle(args.dataset_path_train, 'validation', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, epoch_list[-1], device, args.background_volume, args.background_frequency, args.silence_percentage, args.unknown_percentage, args.time_shift_ms)
-speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_test, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, epoch_list[-1], device, args.background_volume, args.background_frequency, args.silence_percentage, args.unknown_percentage, args.time_shift_ms, non_canonical_test = not args.canonical_testing)
+if not args.canonical_testing:
+    speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_train, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, epoch_list[-1], device, args.background_volume, args.background_frequency, args.silence_percentage, args.unknown_percentage, args.time_shift_ms, non_canonical_test = not args.canonical_testing)
+    speech_dataset_test.size = int(np.sum(np.unique(speech_dataset_test.list_of_y, return_counts= True)[1][:10])/.8)
+else:
+    speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_test, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, epoch_list[-1], device, args.background_volume, args.background_frequency, args.silence_percentage, args.unknown_percentage, args.time_shift_ms, non_canonical_test = not args.canonical_testing)
 
 speech_dataset_val.size = int(np.sum(np.unique(speech_dataset_val.list_of_y, return_counts= True)[1][:10])/.8)
-if not args.canonical_testing:
-    speech_dataset_test.size = int(np.sum(np.unique(speech_dataset_test.list_of_y, return_counts= True)[1][:10])/.8)
+
+    
 
 train_dataloader = torch.utils.data.DataLoader(speech_dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
 test_dataloader = torch.utils.data.DataLoader(speech_dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
@@ -163,7 +168,8 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
 
 # Testing
 print("Start Testing:")
-checkpoint_dict = torch.load('./checkpoints/'+model_uuid+'.pkl')
+#checkpoint_dict = torch.load('./checkpoints/'+model_uuid+'.pkl')
+checkpoint_dict = torch.load('./checkpoints/a24af925-a6be-4338-81a0-a9522e3128be.pkl')
 model.load_state_dict(checkpoint_dict['model_dict'])
 acc_aux = []
 
