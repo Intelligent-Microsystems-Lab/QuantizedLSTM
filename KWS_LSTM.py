@@ -29,21 +29,19 @@ parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.A
 # parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02_cough', help='Path to Dataset')
 parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speech_commands_v0.02', help='Path to Dataset')
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
-parser.add_argument("--batch-size", type=int, default=256, help='Batch Size')
-parser.add_argument("--validation-size", type=int, default=3, help='Number of samples used for validation')
-parser.add_argument("--validation-batch", type=int, default=8192, help='Number of samples used for validation')
-parser.add_argument("--epochs", type=int, default=20001, help='Epochs')
-#parser.add_argument("--CE-train", type=int, default=300, help='Epochs of Cross Entropy Training')
+parser.add_argument("--batch-size", type=int, default=100, help='Batch Size')
+parser.add_argument("--training-steps", type=str, default='10000,10000,10000', help='Training Steps')
+parser.add_argument("--learning-rate", type=str, default='0.0005,0.0001,0.00002', help='Learning Rate')
 parser.add_argument("--lr-divide", type=int, default=10000, help='Learning Rate divide')
 parser.add_argument("--lstm-blocks", type=int, default=0, help='How many parallel LSTM blocks') 
 parser.add_argument("--fc-blocks", type=int, default=0, help='How many parallel LSTM blocks') 
 parser.add_argument("--pool-method", type=str, default="avg", help='Pooling method [max/avg]') 
 parser.add_argument("--hidden", type=int, default=118, help='Number of hidden LSTM units') 
-parser.add_argument("--learning-rate", type=float, default=0.0005, help='Dropout Percentage')
 parser.add_argument("--dataloader-num-workers", type=int, default=8, help='Number Workers Dataloader')
 parser.add_argument("--validation-percentage", type=int, default=10, help='Validation Set Percentage')
 parser.add_argument("--testing-percentage", type=int, default=10, help='Testing Set Percentage')
 parser.add_argument("--sample-rate", type=int, default=16000, help='Audio Sample Rate')
+parser.add_argument("--canonical-testing", type=bool, default=False, help='Whether to use the canoncial test data.')
 
 #could be ramped up to 128 -> explore optimal input
 parser.add_argument("--n-mfcc", type=int, default=10, help='Number of mfc coefficients to retain') # 40 before
@@ -56,7 +54,7 @@ parser.add_argument('--time-shift-ms', type=float, default=100.0, help='Range to
 
 
 parser.add_argument("--win-length", type=int, default=400, help='Window size in ms') # 400
-parser.add_argument("--hop-length", type=int, default=200, help='Length of hop between STFT windows') #320
+parser.add_argument("--hop-length", type=int, default=330, help='Length of hop between STFT windows') #320
 parser.add_argument("--std-scale", type=int, default=3, help='Scaling by how many standard deviations (e.g. how many big values will be cut off: 1std = 65%, 2std = 95%), 3std=99%')
 
 parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
@@ -76,6 +74,9 @@ parser.add_argument("--cy-div", type=int, default=2, help='CY division')
 parser.add_argument("--cy-scale", type=int, default=2, help='Scaling CY')
 
 args = parser.parse_args()
+
+epoch_list = np.cumsum([int(x) for x in args.training_steps.split(',')])
+lr_list = [float(x) for x in args.learning_rate.split(',')]
 
 
 def step_d(bits):
@@ -393,22 +394,25 @@ def pre_processing(x, y, device, mfcc_cuda, std_scale):
 
 mfcc_cuda = torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, log_mels = True, melkwargs = {'win_length' : args.win_length, 'hop_length':args.hop_length}).to(device)
 
-speech_dataset_train = SpeechCommandsGoogle(args.dataset_path_train, 'training', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, args.epochs, device, args.background_volume, args.background_frequency, args.silence_percentage, args.unknown_percentage, args.time_shift_ms,)
-speech_dataset_val = SpeechCommandsGoogle(args.dataset_path_train, 'validation', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.validation_batch, args.epochs, device, args.background_volume, args.background_frequency, args.silence_percentage, args.unknown_percentage, args.time_shift_ms,)
-speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_test, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, args.epochs, device, args.background_volume, args.background_frequency, args.silence_percentage, args.unknown_percentage, args.time_shift_ms,)
+speech_dataset_train = SpeechCommandsGoogle(args.dataset_path_train, 'training', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, epoch_list[-1], device, args.background_volume, args.background_frequency, args.silence_percentage, args.unknown_percentage, args.time_shift_ms)
+speech_dataset_val = SpeechCommandsGoogle(args.dataset_path_train, 'validation', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, epoch_list[-1], device, args.background_volume, args.background_frequency, args.silence_percentage, args.unknown_percentage, args.time_shift_ms)
+speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_test, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, epoch_list[-1], device, args.background_volume, args.background_frequency, args.silence_percentage, args.unknown_percentage, args.time_shift_ms, non_canonical_test = not args.canonical_testing)
 
+speech_dataset_val.size = np.sum(np.unique(speech_dataset_val.list_of_y, return_counts= True)[1][:10])/.8
+if not args.canonical_testing:
+    speech_dataset_test.size = np.sum(np.unique(speech_dataset_test.list_of_y, return_counts= True)[1][:10])/.8
 
 train_dataloader = torch.utils.data.DataLoader(speech_dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
 test_dataloader = torch.utils.data.DataLoader(speech_dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
-validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_size=args.validation_batch, shuffle=True, num_workers=args.dataloader_num_workers)
-
+validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
 
 model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = args.init_factor, quant_beta = args.global_beta, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = args.noise_injectionT, blocks = args.lstm_blocks, pool_method = args.pool_method, fc_blocks = args.fc_blocks).to(device)
 model.to(device)
 loss_fn = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)  
+optimizer = torch.optim.Adam(model.parameters(), lr=lr_list[0])  
 
 best_acc = 0
+seg_count = 1
 train_acc = []
 val_acc = []
 model_uuid = str(uuid.uuid4())
@@ -418,16 +422,16 @@ print(model_uuid)
 print("Start Training:")
 print("Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)")
 start_time = time.time()
-for e, (x_data, y_label) in enumerate(islice(train_dataloader, args.epochs)):
-    if e%args.lr_divide == 0:
+for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
+    if e in epoch_list:
         for param_group in optimizer.param_groups:
-            param_group['lr'] /= 2
+            param_group['lr'] = lr_list[seg_count]
+            seg_count += 1
 
     # train
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale)
     output = model(x_data, train = True)
     
-    import pdb; pdb.set_trace()
     loss_val = loss_fn(output, y_label)
     train_acc.append((output.argmax(dim=1) == y_label).float().mean().item())
 
@@ -436,10 +440,10 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, args.epochs)):
     optimizer.zero_grad()
 
     #print("Step {0:05d} Acc {1:.4f} Loss {1:.4f}".format(e,train_acc[-1],loss_val.item()))
-    if e%100 == 0:
+    if e%100 == 0 or e == epoch_list[-1]-1:
         # validation
         temp_list = []
-        for val_e, (x_vali, y_vali) in enumerate(islice(train_dataloader, args.validation_size)):
+        for val_e, (x_vali, y_vali) in enumerate(validation_dataloader):
             x_data, y_label = pre_processing(x_vali, y_vali, device, mfcc_cuda, args.std_scale)
 
             output = model(x_data, train = False)

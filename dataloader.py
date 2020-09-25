@@ -124,14 +124,13 @@ class SpeechCommandsGoogle(Dataset):
                 self.list_of_x.append(waveform)
 
         self.list_of_y = np.array(self.list_of_y)
-        
-        
-
-    def __len__(self):
         if self.train_test_val == 'testing':
-            return len(self.list_of_labels)
+            self.size = len(self.list_of_labels)
         else:
-            return self.batch_size * self.epochs
+            self.size =  self.batch_size * self.epochs
+        
+    def __len__(self):
+        return self.size
 
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
