@@ -29,7 +29,7 @@ parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.A
 # parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02_cough', help='Path to Dataset')
 parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speech_commands_v0.02', help='Path to Dataset')
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
-parser.add_argument("--batch-size", type=int, default=100, help='Batch Size')
+parser.add_argument("--batch-size", type=int, default=256, help='Batch Size')
 parser.add_argument("--validation-size", type=int, default=3, help='Number of samples used for validation')
 parser.add_argument("--validation-batch", type=int, default=8192, help='Number of samples used for validation')
 parser.add_argument("--epochs", type=int, default=20001, help='Epochs')
@@ -46,7 +46,7 @@ parser.add_argument("--testing-percentage", type=int, default=10, help='Testing 
 parser.add_argument("--sample-rate", type=int, default=16000, help='Audio Sample Rate')
 
 #could be ramped up to 128 -> explore optimal input
-parser.add_argument("--n-mfcc", type=int, default=40, help='Number of mfc coefficients to retain') # 40 before
+parser.add_argument("--n-mfcc", type=int, default=10, help='Number of mfc coefficients to retain') # 40 before
 
 parser.add_argument("--background-volume", type=float, default=.1, help='How loud the background noise should be, between 0 and 1.') 
 parser.add_argument("--background-frequency", type=float, default=.8, help='How many of the training samples have background noise mixed in.') 
@@ -56,7 +56,7 @@ parser.add_argument('--time-shift-ms', type=float, default=100.0, help='Range to
 
 
 parser.add_argument("--win-length", type=int, default=400, help='Window size in ms') # 400
-parser.add_argument("--hop-length", type=int, default=320, help='Length of hop between STFT windows') #320
+parser.add_argument("--hop-length", type=int, default=200, help='Length of hop between STFT windows') #320
 parser.add_argument("--std-scale", type=int, default=3, help='Scaling by how many standard deviations (e.g. how many big values will be cut off: 1std = 65%, 2std = 95%), 3std=99%')
 
 parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
@@ -74,7 +74,6 @@ parser.add_argument("--quant-w", type=int, default=0, help='Bits available for w
 
 parser.add_argument("--cy-div", type=int, default=2, help='CY division')
 parser.add_argument("--cy-scale", type=int, default=2, help='Scaling CY')
-parser.add_argument("--hp-bw", type=bool, default=False, help='High precision backward pass')
 
 args = parser.parse_args()
 
@@ -115,7 +114,7 @@ class QuantFunc(torch.autograd.Function):
     """
 
     @staticmethod
-    def forward(ctx, x, wb, sign, train):
+    def forward(ctx, x, wb, sign, train = False):
         """
         In the forward pass we receive a Tensor containing the input and return
         a Tensor containing the output. ctx is a context object that can be used
@@ -137,10 +136,11 @@ class QuantFunc(torch.autograd.Function):
         # quantization
 
         # new experimental approach 
-        if train:
-            return .5 * quant(x, wb, sign) + .5 * x
-        else:
-            return quant(x, wb, sign)
+        #if train:
+        #    return .5 * quant(x, wb, sign) + .5 * x
+        #else:
+
+        return quant(x, wb, sign)
 
     @staticmethod
     def backward(ctx, grad_output):
@@ -173,37 +173,29 @@ def limit_scale(shape, factor, beta, wb):
 
     return scale, limit.item()
 
-
-
-# noise free weights in backward pass/ optional high precision inputs in backward pass
+# noise free weights in backward pass
 class CustomMM(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, input, weight, hp_inp, nl, hp_bw):
-        ctx.hp_bw = hp_bw
+    def forward(ctx, input, weight, nl):
         noise_w = torch.randn(weight.shape, device = input.device) * weight.max() * nl
 
-        ctx.save_for_backward(input, weight, hp_inp)
+        ctx.save_for_backward(input, weight)
         output = input.mm(weight + noise_w)
         return output
 
     @staticmethod
     def backward(ctx, grad_output):
-        input, weight, hp_inp = ctx.saved_tensors
+        input, weight = ctx.saved_tensors
         grad_input = grad_output.mm(weight.t())
-        
-        if ctx.hp_bw:
-            # use the high precision input
-            grad_weight = grad_output.t().mm(hp_inp)
-        else:
-            grad_weight = grad_output.t().mm(input)
-        return grad_input, grad_weight.t(), None, None, None
+        grad_weight = grad_output.t().mm(input)
+
+        return grad_input, grad_weight.t(), None
 
 #https://github.com/pytorch/benchmark/blob/master/rnns/fastrnns/custom_lstms.py#L32
 class LSTMCell(nn.Module):
-    def __init__(self, input_size, hidden_size, wb, ib, abMVM, abNM, noise_level, hp_bw, device):
+    def __init__(self, input_size, hidden_size, wb, ib, abMVM, abNM, noise_level, device):
         super(LSTMCell, self).__init__()
         self.device = device
-        self.hp_bw = hp_bw
         self.wb = wb
         self.ib = ib
         self.abMVM = abMVM
@@ -217,16 +209,13 @@ class LSTMCell(nn.Module):
         self.bias_hh = nn.Parameter(torch.randn(4 * hidden_size))
 
     def forward(self, input, state, train):
-        # type: (Tensor, Tuple[Tensor, Tensor]) -> Tuple[Tensor, Tuple[Tensor, Tensor]]
-        hx, cx, hp_hx, hp_cx = state
+        hx, cx = state
 
         # noise injection - for bias
-        # noise_ih = torch.randn(self.weight_ih.t().shape, device = self.device) * self.weight_ih.max() * self.noise_level
-        # noise_hh = torch.randn(self.weight_hh.t().shape, device = self.device) * self.weight_hh.max() * self.noise_level
         noise_bias_ih = torch.randn(self.bias_ih.t().shape, device = self.device) * self.bias_ih.max() * self.noise_level
         noise_bias_hh = torch.randn(self.bias_hh.t().shape, device = self.device) * self.bias_hh.max() * self.noise_level
 
-        gates = (CustomMM.apply(quant_pass(input, self.ib, True, train), self.weight_ih.t(), input, self.noise_level, self.hp_bw) + self.bias_ih + noise_bias_ih + CustomMM.apply(quant_pass(hx, self.ib, True, train), self.weight_hh.t(), hp_hx, self.noise_level, self.hp_bw) + self.bias_hh + noise_bias_hh)
+        gates = (CustomMM.apply(quant_pass(input, self.ib, True, train), self.weight_ih.t(), self.noise_level) + self.bias_ih + noise_bias_ih + CustomMM.apply(quant_pass(hx, self.ib, True, train), self.weight_hh.t(), self.noise_level) + self.bias_hh + noise_bias_hh)
 
         ingate, forgetgate, cellgate, outgate = gates.chunk(4, 1)
 
@@ -240,20 +229,9 @@ class LSTMCell(nn.Module):
         cy = quant_pass( (quant_pass(forgetgate * cx, self.abNM, True, train) + quant_pass(ingate * cellgate, self.abNM, True, train)) * 1/args.cy_div, self.abNM, True, train)
         hy = quant_pass(outgate * quant_pass(torch.tanh(cy * args.cy_scale), self.abNM, True, train), self.abNM, True, train)
 
-        # high precision copy of hy and cy in backward pass
-        if self.hp_bw:
-            hp_ingate = torch.sigmoid(ingate)
-            hp_forgetgate = torch.sigmoid(forgetgate)
-            hp_cellgate = torch.tanh(cellgate)
-            hp_outgate = torch.sigmoid(outgate)
-            hp_cy = (hp_forgetgate * hp_cx) + (ingate * cellgate) * 1/args.cy_div
-            hp_hy = outgate * torch.tanh(hp_cy * args.cy_scale)
-        else:
-            hp_hy = None
-            hp_cy = None
 
         
-        return hy, (hy, cy, hp_hy, hp_cy)
+        return hy, (hy, cy)
 
 
 class LSTMLayer(nn.Module):
@@ -279,9 +257,8 @@ class LSTMLayer(nn.Module):
         return torch.stack(outputs), state
 
 class LinLayer(nn.Module):
-    def __init__(self, inp_dim, out_dim, hp_bw, noise_level, abMVM):
+    def __init__(self, inp_dim, out_dim, noise_level, abMVM):
         super(LinLayer, self).__init__()
-        self.hp_bw = hp_bw 
         self.abMVM = abMVM
         self.noise_level = noise_level
 
@@ -296,14 +273,13 @@ class LinLayer(nn.Module):
         noise_bias_ro = torch.randn(self.bias.t().shape, device = input.device) * self.bias.max() * self.noise_level
 
         # what activation?
-        return quant_pass(torch.tanh((CustomMM.apply(input, self.weights, None, self.noise_level, self.hp_bw) + self.bias + noise_bias_ro)), self.abMVM, True, train)
+        return quant_pass(torch.tanh((CustomMM.apply(input, self.weights, self.noise_level) + self.bias + noise_bias_ro)), self.abMVM, True, train)
 
 
 class KWS_LSTM(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, batch_size, device, quant_factor, quant_beta, wb, abMVM, abNM, blocks, ib, noise_level, pool_method, fc_blocks, hp_bw):
+    def __init__(self, input_dim, hidden_dim, output_dim, batch_size, device, quant_factor, quant_beta, wb, abMVM, abNM, blocks, ib, noise_level, pool_method, fc_blocks):
         super(KWS_LSTM, self).__init__()
         self.device = device
-        self.hp_bw = hp_bw
         self.batch_size = batch_size
         self.noise_level = noise_level
         self.wb = wb
@@ -343,27 +319,35 @@ class KWS_LSTM(nn.Module):
         if blocks != 0:
             self.lstmBlocks = []
             for i in range(blocks):
-                self.lstmBlocks.append(LSTMLayer(LSTMCell, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.hp_bw, self.device))
+                self.lstmBlocks.append(LSTMLayer(LSTMCell, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device))
             self.lstmBlocks = nn.ModuleList(self.lstmBlocks)
         else:
-            self.lstmBlocks = LSTMLayer(LSTMCell, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.hp_bw, self.device)
+            self.lstmBlocks = LSTMLayer(LSTMCell, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device)
 
         # FC blocks
         if fc_blocks != 0:
             self.fcBlocks = []
             for i in range(self.fc_blocks):
-                self.fcBlocks.append(LinLayer(self.hidden_dim, 64, hp_bw, noise_level, abMVM))
+                self.fcBlocks.append(LinLayer(self.hidden_dim, 64, noise_level, abMVM))
             self.fcBlocks = nn.ModuleList(self.fcBlocks)
 
 
         # final FC layer
-        self.finFC = LinLayer(self.hidden_dim, self.output_dim, hp_bw, noise_level, abMVM)
+        self.finFC = LinLayer(self.hidden_dim, self.output_dim, noise_level, abMVM)
+
+
+        # Testing!!!!!
+        self.lstmBlocks = torch.nn.LSTM(input_size = self.input_dim, hidden_size = self.hidden_dim, num_layers = 1, batch_first = False)
+        self.finFC = torch.nn.Linear(in_features = self.hidden_dim, out_features = self.output_dim, bias = True)
+
 
 
 
     def forward(self, inputs, train):
         # init states with zero
-        self.hidden_state = (torch.zeros( inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros( inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device))
+
+        # remove 1 again!!!!
+        self.hidden_state = (torch.zeros(1, inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(1,inputs.shape[1], self.hidden_dim, device = self.device))
 
         # LSTM blocks
         if self.n_blocks != 0:
@@ -378,7 +362,7 @@ class KWS_LSTM(nn.Module):
             lstm_out = quant_pass(lstm_out, self.ib, True, train)
             lstm_out = F.pad(lstm_out, (0, self.fc_blocks*100 - lstm_out.shape[1]))
         else:
-            lstm_out, _ = self.lstmBlocks(inputs, self.hidden_state, train)
+            lstm_out, _ = self.lstmBlocks(inputs, self.hidden_state) #train
             fc_out = quant_pass(lstm_out[-1,:,:], self.ib, True, train)
 
         # FC blocks
@@ -390,7 +374,7 @@ class KWS_LSTM(nn.Module):
             fc_out = F.pad(fc_out, (0, 100 - fc_out.shape[1]))
 
         # final FC block
-        output = self.finFC(fc_out, train)
+        output = self.finFC(fc_out) #train
 
         return output
 
@@ -399,15 +383,15 @@ def pre_processing(x, y, device, mfcc_cuda, std_scale):
     batch_size = x.shape[0]
 
     x =  mfcc_cuda(x.to(device))
-    x -= x.reshape((batch_size, -1 )).mean(axis=1)[:, None, None]
-    x /= (x.reshape((batch_size, -1 )).std(axis=1)*std_scale)[:, None, None]
+    #x -= x.reshape((batch_size, -1 )).mean(axis=1)[:, None, None]
+    #x /= (x.reshape((batch_size, -1 )).std(axis=1)*std_scale)[:, None, None]
     x =  x.permute(2,0,1)
     y =  y.view((-1)).to(device)
 
     return x,y
 
 
-mfcc_cuda = torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, melkwargs = {'win_length' : args.win_length, 'hop_length':args.hop_length}).to(device)
+mfcc_cuda = torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, log_mels = True, melkwargs = {'win_length' : args.win_length, 'hop_length':args.hop_length}).to(device)
 
 speech_dataset_train = SpeechCommandsGoogle(args.dataset_path_train, 'training', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, args.epochs, device, args.background_volume, args.background_frequency, args.silence_percentage, args.unknown_percentage, args.time_shift_ms,)
 speech_dataset_val = SpeechCommandsGoogle(args.dataset_path_train, 'validation', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.validation_batch, args.epochs, device, args.background_volume, args.background_frequency, args.silence_percentage, args.unknown_percentage, args.time_shift_ms,)
@@ -419,11 +403,10 @@ test_dataloader = torch.utils.data.DataLoader(speech_dataset_test, batch_size=ar
 validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_size=args.validation_batch, shuffle=True, num_workers=args.dataloader_num_workers)
 
 
-model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = args.init_factor, quant_beta = args.global_beta, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = args.noise_injectionT, blocks = args.lstm_blocks, pool_method = args.pool_method, fc_blocks = args.fc_blocks, hp_bw = args.hp_bw).to(device)
+model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = args.init_factor, quant_beta = args.global_beta, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = args.noise_injectionT, blocks = args.lstm_blocks, pool_method = args.pool_method, fc_blocks = args.fc_blocks).to(device)
 model.to(device)
 loss_fn = nn.CrossEntropyLoss()
-#optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)  
-optimizer = torch.optim.SGD(model.parameters(), lr=args.learning_rate)  
+optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)  
 
 best_acc = 0
 train_acc = []
@@ -434,25 +417,26 @@ print(args)
 print(model_uuid)
 print("Start Training:")
 print("Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)")
+start_time = time.time()
 for e, (x_data, y_label) in enumerate(islice(train_dataloader, args.epochs)):
     if e%args.lr_divide == 0:
-        optimizer.param_groups[-1]['lr'] /= 2
+        for param_group in optimizer.param_groups:
+            param_group['lr'] /= 2
 
     # train
-    start_time = time.time()
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale)
     output = model(x_data, train = True)
     
+    import pdb; pdb.set_trace()
     loss_val = loss_fn(output, y_label)
     train_acc.append((output.argmax(dim=1) == y_label).float().mean().item())
 
     loss_val.backward()
     optimizer.step()
     optimizer.zero_grad()
-    train_time = time.time() - start_time
 
-
-    if e%10 == 0:
+    #print("Step {0:05d} Acc {1:.4f} Loss {1:.4f}".format(e,train_acc[-1],loss_val.item()))
+    if e%100 == 0:
         # validation
         temp_list = []
         for val_e, (x_vali, y_vali) in enumerate(islice(train_dataloader, args.validation_size)):
@@ -477,6 +461,8 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, args.epochs)):
             torch.save(checkpoint_dict, './checkpoints/'+model_uuid+'.pkl')
             del checkpoint_dict
 
+        train_time = time.time() - start_time
+        start_time = time.time()
     
         print("{0:05d}     {1:.4f}      {2:.4f}     {3:.4f}     {4:.4f}".format(e, loss_val, train_acc[-1], best_acc, train_time))
         plot_curves(train_acc, val_acc, model_uuid)
@@ -494,7 +480,6 @@ for i_batch, sample_batch in enumerate(test_dataloader):
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale)
 
     output = model(x_data, train = False)
-    #acc_aux.append((output.max(dim=0)[0].argmax(dim=1) == y_label))
     acc_aux.append((output.argmax(dim=1) == y_label))
 
 test_acc = torch.cat(acc_aux).float().mean().item()

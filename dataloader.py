@@ -91,7 +91,7 @@ class SpeechCommandsGoogle(Dataset):
         self.background_frequency = background_frequency
         self.silence_percentage = silence_percentage
         self.unknown_percentage = unknown_percentage
-        self.time_shift_ms = time_shift_ms   
+        self.time_shift_ms = (time_shift_ms * sample_rate) / 1000
 
         self.noise = torch.distributions.bernoulli.Bernoulli(torch.tensor([self.background_frequency]))
 
