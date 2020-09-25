@@ -11,7 +11,7 @@ import torch.optim as optim
 import numpy as np
 
 from dataloader import SpeechCommandsGoogle
-from models import KWS_LSTM, pre_processing
+from model import KWS_LSTM, pre_processing
 from figure_scripts import plot_curves
 
 torch.manual_seed(42)
@@ -121,6 +121,7 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
             seg_count += 1
 
     # train
+    import pdb; pdb.set_trace()
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale)
     output = model(x_data, train = True)
     

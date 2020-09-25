@@ -150,7 +150,7 @@ class SpeechCommandsGoogle(Dataset):
                 idx = np.random.choice(np.argwhere(self.list_of_y == 10)[:,0],1)
                 waveform = self.list_of_x[idx.item()]
             else:
-                y_sel = int(np.round(((selector - .2)/.8 * (len(self.words)-2)),0))
+                y_sel = int(np.floor(((selector - .2)/.8 * (len(self.words)-2)),0))
                 idx = np.random.choice(np.argwhere(self.list_of_y == y_sel)[:,0],1)
                 waveform = self.list_of_x[idx.item()]
 
