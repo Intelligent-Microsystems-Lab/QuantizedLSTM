@@ -33,7 +33,6 @@ parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech
 parser.add_argument("--batch-size", type=int, default=100, help='Batch Size')
 parser.add_argument("--training-steps", type=str, default='10000,10000,10000', help='Training Steps')
 parser.add_argument("--learning-rate", type=str, default='0.0005,0.0001,0.00002', help='Learning Rate')
-parser.add_argument("--lr-divide", type=int, default=10000, help='Learning Rate divide')
 parser.add_argument("--lstm-blocks", type=int, default=0, help='How many parallel LSTM blocks') 
 parser.add_argument("--fc-blocks", type=int, default=0, help='How many parallel LSTM blocks') 
 parser.add_argument("--pool-method", type=str, default="avg", help='Pooling method [max/avg]') 
@@ -78,7 +77,7 @@ lr_list = [float(x) for x in args.learning_rate.split(',')]
 
 
 
-mfcc_cuda = torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, log_mels = False, melkwargs = {'win_length' : args.win_length, 'hop_length':args.hop_length}).to(device)
+mfcc_cuda = torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, log_mels = True, melkwargs = {'win_length' : args.win_length, 'hop_length':args.hop_length}).to(device)
 
 speech_dataset_train = SpeechCommandsGoogle(args.dataset_path_train, 'training', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, epoch_list[-1], device, args.background_volume, args.background_frequency, args.silence_percentage, args.unknown_percentage, args.time_shift_ms)
 
