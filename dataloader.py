@@ -121,10 +121,19 @@ class SpeechCommandsGoogle(Dataset):
                 self.list_of_x.append(waveform)
 
         self.list_of_y = np.array(self.list_of_y)
-        if self.train_test_val == 'testing':
-            self.size = len(self.list_of_labels)
+
+        if (self.train_test_val == 'validation') or ((self.train_test_val == 'testing') and self.non_canonical_test):
+            self.size = int(np.sum(np.unique(self.list_of_y, return_counts= True)[1][:10])/.8)
+            self.deterministic_sampling = True
+
+            import pdb; pdb.set_trace()
+            #self.relevant_lable_list = 
         else:
-            self.size = int(self.batch_size * self.epochs)
+            self.deterministic_sampling = False
+            if self.train_test_val == 'testing':
+                self.size = len(self.list_of_labels)
+            else:
+                self.size = int(self.batch_size * self.epochs)
         
     def __len__(self):
         return self.size
