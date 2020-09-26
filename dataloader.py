@@ -194,15 +194,15 @@ class SpeechCommandsGoogle(Dataset):
         else:
             uniform_waveform = waveform
 
-        if len(uniform_waveform[0].t()) != 16000:
-            import pdb; pdb.set_trace()
+        # if len(uniform_waveform[0].t()) != 16000:
+        #     import pdb; pdb.set_trace()
         
-        try:
-            yu = self.list_of_y[idx].shape
-            if self.list_of_y[idx].shape[0] != 1:
-                import pdb; pdb.set_trace()
-        except:
-            import pdb; pdb.set_trace()
+        # try:
+        #     yu = self.list_of_y[idx].shape
+        #     if self.list_of_y[idx].shape[0] != 1:
+        #         import pdb; pdb.set_trace()
+        # except:
+        #     import pdb; pdb.set_trace()
 
-        return uniform_waveform[0].t(), self.list_of_y[idx]
+        return uniform_waveform[0].t(), int(self.list_of_y[idx])
 
