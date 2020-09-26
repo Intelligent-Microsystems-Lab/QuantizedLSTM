@@ -199,6 +199,8 @@ class SpeechCommandsGoogle(Dataset):
         
         try:
             yu = self.list_of_y[idx].shape
+            if self.list_of_y[idx].shape[0] != 1:
+                import pdb; pdb.set_trace()
         except:
             import pdb; pdb.set_trace()
 
