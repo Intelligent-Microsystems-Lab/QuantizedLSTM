@@ -194,6 +194,9 @@ class SpeechCommandsGoogle(Dataset):
         else:
             uniform_waveform = waveform
 
-        import pdb; pdb.set_trace()
+        
+
+        if len(self.list_of_y[idx]) != 1:
+            import pdb; pdb.set_trace()
         return uniform_waveform[0].t(), self.list_of_y[idx]
 
