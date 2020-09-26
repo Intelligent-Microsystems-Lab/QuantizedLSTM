@@ -126,7 +126,7 @@ class SpeechCommandsGoogle(Dataset):
             self.size = int(np.sum(np.unique(self.list_of_y, return_counts= True)[1][:10])/.8)
             self.deterministic_sampling = True
 
-            self.relevant_lable_list = np.where(self.list_of_y < 10)
+            self.relevant_lable_list = np.where(self.list_of_y < 10)[0]
         else:
             self.deterministic_sampling = False
             if self.train_test_val == 'testing':
@@ -155,11 +155,10 @@ class SpeechCommandsGoogle(Dataset):
                 idx = np.random.choice(np.argwhere(self.list_of_y == 10)[:,0],1)
                 waveform = self.list_of_x[idx.item()]
             else:
-                y_sel = int(np.floor(((selector - .2)/.8 * (len(self.words)-2))))
                 if self.deterministic_sampling:
-                    import pdb; pdb.set_trace()
-                    idx = self.relevant_lable_list[y_sel]
+                    idx = self.relevant_lable_list[int(idx - self.size*.2)]
                 else:
+                    y_sel = int(np.floor(((selector - .2)/.8 * (len(self.words)-2))))
                     idx = np.random.choice(np.argwhere(self.list_of_y == y_sel)[:,0],1)
                 waveform = self.list_of_x[idx.item()]
 
