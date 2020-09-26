@@ -163,14 +163,15 @@ class SpeechCommandsGoogle(Dataset):
                 waveform = self.list_of_x[idx.item()]
 
             # random time shift
-            start_idx = int(np.random.choice(np.arange(0, self.time_shift_ms)))
-            if (waveform.shape[1] - start_idx) >= self.sample_rate:
-                waveform = waveform[0,start_idx:(waveform.shape[1] + start_idx)].view(1,-1)
-            elif (waveform.shape[1] - start_idx) < self.sample_rate:
-                pad_size = int((self.sample_rate - (waveform.shape[1] - start_idx))/2)
-                zero_waveform = torch.zeros((1,self.sample_rate))
-                zero_waveform[0,pad_size:(pad_size+(waveform.shape[1] - start_idx))] = waveform[0,start_idx:]
-                waveform = zero_waveform
+            if self.time_shift_ms != 0:
+                start_idx = int(np.random.choice(np.arange(0, self.time_shift_ms)))
+                if (waveform.shape[1] - start_idx) >= self.sample_rate:
+                    waveform = waveform[0,start_idx:(waveform.shape[1] + start_idx)].view(1,-1)
+                elif (waveform.shape[1] - start_idx) < self.sample_rate:
+                    pad_size = int((self.sample_rate - (waveform.shape[1] - start_idx))/2)
+                    zero_waveform = torch.zeros((1,self.sample_rate))
+                    zero_waveform[0,pad_size:(pad_size+(waveform.shape[1] - start_idx))] = waveform[0,start_idx:]
+                    waveform = zero_waveform
 
             # sample noise
             if self.noise.sample():
