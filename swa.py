@@ -22,7 +22,7 @@ else:
 
 
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument("--checkpoint", type=str, default='1fa406e7-3338-45c9-8a11-cd8e197d83c2', help='checkpoint to perfrom SWA on')
+parser.add_argument("--checkpoint", type=str, default='682d68fd-2025-44d7-aa53-34eefe62e3d8', help='checkpoint to perfrom SWA on')
 parser.add_argument("--training-cycles", type=int, default=100, help='Training Steps')
 parser.add_argument("--cycle-steps", type=int, default=30, help='Training Steps')
 args_swa = parser.parse_args()

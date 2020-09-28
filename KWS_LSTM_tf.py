@@ -80,15 +80,15 @@ epoch_list = np.cumsum([int(x) for x in args.training_steps.split(',')])
 lr_list = [float(x) for x in args.learning_rate.split(',')]
 
 
-model_settings = input_data.prepare_model_settings(
-      len(input_data.prepare_words_list(args.word_list)),
+model_settings = input_data_tf.prepare_model_settings(
+      len(input_data_tf.prepare_words_list(args.word_list[:10])),
       args.sample_rate, 1000, args.win_length,
       args.hop_length, args.n_mfcc)
 
-audio_processor = input_data.AudioProcessor(
-      'http://download.tensorflow.org/data/speech_commands_v0.02.tar.gz', 'data.nosync/speech_dataset', args.silencepercentage*1000,
+audio_processor = input_data_tf.AudioProcessor(
+      'http://download.tensorflow.org/data/speech_commands_v0.02.tar.gz', 'data.nosync/speech_dataset', args.silence_percentage*1000,
       args.unknown_percentage*100,
-      args.word_list, args.validation_percentage,
+      args.word_list[:10], args.validation_percentage,
       args.testing_percentage, model_settings)
 
 fingerprint_size = model_settings['fingerprint_size']
@@ -124,6 +124,9 @@ for e in range(epoch_list[-1]):
     train_fingerprints, train_ground_truth = audio_processor.get_data(
         args.batch_size, 0, model_settings, args.background_frequency,
         args.background_volume, time_shift_samples, 'training', sess)
+    import pdb; pdb.set_trace()
+    y_label = torch.tensor(train_ground_truth).argmax(dim=1).to(device)
+    x_data  = torch.tensor(train_fingerprints, dtype = torch.float32).to(device).reshape([-1, model_settings['spectrogram_length'],model_settings['dct_coefficient_count']]).permute(1,0,2)
 
     output = model(x_data, train = True)
     
@@ -134,13 +137,15 @@ for e in range(epoch_list[-1]):
     optimizer.step()
     optimizer.zero_grad()
 
-    #print("Step {0:05d} Acc {1:.4f} Loss {1:.4f}".format(e,train_acc[-1],loss_val.item()))
+    print("Step {0:05d} Acc {1:.4f} Loss {1:.4f}".format(e,train_acc[-1],loss_val.item()))
     if (e%100 == 0) or (e == epoch_list[-1]-1):
         # validation
         temp_list = []
         set_size = audio_processor.set_size('validation')
         for val_e in range(0, set_size, args.batch_size):
             validation_fingerprints, validation_ground_truth = (audio_processor.get_data(args.batch_size, val_e, model_settings, 0.0, 0.0, 0, 'validation', sess))
+            y_label = torch.tensor(validation_ground_truth).argmax(dim=1).to(device)
+            x_data  = torch.tensor(validation_fingerprints, dtype = torch.float32).to(device).reshape([-1, model_settings['spectrogram_length'],model_settings['dct_coefficient_count']]).permute(1,0,2)
             #x_data, y_label = pre_processing(x_vali, y_vali, device, mfcc_cuda, args.std_scale)
 
             output = model(x_data, train = False)
@@ -176,9 +181,11 @@ model.load_state_dict(checkpoint_dict['model_dict'])
 acc_aux = []
 
 model.noise_level = args.noise_injectionI
-for i_batch, sample_batch in enumerate(test_dataloader):
-    x_data, y_label = sample_batch
-    x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale)
+set_size = audio_processor.set_size('testing')
+for i_batch in range(0, set_size, args.batch_size):
+    validation_fingerprints, validation_ground_truth = (audio_processor.get_data(args.batch_size, val_e, model_settings, 0.0, 0.0, 0, 'testing', sess))
+    y_label = torch.tensor(validation_ground_truth).argmax(dim=1).to(device)
+    x_data  = torch.tensor(validation_fingerprints, dtype = torch.float32).to(device).reshape([-1, model_settings['spectrogram_length'],model_settings['dct_coefficient_count']]).permute(1,0,2)
 
     output = model(x_data, train = False)
     acc_aux.append((output.argmax(dim=1) == y_label))

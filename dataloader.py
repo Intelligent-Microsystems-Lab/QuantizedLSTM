@@ -174,7 +174,7 @@ class SpeechCommandsGoogle(Dataset):
                     waveform = zero_waveform
 
             # sample noise
-            if self.noise.sample():
+            if self.noise.sample() and self.train_test_val == 'training':
                 noise_wave = self.list_of_x[np.random.choice(np.argwhere(self.list_of_y == 11)[:,0],1).item()]
                 start_noise = int(np.random.choice(np.arange(0, noise_wave.shape[1] - (self.sample_rate+1))))
                 noise_mul = noise_wave[0, start_noise:(start_noise+self.sample_rate)].view(1,-1) * self.background_volume

@@ -50,8 +50,8 @@ parser.add_argument('--silence-percentage', type=float, default=.1, help='How mu
 parser.add_argument('--unknown-percentage', type=float, default=.1, help='How much of the training data should be unknown words.')
 parser.add_argument('--time-shift-ms', type=float, default=100.0, help='Range to randomly shift the training audio by in time.')
 
-parser.add_argument("--win-length", type=int, default=400, help='Window size in ms') # 400
-parser.add_argument("--hop-length", type=int, default=330, help='Length of hop between STFT windows') #320
+parser.add_argument("--win-length", type=int, default=640, help='Window size in ms') # 400
+parser.add_argument("--hop-length", type=int, default=320, help='Length of hop between STFT windows') #320
 parser.add_argument("--std-scale", type=int, default=3, help='Scaling by how many standard deviations (e.g. how many big values will be cut off: 1std = 65%, 2std = 95%), 3std=99%')
 
 parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
@@ -77,7 +77,7 @@ lr_list = [float(x) for x in args.learning_rate.split(',')]
 
 
 
-mfcc_cuda = torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, log_mels = True, melkwargs = {'win_length' : args.win_length, 'hop_length':args.hop_length}).to(device)
+mfcc_cuda = torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, log_mels = True, melkwargs = {'win_length' : args.win_length, 'hop_length' : args.hop_length, 'n_fft' : args.win_length, 'pad': 0, 'f_min' : 20, 'f_max': 4000, 'n_mels' : 40}).to(device)
 
 speech_dataset_train = SpeechCommandsGoogle(args.dataset_path_train, 'training', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, epoch_list[-1], device, args.background_volume, args.background_frequency, args.silence_percentage, args.unknown_percentage, args.time_shift_ms)
 
@@ -114,6 +114,9 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
 
     # train
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale)
+
+    x_data = quant_pass(x_data, args.quant_inp, True, False)
+
     output = model(x_data, train = True)
     
     loss_val = loss_fn(output, y_label)
@@ -129,6 +132,8 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
         temp_list = []
         for val_e, (x_vali, y_vali) in enumerate(validation_dataloader):
             x_data, y_label = pre_processing(x_vali, y_vali, device, mfcc_cuda, args.std_scale)
+
+            x_data = quant_pass(x_data, args.quant_inp, True, False)
 
             output = model(x_data, train = False)
             temp_list.append((output.argmax(dim=1) == y_label).float().mean().item())
@@ -166,6 +171,7 @@ model.noise_level = args.noise_injectionI
 for i_batch, sample_batch in enumerate(test_dataloader):
     x_data, y_label = sample_batch
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale)
+    x_data = quant_pass(x_data, args.quant_inp, True, False)
 
     output = model(x_data, train = False)
     acc_aux.append((output.argmax(dim=1) == y_label))
