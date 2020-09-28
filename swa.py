@@ -22,7 +22,7 @@ else:
 
 
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument("--checkpoint", type=str, default='3e2ec001-56b8-4f63-99f3-39b05b6d6ffe', help='checkpoint to perfrom SWA on')
+parser.add_argument("--checkpoint", type=str, default='1fa406e7-3338-45c9-8a11-cd8e197d83c2', help='checkpoint to perfrom SWA on')
 parser.add_argument("--training-cycles", type=int, default=100, help='Training Steps')
 parser.add_argument("--cycle-steps", type=int, default=30, help='Training Steps')
 args_swa = parser.parse_args()
@@ -33,19 +33,18 @@ checkpoint_dict = torch.load('./checkpoints/'+args_swa.checkpoint+'.pkl')
 args = checkpoint_dict['arguments']
 
 
+epoch_list = np.cumsum([int(x) for x in args.training_steps.split(',')])
+lr_list = [float(x) for x in args.learning_rate.split(',')]
+
+
 
 mfcc_cuda = torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, log_mels = True, melkwargs = {'win_length' : args.win_length, 'hop_length':args.hop_length}).to(device)
 
 speech_dataset_train = SpeechCommandsGoogle(args.dataset_path_train, 'training', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, int(args_swa.cycle_steps * args_swa.training_cycles), device, args.background_volume, args.background_frequency, args.silence_percentage, args.unknown_percentage, args.time_shift_ms)
-speech_dataset_val = SpeechCommandsGoogle(args.dataset_path_train, 'validation', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, int(args_swa.cycle_steps * args_swa.training_cycles), device, args.background_volume, args.background_frequency, args.silence_percentage, args.unknown_percentage, args.time_shift_ms)
-if not args.canonical_testing:
-    speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_train, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, int(args_swa.cycle_steps * args_swa.training_cycles), device, args.background_volume, args.background_frequency, args.silence_percentage, args.unknown_percentage, args.time_shift_ms, non_canonical_test = not args.canonical_testing)
-    speech_dataset_test.size = int(np.sum(np.unique(speech_dataset_test.list_of_y, return_counts= True)[1][:10])/.8)
-else:
-    speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_test, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, int(args_swa.cycle_steps * args_swa.training_cycles), device, args.background_volume, args.background_frequency, args.silence_percentage, args.unknown_percentage, args.time_shift_ms, non_canonical_test = not args.canonical_testing)
 
-speech_dataset_val.size = int(np.sum(np.unique(speech_dataset_val.list_of_y, return_counts= True)[1][:10])/.8)
+speech_dataset_val = SpeechCommandsGoogle(args.dataset_path_train, 'validation', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, epoch_list[-1], device, 0., 0., args.silence_percentage, args.unknown_percentage, 0.)
 
+speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_train, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, epoch_list[-1], device, 0., 0., args.silence_percentage, args.unknown_percentage, 0., non_canonical_test = not args.canonical_testing)
 
 train_dataloader = torch.utils.data.DataLoader(speech_dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
 test_dataloader = torch.utils.data.DataLoader(speech_dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
@@ -53,11 +52,11 @@ validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_si
 
 model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = args.init_factor, quant_beta = args.global_beta, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = args.noise_injectionT, blocks = args.lstm_blocks, pool_method = args.pool_method, fc_blocks = args.fc_blocks).to(device)
 model.load_state_dict(checkpoint_dict['model_dict'])
-
+model.to(device)
 
 model_uuid = str(uuid.uuid4())
 
-model.to(device)
+
 loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.SGD(model.parameters(), lr=0.0005)
 scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.0001, max_lr=0.00002, step_size_up = args_swa.cycle_steps, step_size_down = 1)

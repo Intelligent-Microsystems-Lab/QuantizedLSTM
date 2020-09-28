@@ -14,6 +14,10 @@ from dataloader import SpeechCommandsGoogle
 from model import KWS_LSTM, pre_processing
 from figure_scripts import plot_curves
 
+import tensorflow as tf
+
+import input_data_tf
+
 torch.manual_seed(42)
 if torch.cuda.is_available():
     device = torch.device("cuda")    
@@ -50,8 +54,8 @@ parser.add_argument('--silence-percentage', type=float, default=.1, help='How mu
 parser.add_argument('--unknown-percentage', type=float, default=.1, help='How much of the training data should be unknown words.')
 parser.add_argument('--time-shift-ms', type=float, default=100.0, help='Range to randomly shift the training audio by in time.')
 
-parser.add_argument("--win-length", type=int, default=400, help='Window size in ms') # 400
-parser.add_argument("--hop-length", type=int, default=330, help='Length of hop between STFT windows') #320
+parser.add_argument("--win-length", type=int, default=40, help='Window size in ms') # 400
+parser.add_argument("--hop-length", type=int, default=20, help='Length of hop between STFT windows') #320
 parser.add_argument("--std-scale", type=int, default=3, help='Scaling by how many standard deviations (e.g. how many big values will be cut off: 1std = 65%, 2std = 95%), 3std=99%')
 
 parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
@@ -76,18 +80,22 @@ epoch_list = np.cumsum([int(x) for x in args.training_steps.split(',')])
 lr_list = [float(x) for x in args.learning_rate.split(',')]
 
 
+model_settings = input_data.prepare_model_settings(
+      len(input_data.prepare_words_list(args.word_list)),
+      args.sample_rate, 1000, args.win_length,
+      args.hop_length, args.n_mfcc)
 
-mfcc_cuda = torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, log_mels = True, melkwargs = {'win_length' : args.win_length, 'hop_length':args.hop_length}).to(device)
+audio_processor = input_data.AudioProcessor(
+      'http://download.tensorflow.org/data/speech_commands_v0.02.tar.gz', 'data.nosync/speech_dataset', args.silencepercentage*1000,
+      args.unknown_percentage*100,
+      args.word_list, args.validation_percentage,
+      args.testing_percentage, model_settings)
 
-speech_dataset_train = SpeechCommandsGoogle(args.dataset_path_train, 'training', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, epoch_list[-1], device, args.background_volume, args.background_frequency, args.silence_percentage, args.unknown_percentage, args.time_shift_ms)
+fingerprint_size = model_settings['fingerprint_size']
+label_count = model_settings['label_count']
+time_shift_samples = int((args.time_shift_ms * args.sample_rate) / 1000)
 
-speech_dataset_val = SpeechCommandsGoogle(args.dataset_path_train, 'validation', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, epoch_list[-1], device, 0., 0., args.silence_percentage, args.unknown_percentage, 0.)
-
-speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_train, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, epoch_list[-1], device, 0., 0., args.silence_percentage, args.unknown_percentage, 0., non_canonical_test = not args.canonical_testing)
-
-train_dataloader = torch.utils.data.DataLoader(speech_dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
-test_dataloader = torch.utils.data.DataLoader(speech_dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
-validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
+sess = tf.InteractiveSession()
 
 model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = args.init_factor, quant_beta = args.global_beta, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = args.noise_injectionT, blocks = args.lstm_blocks, pool_method = args.pool_method, fc_blocks = args.fc_blocks).to(device)
 model.to(device)
@@ -106,14 +114,17 @@ print(model_uuid)
 print("Start Training:")
 print("Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)")
 start_time = time.time()
-for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
+for e in range(epoch_list[-1]):
     if e in epoch_list:
         for param_group in optimizer.param_groups:
             param_group['lr'] = lr_list[seg_count]
             seg_count += 1
 
     # train
-    x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale)
+    train_fingerprints, train_ground_truth = audio_processor.get_data(
+        args.batch_size, 0, model_settings, args.background_frequency,
+        args.background_volume, time_shift_samples, 'training', sess)
+
     output = model(x_data, train = True)
     
     loss_val = loss_fn(output, y_label)
@@ -127,8 +138,10 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
     if (e%100 == 0) or (e == epoch_list[-1]-1):
         # validation
         temp_list = []
-        for val_e, (x_vali, y_vali) in enumerate(validation_dataloader):
-            x_data, y_label = pre_processing(x_vali, y_vali, device, mfcc_cuda, args.std_scale)
+        set_size = audio_processor.set_size('validation')
+        for val_e in range(0, set_size, args.batch_size):
+            validation_fingerprints, validation_ground_truth = (audio_processor.get_data(args.batch_size, val_e, model_settings, 0.0, 0.0, 0, 'validation', sess))
+            #x_data, y_label = pre_processing(x_vali, y_vali, device, mfcc_cuda, args.std_scale)
 
             output = model(x_data, train = False)
             temp_list.append((output.argmax(dim=1) == y_label).float().mean().item())
