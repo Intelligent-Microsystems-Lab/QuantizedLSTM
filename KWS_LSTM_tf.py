@@ -86,7 +86,7 @@ model_settings = input_data_tf.prepare_model_settings(
       args.hop_length, args.n_mfcc)
 
 audio_processor = input_data_tf.AudioProcessor(
-      'http://download.tensorflow.org/data/speech_commands_v0.02.tar.gz', 'data.nosync/speech_dataset', args.silence_percentage*1000,
+      'http://download.tensorflow.org/data/speech_commands_v0.02.tar.gz', 'data.nosync/speech_dataset', args.silence_percentage*100,
       args.unknown_percentage*100,
       args.word_list[:10], args.validation_percentage,
       args.testing_percentage, model_settings)
