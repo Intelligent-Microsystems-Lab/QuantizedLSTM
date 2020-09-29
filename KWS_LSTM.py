@@ -114,6 +114,7 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
 
     # train
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale)
+    import pdb; pdb.set_trace()
 
     x_data = quant_pass(x_data, args.quant_inp, True, False)
 

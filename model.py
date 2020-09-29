@@ -326,8 +326,8 @@ def pre_processing(x, y, device, mfcc_cuda, std_scale):
     batch_size = x.shape[0]
 
     x =  mfcc_cuda(x.to(device))
-    x -= x.reshape((batch_size, -1 )).mean(axis=1)[:, None, None]
-    x /= (x.reshape((batch_size, -1 )).std(axis=1)*std_scale)[:, None, None]
+    #x -= x.reshape((batch_size, -1 )).mean(axis=1)[:, None, None]
+    #x /= (x.reshape((batch_size, -1 )).std(axis=1)*std_scale)[:, None, None]
     x =  x.permute(2,0,1)
     y =  y.view((-1)).to(device)
 
