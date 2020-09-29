@@ -326,6 +326,7 @@ class AudioProcessor(object):
       else:
         self.word_to_index[word] = UNKNOWN_WORD_INDEX
     self.word_to_index[SILENCE_LABEL] = SILENCE_INDEX
+    import pdb; pdb.set_trace()
 
 
   def prepare_background_data(self):
