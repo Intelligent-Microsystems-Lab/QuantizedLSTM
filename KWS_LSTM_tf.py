@@ -25,6 +25,8 @@ if torch.cuda.is_available():
 else:
     device = torch.device("cpu")
 
+torch.manual_seed(80085)
+np.random.seed(80085)
 
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
@@ -124,7 +126,6 @@ for e in range(epoch_list[-1]):
     train_fingerprints, train_ground_truth = audio_processor.get_data(
         args.batch_size, 0, model_settings, args.background_frequency,
         args.background_volume, time_shift_samples, 'training', sess)
-    import pdb; pdb.set_trace()
     y_label = torch.tensor(train_ground_truth).argmax(dim=1).to(device)
     x_data  = torch.tensor(train_fingerprints, dtype = torch.float32).to(device).reshape([-1, model_settings['spectrogram_length'],model_settings['dct_coefficient_count']]).permute(1,0,2)
 

@@ -322,10 +322,12 @@ class KWS_LSTM(nn.Module):
         return output
 
 
-def pre_processing(x, y, device, mfcc_cuda, std_scale):
+def pre_processing(x, y, device, mfcc_cuda, std_scale, mean_val, std_val):
     batch_size = x.shape[0]
 
     x =  mfcc_cuda(x.to(device))
+    x -= mean_val
+    x /= std_val*std_scale
     #x -= x.reshape((batch_size, -1 )).mean(axis=1)[:, None, None]
     #x /= (x.reshape((batch_size, -1 )).std(axis=1)*std_scale)[:, None, None]
     x =  x.permute(2,0,1)

@@ -21,6 +21,8 @@ if torch.cuda.is_available():
 else:
     device = torch.device("cpu")
 
+torch.manual_seed(80085)
+np.random.seed(80085)
 
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
@@ -70,6 +72,9 @@ parser.add_argument("--quant-w", type=int, default=0, help='Bits available for w
 parser.add_argument("--cy-div", type=int, default=2, help='CY division')
 parser.add_argument("--cy-scale", type=int, default=2, help='Scaling CY')
 
+parser.add_argument("--inp-mean", type=float, default=-1.9685, help='Input pre_processing')
+parser.add_argument("--inp-std", type=float, default=10.8398, help='Input pre_processing')
+
 args = parser.parse_args()
 
 epoch_list = np.cumsum([int(x) for x in args.training_steps.split(',')])
@@ -113,8 +118,7 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
             seg_count += 1
 
     # train
-    x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale)
-    import pdb; pdb.set_trace()
+    x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale, args.inp_mean, args.inp_std)
 
     x_data = quant_pass(x_data, args.quant_inp, True, False)
 
@@ -132,7 +136,7 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
         # validation
         temp_list = []
         for val_e, (x_vali, y_vali) in enumerate(validation_dataloader):
-            x_data, y_label = pre_processing(x_vali, y_vali, device, mfcc_cuda, args.std_scale)
+            x_data, y_label = pre_processing(x_vali, y_vali, device, mfcc_cuda, args.std_scale, args.inp_mean, args.inp_std)
 
             x_data = quant_pass(x_data, args.quant_inp, True, False)
 
@@ -171,7 +175,7 @@ acc_aux = []
 model.noise_level = args.noise_injectionI
 for i_batch, sample_batch in enumerate(test_dataloader):
     x_data, y_label = sample_batch
-    x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale)
+    x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale, args.inp_mean, args.inp_std)
     x_data = quant_pass(x_data, args.quant_inp, True, False)
 
     output = model(x_data, train = False)
