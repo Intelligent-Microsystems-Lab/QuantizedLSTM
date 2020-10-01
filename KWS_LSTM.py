@@ -54,7 +54,7 @@ parser.add_argument('--time-shift-ms', type=float, default=100.0, help='Range to
 
 parser.add_argument("--win-length", type=int, default=640, help='Window size in ms') # 400
 parser.add_argument("--hop-length", type=int, default=320, help='Length of hop between STFT windows') #320
-parser.add_argument("--std-scale", type=int, default=3, help='Scaling by how many standard deviations (e.g. how many big values will be cut off: 1std = 65%, 2std = 95%), 3std=99%')
+parser.add_argument("--std-scale", type=int, default=1, help='Scaling by how many standard deviations (e.g. how many big values will be cut off: 1std = 65%, 2std = 95%), 3std=99%') # 3
 
 parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
 #parser.add_argument("--word-list", nargs='+', type=str, default=['stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
@@ -72,8 +72,11 @@ parser.add_argument("--quant-w", type=int, default=0, help='Bits available for w
 parser.add_argument("--cy-div", type=int, default=2, help='CY division')
 parser.add_argument("--cy-scale", type=int, default=2, help='Scaling CY')
 
-parser.add_argument("--inp-mean", type=float, default=-1.9685, help='Input pre_processing')
-parser.add_argument("--inp-std", type=float, default=10.8398, help='Input pre_processing')
+# parser.add_argument("--inp-mean", type=float, default=-1.9685, help='Input pre_processing')
+# parser.add_argument("--inp-std", type=float, default=10.8398, help='Input pre_processing')
+
+parser.add_argument("--inp-mean", type=float, default=0, help='Input pre_processing')
+parser.add_argument("--inp-std", type=float, default=128, help='Input pre_processing')
 
 args = parser.parse_args()
 
