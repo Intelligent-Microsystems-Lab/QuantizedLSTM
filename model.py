@@ -232,7 +232,7 @@ class LinLayer(nn.Module):
 
 
     def forward(self, input, train):
-        return quant_pass(torch.tanh((CustomMM.apply(quant_pass(input, self.ib, True, train), quant_pass(self.weights/self.scale, self.wb, True, train), quant_pass(self.bias, self.wb, True, train), self.noise_level, self.scale))), self.abMVM, True, train)
+        return quant_pass(CustomMM.apply(quant_pass(input, self.ib, True, train), quant_pass(self.weights/self.scale, self.wb, True, train), quant_pass(self.bias/self.scale, self.wb, True, train), self.noise_level, self.scale), self.abMVM, True, train)
 
 
 class KWS_LSTM(nn.Module):
@@ -297,7 +297,7 @@ class KWS_LSTM(nn.Module):
 
         # Testing!!!!!
         self.lstmBlocks = torch.nn.LSTM(input_size = self.input_dim, hidden_size = self.hidden_dim, num_layers = 1, batch_first = False)
-        self.finFC = torch.nn.Linear(in_features = self.hidden_dim, out_features = self.output_dim, bias = True)
+        # self.finFC = torch.nn.Linear(in_features = self.hidden_dim, out_features = self.output_dim, bias = True)
 
 
     def forward(self, inputs, train):
