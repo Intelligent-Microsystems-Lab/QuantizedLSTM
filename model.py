@@ -190,8 +190,8 @@ class LSTMLayer(nn.Module):
         super(LSTMLayer, self).__init__()
         self.cell = cell(*cell_args)
 
-        self.cell.scale1, limit1 = limit_scale(cell_args[1], 2, 1.5, wb)
-        self.cell.scale2, limit2 = limit_scale(cell_args[0], 2, 1.5, wb)
+        self.cell.scale1, limit1 = limit_scale(cell_args[1], 2, 1.5, cell_args[2])
+        self.cell.scale2, limit2 = limit_scale(cell_args[0], 2, 1.5, cell_args[2])
 
         torch.nn.init.uniform_(self.cell.weight_ih, a = -limit1, b = limit1)
         torch.nn.init.uniform_(self.cell.weight_hh, a = -limit2, b = limit2)
