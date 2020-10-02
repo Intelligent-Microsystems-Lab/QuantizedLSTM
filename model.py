@@ -220,7 +220,6 @@ class LinLayer(nn.Module):
     def forward(self, input, train):
         noise_bias_ro = torch.randn(self.bias.t().shape, device = input.device) * self.bias.max() * self.noise_level
 
-        import pdb; pdb.set_trace()
         return quant_pass(torch.tanh((CustomMM.apply(quant_pass(input, self.ib, True, train), self.weights, self.noise_level) + self.bias + noise_bias_ro)), self.abMVM, True, train)
 
 
@@ -285,13 +284,13 @@ class KWS_LSTM(nn.Module):
 
 
         # Testing!!!!!
-        self.lstmBlocks = torch.nn.LSTM(input_size = self.input_dim, hidden_size = self.hidden_dim, num_layers = 1, batch_first = False)
+        #self.lstmBlocks = torch.nn.LSTM(input_size = self.input_dim, hidden_size = self.hidden_dim, num_layers = 1, batch_first = False)
         #self.finFC = torch.nn.Linear(in_features = self.hidden_dim, out_features = self.output_dim, bias = True)
 
 
     def forward(self, inputs, train):
         # init states with zero
-        self.hidden_state = (torch.zeros(1, inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(1,inputs.shape[1], self.hidden_dim, device = self.device))
+        self.hidden_state = (torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device))
 
         # LSTM blocks
         if self.n_blocks != 0:
@@ -306,7 +305,7 @@ class KWS_LSTM(nn.Module):
             lstm_out = quant_pass(lstm_out, self.ib, True, train)
             lstm_out = F.pad(lstm_out, (0, self.fc_blocks*100 - lstm_out.shape[1]))
         else:
-            lstm_out, _ = self.lstmBlocks(inputs, self.hidden_state) #, train
+            lstm_out, _ = self.lstmBlocks(inputs, self.hidden_state, train)
 
         # FC blocks
         if self.fc_blocks != 0:
@@ -319,7 +318,6 @@ class KWS_LSTM(nn.Module):
         	fc_out = lstm_out[-1,:,:]
 
         # final FC block
-        import pdb; pdb.set_trace()
         output = self.finFC(fc_out, train)
 
         return output
