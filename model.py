@@ -278,7 +278,7 @@ class KWS_LSTM(nn.Module):
 
 
         # final FC layer
-        self.finFC = LinLayer(self.hidden_dim, self.output_dim, noise_level, abMVM)
+        self.finFC = LinLayer(self.hidden_dim, self.output_dim, noise_level, abMVM, ib, wb)
 
 
         # Testing!!!!!
