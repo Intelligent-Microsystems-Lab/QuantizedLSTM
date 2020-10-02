@@ -69,8 +69,8 @@ parser.add_argument("--quant-actNM", type=int, default=0, help='Bits available f
 parser.add_argument("--quant-inp", type=int, default=0, help='Bits available for inputs')
 parser.add_argument("--quant-w", type=int, default=0, help='Bits available for weights')
 
-parser.add_argument("--cy-div", type=int, default=2, help='CY division')
-parser.add_argument("--cy-scale", type=int, default=2, help='Scaling CY')
+parser.add_argument("--cy-div", type=int, default=1, help='CY division')
+parser.add_argument("--cy-scale", type=int, default=1, help='Scaling CY')
 
 # parser.add_argument("--inp-mean", type=float, default=-1.9685, help='Input pre_processing')
 # parser.add_argument("--inp-std", type=float, default=10.8398, help='Input pre_processing')
