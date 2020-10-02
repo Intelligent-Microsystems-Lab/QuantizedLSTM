@@ -317,6 +317,7 @@ class KWS_LSTM(nn.Module):
             lstm_out = quant_pass(lstm_out, self.ib, True, train)
             lstm_out = F.pad(lstm_out, (0, self.fc_blocks*100 - lstm_out.shape[1]))
         else:
+        	import pdb; pdb.set_trace()
             lstm_out, _ = self.lstmBlocks(inputs, self.hidden_state) #, train
 
         # FC blocks
