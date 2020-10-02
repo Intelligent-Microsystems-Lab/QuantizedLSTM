@@ -318,7 +318,7 @@ class KWS_LSTM(nn.Module):
         	fc_out = lstm_out
 
         # final FC block
-        output = self.finFC(fc_out)
+        output = self.finFC(fc_out, train)
 
         return output
 
