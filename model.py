@@ -167,7 +167,7 @@ class LSTMCell(nn.Module):
     def forward(self, input, state, train):
         hx, cx = state
 
-        gates = (CustomMM.apply(quant_pass(input, self.ib, True, train), quant_pass(self.weight_ih.t()/self.scale1, self.wb, True, train), quant_pass(self.bias_ih.t(), self.wb, True, train), self.noise_level, self.scale2) + CustomMM.apply(quant_pass(hx, self.ib, True, train), quant_pass(self.weight_hh.t()/self.scale2, self.wb, True, train), quant_pass(self.bias_hh.t(), self.wb, True, train), self.noise_level, self.scale2))
+        gates = (CustomMM.apply(quant_pass(input, self.ib, True, train), quant_pass(self.weight_ih.t()/self.scale1, self.wb, True, train), quant_pass(self.bias_ih.t()/self.scale1, self.wb, True, train), self.noise_level, self.scale2) + CustomMM.apply(quant_pass(hx, self.ib, True, train), quant_pass(self.weight_hh.t()/self.scale2, self.wb, True, train), quant_pass(self.bias_hh.t()/self.scale2, self.wb, True, train), self.noise_level, self.scale2))
 
         ingate, forgetgate, cellgate, outgate = gates.chunk(4, 1)
 
@@ -296,13 +296,13 @@ class KWS_LSTM(nn.Module):
 
 
         # Testing!!!!!
-        self.lstmBlocks = torch.nn.LSTM(input_size = self.input_dim, hidden_size = self.hidden_dim, num_layers = 1, batch_first = False)
+        #self.lstmBlocks = torch.nn.LSTM(input_size = self.input_dim, hidden_size = self.hidden_dim, num_layers = 1, batch_first = False)
         # self.finFC = torch.nn.Linear(in_features = self.hidden_dim, out_features = self.output_dim, bias = True)
 
 
     def forward(self, inputs, train):
         # init states with zero
-        self.hidden_state = (torch.zeros(1, inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(1, inputs.shape[1], self.hidden_dim, device = self.device))
+        self.hidden_state = (torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device))
 
         # LSTM blocks
         if self.n_blocks != 0:
@@ -317,7 +317,7 @@ class KWS_LSTM(nn.Module):
             lstm_out = quant_pass(lstm_out, self.ib, True, train)
             lstm_out = F.pad(lstm_out, (0, self.fc_blocks*100 - lstm_out.shape[1]))
         else:
-            lstm_out, _ = self.lstmBlocks(inputs, self.hidden_state) #, train
+            lstm_out, _ = self.lstmBlocks(inputs, self.hidden_state, train)
 
         # FC blocks
         if self.fc_blocks != 0:
