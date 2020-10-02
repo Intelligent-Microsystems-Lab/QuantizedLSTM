@@ -193,11 +193,11 @@ class LSTMLayer(nn.Module):
         self.cell.scale1, limit1 = limit_scale(cell_args[1], 2, 1.5, cell_args[2])
         self.cell.scale2, limit2 = limit_scale(cell_args[0], 2, 1.5, cell_args[2])
 
-        torch.nn.init.uniform_(self.cell.weight_ih, a = -limit1, b = limit1)
-        torch.nn.init.uniform_(self.cell.weight_hh, a = -limit2, b = limit2)
+        #torch.nn.init.uniform_(self.cell.weight_ih, a = -limit1, b = limit1)
+        #torch.nn.init.uniform_(self.cell.weight_hh, a = -limit2, b = limit2)
 
-        #torch.nn.init.uniform_(self.cell.weight_ih, a = -np.sqrt(6/cell_args[1]), b = np.sqrt(6/cell_args[1]))
-        #torch.nn.init.uniform_(self.cell.weight_hh, a = -np.sqrt(6/cell_args[0]), b = np.sqrt(6/cell_args[0]))
+        torch.nn.init.uniform_(self.cell.weight_ih, a = -np.sqrt(6/cell_args[1]), b = np.sqrt(6/cell_args[1]))
+        torch.nn.init.uniform_(self.cell.weight_hh, a = -np.sqrt(6/cell_args[0]), b = np.sqrt(6/cell_args[0]))
 
         # http://proceedings.mlr.press/v37/jozefowicz15.pdf
         torch.nn.init.uniform_(self.cell.bias_ih, a = -0, b = 0)
