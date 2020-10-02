@@ -314,6 +314,8 @@ class KWS_LSTM(nn.Module):
                 fc_out.append(self.fcBlocks[i](lstm_out[:,i*100:(i+1)*100], train))
             fc_out = quant_pass(self.poolL2(torch.unsqueeze(torch.cat(fc_out,1),1))[:,0,:], self.ib, True, train)
             fc_out = F.pad(fc_out, (0, 100 - fc_out.shape[1]))
+        else:
+        	fc_out = lstm_out
 
         # final FC block
         output = self.finFC(fc_out)
