@@ -62,7 +62,7 @@ parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'u
 parser.add_argument("--global-beta", type=float, default=1.5, help='Globale Beta for quantization')
 parser.add_argument("--init-factor", type=float, default=2, help='Init factor for quantization')
 
-parser.add_argument("--noise-injectionT", type=float, default=0, help='Percentage of noise injected to weights')
+parser.add_argument("--noise-injectionT", type=float, default=0.1, help='Percentage of noise injected to weights')
 parser.add_argument("--noise-injectionI", type=float, default=0, help='Percentage of noise injected to weights')
 parser.add_argument("--quant-actMVM", type=int, default=8, help='Bits available for MVM activations/state')
 parser.add_argument("--quant-actNM", type=int, default=8, help='Bits available for non-MVM activations/state')
@@ -79,6 +79,9 @@ parser.add_argument("--inp-mean", type=float, default=0, help='Input pre_process
 parser.add_argument("--inp-std", type=float, default=128, help='Input pre_processing')
 
 args = parser.parse_args()
+
+
+args.quant_actNM = args.quant_inp = args.quant_w = args.quant_actMVM
 
 epoch_list = np.cumsum([int(x) for x in args.training_steps.split(',')])
 lr_list = [float(x) for x in args.learning_rate.split(',')]
