@@ -66,8 +66,8 @@ class QuantFunc(torch.autograd.Function):
         to stash information for backward computation. You can cache arbitrary
         objects for use in the backward pass using the ctx.save_for_backward method.
         """
-        ctx.wb = wb
-        ctx.save_for_backward(x)
+        #ctx.wb = wb
+        #ctx.save_for_backward(x)
         # no quantizaton, if x is None or no bits given
         if (x is None) or (wb is None) or (wb == 0):
             return x 
@@ -96,9 +96,9 @@ class QuantFunc(torch.autograd.Function):
 
         STE estimator, no quantization on the backward pass
         """
-        input, = ctx.saved_tensors
-        if (input is None) or (ctx.wb is None) or (ctx.wb == 0):
-            return grad_output, None, None, None
+        #input, = ctx.saved_tensors
+        #if (input is None) or (ctx.wb is None) or (ctx.wb == 0):
+        #    return grad_output, None, None, None
 
         return grad_output, None, None, None
 
@@ -118,31 +118,40 @@ def limit_scale(shape, factor, beta, wb):
 
     return scale, limit.item()
 
-# noise free weights in backward pass
+# noise free weights + biases in backward pass
 class CustomMM(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, input, weight, nl):
+    def forward(ctx, input, weight, bias, nl, scale):
         noise_w = torch.randn(weight.shape, device = input.device) * weight.max() * nl
+        bias_w  = torch.randn(bias.shape, device = bias.device) * bias.max() * nl
 
-        ctx.save_for_backward(input, weight)
-        output = input.mm(weight + noise_w)
+        ctx.save_for_backward(input, weight, bias)
+        output = input.mm(weight + noise_w) + bias + bias_w
         return output
 
     @staticmethod
     def backward(ctx, grad_output):
-        input, weight = ctx.saved_tensors
-        grad_input = grad_output.mm(weight.t())
-        grad_weight = grad_output.t().mm(input)
+        input, weight, bias = ctx.saved_tensors
+        grad_input = grad_weight = grad_bias = None
 
-        return grad_input, grad_weight.t(), None
+        if ctx.needs_input_grad[0]:
+	        grad_input = grad_output.mm(weight.t())
+        if ctx.needs_input_grad[1]:
+        	grad_weight = grad_output.t().mm(input)
+        if ctx.needs_input_grad[2]:
+	        grad_bias = grad_output.sum(0)
+
+        return grad_input, grad_weight.t(), grad_bias, None, None, None
 
 #https://github.com/pytorch/benchmark/blob/master/rnns/fastrnns/custom_lstms.py#L32
 class LSTMCell(nn.Module):
-    def __init__(self, input_size, hidden_size, wb, ib, abMVM, abNM, noise_level, device, cy_div, cy_scale):
+    def __init__(self, input_size, hidden_size, wb, ib, abMVM, abNM, noise_level, device, cy_div, cy_scale, scale1, scale2):
         super(LSTMCell, self).__init__()
         self.device = device
         self.wb = wb
         self.ib = ib
+        self.scale1 = scale1
+        self.scale2 = scale2
         self.abMVM = abMVM
         self.abNM  = abNM
         self.cy_div = cy_div
@@ -158,11 +167,7 @@ class LSTMCell(nn.Module):
     def forward(self, input, state, train):
         hx, cx = state
 
-        # noise injection - for bias
-        noise_bias_ih = torch.randn(self.bias_ih.t().shape, device = self.device) * self.bias_ih.max() * self.noise_level
-        noise_bias_hh = torch.randn(self.bias_hh.t().shape, device = self.device) * self.bias_hh.max() * self.noise_level
-
-        gates = (CustomMM.apply(quant_pass(input, self.ib, True, train), self.weight_ih.t(), self.noise_level) + self.bias_ih + noise_bias_ih + CustomMM.apply(quant_pass(hx, self.ib, True, train), self.weight_hh.t(), self.noise_level) + self.bias_hh + noise_bias_hh)
+        gates = (CustomMM.apply(quant_pass(input, self.ib, True, train), quant_pass(self.weight_ih.t()/self.scale1, self.wb, True, train), quant_pass(self.bias_ih.t(), self.wb, True, train), self.noise_level, self.scale2) + CustomMM.apply(quant_pass(hx, self.ib, True, train), quant_pass(self.weight_hh.t()/self.scale2, self.wb, True, train), quant_pass(self.bias_hh.t(), self.wb, True, train), self.noise_level, self.scale2))
 
         ingate, forgetgate, cellgate, outgate = gates.chunk(4, 1)
 
@@ -185,8 +190,14 @@ class LSTMLayer(nn.Module):
         super(LSTMLayer, self).__init__()
         self.cell = cell(*cell_args)
 
-        torch.nn.init.uniform_(self.cell.weight_ih, a = -np.sqrt(6/cell_args[1]), b = np.sqrt(6/cell_args[1]))
-        torch.nn.init.uniform_(self.cell.weight_hh, a = -np.sqrt(6/cell_args[0]), b = np.sqrt(6/cell_args[0]))
+        self.cell.scale1, limit1 = limit_scale(cell_args[1], 2, 1.5, wb)
+        self.cell.scale2, limit2 = limit_scale(cell_args[0], 2, 1.5, wb)
+
+        torch.nn.init.uniform_(self.cell.weight_ih, a = -limit1, b = limit1)
+        torch.nn.init.uniform_(self.cell.weight_hh, a = -limit2, b = limit2)
+
+        #torch.nn.init.uniform_(self.cell.weight_ih, a = -np.sqrt(6/cell_args[1]), b = np.sqrt(6/cell_args[1]))
+        #torch.nn.init.uniform_(self.cell.weight_hh, a = -np.sqrt(6/cell_args[0]), b = np.sqrt(6/cell_args[0]))
 
         # http://proceedings.mlr.press/v37/jozefowicz15.pdf
         torch.nn.init.uniform_(self.cell.bias_ih, a = -0, b = 0)
@@ -213,14 +224,15 @@ class LinLayer(nn.Module):
         self.weights = nn.Parameter(torch.randn(inp_dim, out_dim))
         self.bias = nn.Parameter(torch.randn(out_dim))
 
-        torch.nn.init.uniform_(self.weights, a = -np.sqrt(6/inp_dim), b = np.sqrt(6/inp_dim))
+        self.scale, limit_a = limit_scale(inp_dim, 2, 1.5, wb)
+
+        #torch.nn.init.uniform_(self.weights, a = -np.sqrt(6/inp_dim), b = np.sqrt(6/inp_dim))
+        torch.nn.init.uniform_(self.weights, a = -limit_a, b = limit_a)
         torch.nn.init.uniform_(self.bias, a = -0, b = 0)
 
 
     def forward(self, input, train):
-        noise_bias_ro = torch.randn(self.bias.t().shape, device = input.device) * self.bias.max() * self.noise_level
-
-        return quant_pass(torch.tanh((CustomMM.apply(quant_pass(input, self.ib, True, train), self.weights, self.noise_level) + self.bias + noise_bias_ro)), self.abMVM, True, train)
+        return quant_pass(torch.tanh((CustomMM.apply(quant_pass(input, self.ib, True, train), quant_pass(self.weights/self.scale, self.wb, True, train), quant_pass(self.bias, self.wb, True, train), self.noise_level, self.scale))), self.abMVM, True, train)
 
 
 class KWS_LSTM(nn.Module):
