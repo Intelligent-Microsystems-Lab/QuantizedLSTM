@@ -1,0 +1,6 @@
+Loading python/3.7.3
+  Loading requirement: tcl/8.6.8 gcc/8.3.0
+Namespace(background_frequency=0.8, background_volume=0.1, batch_size=100, canonical_testing=False, cy_div=2, cy_scale=2, dataloader_num_workers=8, dataset_path_test='data.nosync/speech_commands_test_set_v0.02', dataset_path_train='data.nosync/speech_commands_v0.02', fc_blocks=0, global_beta=1.5, hidden=118, hop_length=320, init_factor=2, inp_mean=0, inp_std=128, learning_rate='0.0005,0.0001,0.00002', lstm_blocks=0, n_mfcc=10, noise_injectionI=0, noise_injectionT=0.1, pool_method='avg', quant_actMVM=3, quant_actNM=3, quant_inp=3, quant_w=3, sample_rate=16000, silence_percentage=0.1, std_scale=1, testing_percentage=10, time_shift_ms=100.0, training_steps='10000,10000,10000', unknown_percentage=0.1, validation_percentage=10, win_length=640, word_list=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'])
+8c56fc39-d538-4d72-b085-570ba96d2904
+Start Training:
+Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)

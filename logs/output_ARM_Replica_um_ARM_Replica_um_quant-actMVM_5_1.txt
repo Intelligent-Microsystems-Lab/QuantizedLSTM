@@ -1,0 +1,14 @@
+Loading python/3.7.3
+  Loading requirement: tcl/8.6.8 gcc/8.3.0
+Namespace(background_frequency=0.8, background_volume=0.1, batch_size=100, canonical_testing=False, cy_div=2, cy_scale=2, dataloader_num_workers=8, dataset_path_test='data.nosync/speech_commands_test_set_v0.02', dataset_path_train='data.nosync/speech_commands_v0.02', fc_blocks=0, global_beta=1.5, hidden=118, hop_length=320, init_factor=2, inp_mean=0, inp_std=128, learning_rate='0.0005,0.0001,0.00002', lstm_blocks=0, n_mfcc=10, noise_injectionI=0, noise_injectionT=0.1, pool_method='avg', quant_actMVM=5, quant_actNM=5, quant_inp=5, quant_w=5, sample_rate=16000, silence_percentage=0.1, std_scale=1, testing_percentage=10, time_shift_ms=100.0, training_steps='10000,10000,10000', unknown_percentage=0.1, validation_percentage=10, win_length=640, word_list=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'])
+82df2586-51ca-48a6-8266-2f7cdb890fe2
+Start Training:
+Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)
+00000     2.5660      0.0700     0.0770     9.0901
+00100     2.5065      0.0900     0.0893     25.3283
+00200     2.4776      0.1300     0.1053     27.4827
+00300     2.4782      0.0900     0.1053     26.5486
+00400     2.4884      0.1400     0.1053     26.4965
+00500     2.5224      0.1000     0.1053     25.8505
+00600     2.5531      0.0700     0.1053     24.9676
+00700     2.4996      0.1200     0.1053     27.8616
