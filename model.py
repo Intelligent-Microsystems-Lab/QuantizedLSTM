@@ -220,6 +220,7 @@ class LinLayer(nn.Module):
     def forward(self, input, train):
         noise_bias_ro = torch.randn(self.bias.t().shape, device = input.device) * self.bias.max() * self.noise_level
 
+        import pdb; pdb.set_trace()
         return quant_pass(torch.tanh((CustomMM.apply(quant_pass(input, self.ib, True, train), self.weights, self.noise_level) + self.bias + noise_bias_ro)), self.abMVM, True, train)
 
 
