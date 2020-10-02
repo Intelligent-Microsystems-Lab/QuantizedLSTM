@@ -175,7 +175,6 @@ class LSTMCell(nn.Module):
         hy = quant_pass(outgate * quant_pass(torch.tanh(cy * args.cy_scale), self.abNM, True, train), self.abNM, True, train)
 
 
-        
         return hy, (hy, cy)
 
 
@@ -202,9 +201,11 @@ class LSTMLayer(nn.Module):
         return torch.stack(outputs), state
 
 class LinLayer(nn.Module):
-    def __init__(self, inp_dim, out_dim, noise_level, abMVM):
+    def __init__(self, inp_dim, out_dim, noise_level, abMVM, ib, wb):
         super(LinLayer, self).__init__()
         self.abMVM = abMVM
+        self.ib = ib
+        self.wb = wb
         self.noise_level = noise_level
 
         self.weights = nn.Parameter(torch.randn(inp_dim, out_dim))
@@ -217,8 +218,7 @@ class LinLayer(nn.Module):
     def forward(self, input, train):
         noise_bias_ro = torch.randn(self.bias.t().shape, device = input.device) * self.bias.max() * self.noise_level
 
-        # what activation?
-        return quant_pass(torch.tanh((CustomMM.apply(input, self.weights, self.noise_level) + self.bias + noise_bias_ro)), self.abMVM, True, train)
+        return quant_pass(torch.tanh((CustomMM.apply(quant_pass(input, self.ib, True, train), self.weights, self.noise_level) + self.bias + noise_bias_ro)), self.abMVM, True, train)
 
 
 class KWS_LSTM(nn.Module):
@@ -282,15 +282,13 @@ class KWS_LSTM(nn.Module):
 
 
         # Testing!!!!!
-        self.lstmBlocks = torch.nn.LSTM(input_size = self.input_dim, hidden_size = self.hidden_dim, num_layers = 1, batch_first = False)
-        self.finFC = torch.nn.Linear(in_features = self.hidden_dim, out_features = self.output_dim, bias = True)
+        #self.lstmBlocks = torch.nn.LSTM(input_size = self.input_dim, hidden_size = self.hidden_dim, num_layers = 1, batch_first = False)
+        #self.finFC = torch.nn.Linear(in_features = self.hidden_dim, out_features = self.output_dim, bias = True)
 
 
     def forward(self, inputs, train):
         # init states with zero
-
-        # remove 1 again!!!!
-        self.hidden_state = (torch.zeros(1, inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(1,inputs.shape[1], self.hidden_dim, device = self.device))
+        self.hidden_state = (torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device))
 
         # LSTM blocks
         if self.n_blocks != 0:
@@ -306,7 +304,6 @@ class KWS_LSTM(nn.Module):
             lstm_out = F.pad(lstm_out, (0, self.fc_blocks*100 - lstm_out.shape[1]))
         else:
             lstm_out, _ = self.lstmBlocks(inputs, self.hidden_state) #train
-            fc_out = quant_pass(lstm_out[-1,:,:], self.ib, True, train)
 
         # FC blocks
         if self.fc_blocks != 0:
@@ -317,7 +314,7 @@ class KWS_LSTM(nn.Module):
             fc_out = F.pad(fc_out, (0, 100 - fc_out.shape[1]))
 
         # final FC block
-        output = self.finFC(fc_out) #train
+        output = self.finFC(fc_out)
 
         return output
 
