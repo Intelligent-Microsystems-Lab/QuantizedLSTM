@@ -138,13 +138,15 @@ class CustomMM(torch.autograd.Function):
 
 #https://github.com/pytorch/benchmark/blob/master/rnns/fastrnns/custom_lstms.py#L32
 class LSTMCell(nn.Module):
-    def __init__(self, input_size, hidden_size, wb, ib, abMVM, abNM, noise_level, device):
+    def __init__(self, input_size, hidden_size, wb, ib, abMVM, abNM, noise_level, device, cy_div, cy_scale):
         super(LSTMCell, self).__init__()
         self.device = device
         self.wb = wb
         self.ib = ib
         self.abMVM = abMVM
         self.abNM  = abNM
+        self.cy_div = cy_div
+        self.cy_scale = cy_scale
         self.noise_level = noise_level
         self.input_size = input_size
         self.hidden_size = hidden_size
@@ -171,8 +173,8 @@ class LSTMCell(nn.Module):
         outgate = quant_pass(torch.sigmoid(outgate), self.abMVM, False, train)
         
         #quantize state / cy scale
-        cy = quant_pass( (quant_pass(forgetgate * cx, self.abNM, True, train) + quant_pass(ingate * cellgate, self.abNM, True, train)) * 1/args.cy_div, self.abNM, True, train)
-        hy = quant_pass(outgate * quant_pass(torch.tanh(cy * args.cy_scale), self.abNM, True, train), self.abNM, True, train)
+        cy = quant_pass( (quant_pass(forgetgate * cx, self.abNM, True, train) + quant_pass(ingate * cellgate, self.abNM, True, train)) * 1/self.cy_div, self.abNM, True, train)
+        hy = quant_pass(outgate * quant_pass(torch.tanh(cy * self.cy_scale), self.abNM, True, train), self.abNM, True, train)
 
 
         return hy, (hy, cy)
@@ -222,7 +224,7 @@ class LinLayer(nn.Module):
 
 
 class KWS_LSTM(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, batch_size, device, quant_factor, quant_beta, wb, abMVM, abNM, blocks, ib, noise_level, pool_method, fc_blocks):
+    def __init__(self, input_dim, hidden_dim, output_dim, batch_size, device, quant_factor, quant_beta, wb, abMVM, abNM, blocks, ib, noise_level, pool_method, fc_blocks, cy_div, cy_scale):
         super(KWS_LSTM, self).__init__()
         self.device = device
         self.batch_size = batch_size
@@ -264,10 +266,10 @@ class KWS_LSTM(nn.Module):
         if blocks != 0:
             self.lstmBlocks = []
             for i in range(blocks):
-                self.lstmBlocks.append(LSTMLayer(LSTMCell, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device))
+                self.lstmBlocks.append(LSTMLayer(LSTMCell, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device, cy_div, cy_scale))
             self.lstmBlocks = nn.ModuleList(self.lstmBlocks)
         else:
-            self.lstmBlocks = LSTMLayer(LSTMCell, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device)
+            self.lstmBlocks = LSTMLayer(LSTMCell, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device, cy_div, cy_scale)
 
         # FC blocks
         if fc_blocks != 0:
