@@ -291,7 +291,7 @@ class KWS_LSTM(nn.Module):
 
     def forward(self, inputs, train):
         # init states with zero
-        self.hidden_state = (torch.zeros(0, inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(0,inputs.shape[1], self.hidden_dim, device = self.device))
+        self.hidden_state = (torch.zeros(1, inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(1,inputs.shape[1], self.hidden_dim, device = self.device))
 
         # LSTM blocks
         if self.n_blocks != 0:
