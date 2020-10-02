@@ -63,7 +63,7 @@ parser.add_argument("--global-beta", type=float, default=1.5, help='Globale Beta
 parser.add_argument("--init-factor", type=float, default=2, help='Init factor for quantization')
 
 parser.add_argument("--noise-injectionT", type=float, default=0.1, help='Percentage of noise injected to weights')
-parser.add_argument("--noise-injectionI", type=float, default=0, help='Percentage of noise injected to weights')
+#parser.add_argument("--noise-injectionI", type=float, default=0, help='Percentage of noise injected to weights')
 parser.add_argument("--quant-actMVM", type=int, default=8, help='Bits available for MVM activations/state')
 parser.add_argument("--quant-actNM", type=int, default=8, help='Bits available for non-MVM activations/state')
 parser.add_argument("--quant-inp", type=int, default=8, help='Bits available for inputs')
@@ -174,7 +174,6 @@ checkpoint_dict = torch.load('./checkpoints/'+model_uuid+'.pkl')
 model.load_state_dict(checkpoint_dict['model_dict'])
 acc_aux = []
 
-model.noise_level = args.noise_injectionI
 for i_batch, sample_batch in enumerate(test_dataloader):
     x_data, y_label = sample_batch
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale, args.inp_mean, args.inp_std)
