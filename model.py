@@ -145,13 +145,13 @@ class CustomMM(torch.autograd.Function):
 
 #https://github.com/pytorch/benchmark/blob/master/rnns/fastrnns/custom_lstms.py#L32
 class LSTMCell(nn.Module):
-    def __init__(self, input_size, hidden_size, wb, ib, abMVM, abNM, noise_level, device, cy_div, cy_scale, scale1, scale2):
+    def __init__(self, input_size, hidden_size, wb, ib, abMVM, abNM, noise_level, device, cy_div, cy_scale):
         super(LSTMCell, self).__init__()
         self.device = device
         self.wb = wb
         self.ib = ib
-        self.scale1 = scale1
-        self.scale2 = scale2
+        self.scale1 = 1
+        self.scale2 = 1
         self.abMVM = abMVM
         self.abNM  = abNM
         self.cy_div = cy_div
