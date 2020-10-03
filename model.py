@@ -316,21 +316,21 @@ class KWS_LSTM(nn.Module):
         else:
             raise ValueError('Unknown Pooling Method')
 
-        # LSTM blocks
-        if blocks != 0:
-            self.lstmBlocks = []
-            for i in range(blocks):
-                self.lstmBlocks.append(LSTMLayer(LSTMCell, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device, cy_div, cy_scale))
-            self.lstmBlocks = nn.ModuleList(self.lstmBlocks)
-        else:
-            self.lstmBlocks = LSTMLayer(LSTMCell, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device, cy_div, cy_scale)
+        # # LSTM blocks
+        # if blocks != 0:
+        #     self.lstmBlocks = []
+        #     for i in range(blocks):
+        #         self.lstmBlocks.append(LSTMLayer(LSTMCell, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device, cy_div, cy_scale))
+        #     self.lstmBlocks = nn.ModuleList(self.lstmBlocks)
+        # else:
+        #     self.lstmBlocks = LSTMLayer(LSTMCell, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device, cy_div, cy_scale)
 
-        # FC blocks
-        if fc_blocks != 0:
-            self.fcBlocks = []
-            for i in range(self.fc_blocks):
-                self.fcBlocks.append(LinLayer(self.hidden_dim, 64, noise_level, abMVM))
-            self.fcBlocks = nn.ModuleList(self.fcBlocks)
+        # # FC blocks
+        # if fc_blocks != 0:
+        #     self.fcBlocks = []
+        #     for i in range(self.fc_blocks):
+        #         self.fcBlocks.append(LinLayer(self.hidden_dim, 64, noise_level, abMVM))
+        #     self.fcBlocks = nn.ModuleList(self.fcBlocks)
 
 
         # final FC layer
