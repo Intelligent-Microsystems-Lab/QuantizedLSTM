@@ -296,8 +296,8 @@ class KWS_LSTM(nn.Module):
 
 
         # Testing!!!!!
-        #self.lstmBlocks = torch.nn.LSTM(input_size = self.input_dim, hidden_size = self.hidden_dim, num_layers = 1, batch_first = False)
-        self.finFC = torch.nn.Linear(in_features = self.hidden_dim, out_features = self.output_dim, bias = True)
+        self.lstmBlocks = torch.nn.LSTM(input_size = self.input_dim, hidden_size = self.hidden_dim, num_layers = 1, batch_first = False)
+        #self.finFC = torch.nn.Linear(in_features = self.hidden_dim, out_features = self.output_dim, bias = True)
 
 
     def forward(self, inputs, train):
