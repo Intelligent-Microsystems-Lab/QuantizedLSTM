@@ -25,7 +25,7 @@ for j in parameter_strings:
 	for i in range(trials):
 	    name = ident_word + datetime.datetime.now().strftime("_%d%m%Y_%H%M%S_") + str(i)
 	    with open('jobscripts/'+name+'.script', 'w') as f:
-	        f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + j
+	        f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + j)
 	    os.system("qsub "+ 'jobscripts/'+name+'.script')
 	    q_counter += 1
 	    if q_counter >= len(avail_q):
