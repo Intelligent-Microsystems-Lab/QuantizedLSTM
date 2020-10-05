@@ -1,0 +1,11 @@
+#!/bin/csh 
+#$ -M cschaef6@nd.edu 
+#$ -m abe
+#$ -q gpu@@joshi
+#$ -l gpu_card=1
+#$ -N Quiwen_05102020_171140_2
+#$ -o ./logs/output_Quiwen_Quiwen_05102020_171140_2.txt
+#$ -e ./logs/error_Quiwen_Quiwen_05102020_171140_2.txt
+module load python
+setenv OMP_NUM_THREADS $NSLOTS
+python KWS_LSTM.py --noise-injectionT 0 --quant-actMVM 8 --quant-actNM 8 --quant-inp 8 --quant-w 8
