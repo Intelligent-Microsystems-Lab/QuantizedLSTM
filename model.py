@@ -72,14 +72,13 @@ class QuantFunc(torch.autograd.Function):
         if (x is None) or (bits is None) or (bits == 0):
             return x
         
-        import pdb; pdb.set_trace()
         step_d = 2.0 ** (bits - 1)
 
         x_scaled = x/x_range
 
-        x01 = torch.clamp(x_scaled,-1+step_d,1-step_d)
+        x01 = torch.clamp(x_scaled,-1+(1./step_d),1-(1./step_d))
 
-        x01q =  torch.round(x * step_d ) / step_d
+        x01q =  torch.round(x01 * step_d ) / step_d
 
         return x01q*x_range
 
