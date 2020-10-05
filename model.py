@@ -284,10 +284,10 @@ class LinLayer(nn.Module):
         self.weights = nn.Parameter(torch.randn(inp_dim, out_dim))
         self.bias = nn.Parameter(torch.randn(out_dim))
 
-        self.scale, limit_a = limit_scale(inp_dim, 2, 1.5, wb)
+        #self.scale, limit_a = limit_scale(inp_dim, 2, 1.5, wb)
 
-        #torch.nn.init.uniform_(self.weights, a = -np.sqrt(6/inp_dim), b = np.sqrt(6/inp_dim))
-        torch.nn.init.uniform_(self.weights, a = -limit_a, b = limit_a)
+        torch.nn.init.uniform_(self.weights, a = -np.sqrt(6/inp_dim), b = np.sqrt(6/inp_dim))
+        #torch.nn.init.uniform_(self.weights, a = -limit_a, b = limit_a)
         torch.nn.init.uniform_(self.bias, a = -0, b = 0)
 
 
