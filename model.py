@@ -218,18 +218,21 @@ class LSTMLayer(nn.Module):
         super(LSTMLayer, self).__init__()
         self.cell = cell(*cell_args)
 
-        #self.cell.scale1, limit1 = limit_scale(cell_args[1], 2, 1.5, cell_args[2])
-        #self.cell.scale2, limit2 = limit_scale(cell_args[0], 2, 1.5, cell_args[2])
+        self.cell.scale1, limit1 = limit_scale(cell_args[1], 2, 1.5, cell_args[2])
+        self.cell.scale2, limit2 = limit_scale(cell_args[0], 2, 1.5, cell_args[2])
 
-        #torch.nn.init.uniform_(self.cell.weight_ih, a = -limit1, b = limit1)
-        #torch.nn.init.uniform_(self.cell.weight_hh, a = -limit2, b = limit2)
+        limit1 = 1.0 / math.sqrt(cell_args[1])
+        limit2 = limit1
+
+        torch.nn.init.uniform_(self.cell.weight_ih, a = -limit1, b = limit1)
+        torch.nn.init.uniform_(self.cell.weight_hh, a = -limit2, b = limit2)
 
         #torch.nn.init.uniform_(self.cell.weight_ih, a = -np.sqrt(6/cell_args[1]), b = np.sqrt(6/cell_args[1]))
         #torch.nn.init.uniform_(self.cell.weight_hh, a = -np.sqrt(6/cell_args[0]), b = np.sqrt(6/cell_args[0]))
 
-        # http://proceedings.mlr.press/v37/jozefowicz15.pdf
-        #torch.nn.init.uniform_(self.cell.bias_ih, a = -0, b = 0)
-        #torch.nn.init.uniform_(self.cell.bias_hh, a = 1, b = 1)
+        #http://proceedings.mlr.press/v37/jozefowicz15.pdf
+        torch.nn.init.uniform_(self.cell.bias_ih, a = -0, b = 0)
+        torch.nn.init.uniform_(self.cell.bias_hh, a = 1, b = 1)
 
     def forward(self, input, state, train):
         inputs = input.unbind(0)
@@ -323,15 +326,15 @@ class KWS_LSTM(nn.Module):
         self.finFC = LinLayer(self.hidden_dim, self.output_dim, noise_level, abMVM, ib, wb)
 
 
-        #self.lstmBlocks = LSTMLayer(LSTMCellQ, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device, cy_div, cy_scale)
+        self.lstmBlocks = LSTMLayer(LSTMCellQ, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device, cy_div, cy_scale)
         # Testing!!!!!
-        self.lstmBlocks = torch.nn.LSTM(input_size = self.input_dim, hidden_size = self.hidden_dim, num_layers = 1, batch_first = False)
+        #self.lstmBlocks = torch.nn.LSTM(input_size = self.input_dim, hidden_size = self.hidden_dim, num_layers = 1, batch_first = False)
         #self.finFC = torch.nn.Linear(in_features = self.hidden_dim, out_features = self.output_dim, bias = True)
 
 
     def forward(self, inputs, train):
         # init states with zero
-        self.hidden_state = (torch.zeros(1, inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(1,inputs.shape[1], self.hidden_dim, device = self.device))
+        self.hidden_state = (torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device))
 
         # LSTM blocks
         if self.n_blocks != 0:
@@ -346,7 +349,7 @@ class KWS_LSTM(nn.Module):
             lstm_out = quant_pass(lstm_out, self.ib, True, train)
             lstm_out = F.pad(lstm_out, (0, self.fc_blocks*100 - lstm_out.shape[1]))
         else:
-            lstm_out, _ = self.lstmBlocks(inputs, self.hidden_state)#, train)
+            lstm_out, _ = self.lstmBlocks(inputs, self.hidden_state, train)
 
         # FC blocks
         if self.fc_blocks != 0:
