@@ -1,6 +1,6 @@
 import os, datetime
 
-ident_word = "Weier_old"
+ident_word = "Quiwen"
 
 part1 = "#!/bin/csh \n#$ -M cschaef6@nd.edu \n#$ -m abe\n#$ -q " 
 part11 = "\n#$ -l gpu_card=1\n#$ -N "
@@ -11,8 +11,8 @@ part3 = ".txt\n#$ -e ./logs/error_"+ident_word+"_"
 
 part4 = ".txt\nmodule load python\nsetenv OMP_NUM_THREADS $NSLOTS\npython KWS_LSTM.py "
 
-# '--noise-injectionT 0 --quant-actMVM 8 --quant-actNM 8 --quant-inp 8 --quant-w 8'
-parameter_strings = ['--noise-injectionT 0.1 --quant-actMVM 6 --quant-actNM 8 --quant-inp 4 --quant-w 0']
+parameter_strings = [ '--noise-injectionT 0 --quant-actMVM 8 --quant-actNM 8 --quant-inp 8 --quant-w 8']
+#parameter_strings = ['--noise-injectionT 0.1 --quant-actMVM 6 --quant-actNM 8 --quant-inp 4 --quant-w 0']
 
 
 trials = 3
