@@ -323,7 +323,7 @@ class KWS_LSTM(nn.Module):
         self.finFC = LinLayer(self.hidden_dim, self.output_dim, noise_level, abMVM, ib, wb)
 
 
-        self.lstmBlocks = LSTMLayer(LSTMCell, self.input_dim, self.hidden_dim)
+        self.lstmBlocks = LSTMLayer(LSTMCellQ, self.input_dim, self.hidden_dim)
         # Testing!!!!!
         #self.lstmBlocks = torch.nn.LSTM(input_size = self.input_dim, hidden_size = self.hidden_dim, num_layers = 1, batch_first = False)
         #self.finFC = torch.nn.Linear(in_features = self.hidden_dim, out_features = self.output_dim, bias = True)
