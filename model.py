@@ -315,25 +315,25 @@ class KWS_LSTM(nn.Module):
         self.fc_blocks = fc_blocks
         self.pool_method = pool_method
 
-        # Pooling Layer
-        if pool_method == 'max':
-            if self.n_blocks > fc_blocks:
-                self.poolL = nn.MaxPool1d(kernel_size = int(np.ceil(self.n_blocks/fc_blocks)))
-            elif self.n_blocks < fc_blocks:
-                raise ValueError('More FC Layer than LSTM Layer')
-            else:
-                self.poolL = None
-            self.poolL2 = nn.MaxPool1d(kernel_size = int(np.ceil(64*fc_blocks/100)))
-        elif pool_method == 'avg':
-            if self.n_blocks > fc_blocks:
-                self.poolL = nn.AvgPool1d(kernel_size = int(np.ceil(self.n_blocks/fc_blocks)))
-            elif self.n_blocks < fc_blocks:
-                raise ValueError('More FC Layer than LSTM Layer')
-            else:
-                self.poolL = None
-            self.poolL2 = nn.AvgPool1d(kernel_size = int(np.ceil(64*fc_blocks/100)))
-        else:
-            raise ValueError('Unknown Pooling Method')
+        # # Pooling Layer
+        # if pool_method == 'max':
+        #     if self.n_blocks > fc_blocks:
+        #         self.poolL = nn.MaxPool1d(kernel_size = int(np.ceil(self.n_blocks/fc_blocks)))
+        #     elif self.n_blocks < fc_blocks:
+        #         raise ValueError('More FC Layer than LSTM Layer')
+        #     else:
+        #         self.poolL = None
+        #     self.poolL2 = nn.MaxPool1d(kernel_size = int(np.ceil(64*fc_blocks/100)))
+        # elif pool_method == 'avg':
+        #     if self.n_blocks > fc_blocks:
+        #         self.poolL = nn.AvgPool1d(kernel_size = int(np.ceil(self.n_blocks/fc_blocks)))
+        #     elif self.n_blocks < fc_blocks:
+        #         raise ValueError('More FC Layer than LSTM Layer')
+        #     else:
+        #         self.poolL = None
+        #     self.poolL2 = nn.AvgPool1d(kernel_size = int(np.ceil(64*fc_blocks/100)))
+        # else:
+        #     raise ValueError('Unknown Pooling Method')
 
         # # LSTM blocks
         # if blocks != 0:
