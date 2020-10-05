@@ -23,32 +23,32 @@ else:
 
 
 
-def step_d(bits):
-    return 2.0 ** (bits - 1)
+# def step_d(bits):
+#     return 2.0 ** (bits - 1)
 
-def shift(x):
-    if x == 0:
-        return 1
-    return 2 ** torch.round(torch.log2(x))
+# def shift(x):
+#     if x == 0:
+#         return 1
+#     return 2 ** torch.round(torch.log2(x))
 
-def clip(x, bits):
-    if bits == 1:
-        delta = 0.
-    else:
-        delta = 1./step_d(bits)
-    maxv = +1 - delta
-    minv = -1 + delta
-    return torch.clamp(x, float(minv), float(maxv))
+# def clip(x, bits):
+#     if bits == 1:
+#         delta = 0.
+#     else:
+#         delta = 1./step_d(bits)
+#     maxv = +1 - delta
+#     minv = -1 + delta
+#     return torch.clamp(x, float(minv), float(maxv))
 
-def quant(x, bits, sign):
-    if bits == 1: # BNN
-        return torch.sign(x)
-    else:
-        if sign:
-            scale = step_d(bits)
-        else:
-            scale = 2.0 ** bits
-        return torch.round(x * scale ) / scale
+# def quant(x, bits, sign):
+#     if bits == 1: # BNN
+#         return torch.sign(x)
+#     else:
+#         if sign:
+#             scale = step_d(bits)
+#         else:
+#             scale = 2.0 ** bits
+#         return torch.round(x * scale ) / scale
 
 
 class QuantFunc(torch.autograd.Function):
@@ -59,7 +59,7 @@ class QuantFunc(torch.autograd.Function):
     """
 
     @staticmethod
-    def forward(ctx, x, wb, sign, train = False):
+    def forward(ctx, x, bits, x_range):
         """
         In the forward pass we receive a Tensor containing the input and return
         a Tensor containing the output. ctx is a context object that can be used
@@ -70,22 +70,24 @@ class QuantFunc(torch.autograd.Function):
         #ctx.save_for_backward(x)
         # no quantizaton, if x is None or no bits given
         if (x is None) or (wb is None) or (wb == 0):
-            return x 
+            return x
         
-        # clipping
-        if sign:
-            x = clip(x, wb)
-        else:
-            x = torch.clamp(x, 0, 1)
+        step_d = 2.0 ** (bits - 1)
 
-        # quantization
+        x_scaled = x/x_range
+
+        x01 = torch.clamp(x_scaled,-1+step_d,1-step_d)
+
+        x01q =  torch.round(x * step_d ) / step_d
+
+        return x01q*x_range
 
         # new experimental approach 
         #if train:
         #    return .5 * quant(x, wb, sign) + .5 * x
         #else:
 
-        return quant(x, wb, sign)
+        #return quant(x, wb, sign)
 
     @staticmethod
     def backward(ctx, grad_output):
@@ -121,12 +123,16 @@ def limit_scale(shape, factor, beta, wb):
 # noise free weights + biases in backward pass
 class CustomMM(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, input, weight, bias, nl, scale):
+    def forward(ctx, input, weight, bias, nl, scale, wb):
         noise_w = torch.randn(weight.shape, device = input.device) * weight.max() * nl
         bias_w  = torch.randn(bias.shape, device = bias.device) * bias.max() * nl
 
+        # quant_pass for weights here + high precision backward pass weights
+        wq = quant_pass(weight, wb, 1.)
+        bq = quant_pass(bias, wb, 1.)
+
         ctx.save_for_backward(input, weight, bias)
-        output = input.mm(weight + noise_w) + bias + bias_w
+        output = input.mm(wq + noise_w) + bq + bias_w
         return output
 
     @staticmethod
@@ -164,22 +170,22 @@ class LSTMCellQ(nn.Module):
         self.bias_ih = nn.Parameter(torch.randn(4 * hidden_size))
         self.bias_hh = nn.Parameter(torch.randn(4 * hidden_size))
 
-    def forward(self, input, state, train):
+    def forward(self, input, state):
         hx, cx = state
 
-        gates = (CustomMM.apply(quant_pass(input, self.ib, True, train), quant_pass(self.weight_ih.t()/self.scale1, self.wb, True, train), quant_pass(self.bias_ih.t()/self.scale1, self.wb, True, train), self.noise_level, self.scale2) + CustomMM.apply(quant_pass(hx, self.ib, True, train), quant_pass(self.weight_hh.t()/self.scale2, self.wb, True, train), quant_pass(self.bias_hh.t()/self.scale2, self.wb, True, train), self.noise_level, self.scale2))
+        gates = (CustomMM.apply(quant_pass(input, self.ib, True), self.weight_ih.t(), self.bias_ih.t(), self.noise_level, self.scale2, self.wb) + CustomMM.apply(quant_pass(hx, self.ib, True), self.weight_hh.t(), self.bias_hh.t(), self.noise_level, self.scale2, self.wb))
 
         ingate, forgetgate, cellgate, outgate = gates.chunk(4, 1)
 
         # quantize activations -> step functions
-        ingate = quant_pass(torch.sigmoid(ingate), self.abMVM, False, train)
-        forgetgate = quant_pass(torch.sigmoid(forgetgate), self.abMVM, False, train) 
-        cellgate = quant_pass(torch.tanh(cellgate), self.abMVM, True, train)
-        outgate = quant_pass(torch.sigmoid(outgate), self.abMVM, False, train)
+        ingate = quant_pass(torch.sigmoid(ingate), self.abMVM, False)
+        forgetgate = quant_pass(torch.sigmoid(forgetgate), self.abMVM, False) 
+        cellgate = quant_pass(torch.tanh(cellgate), self.abMVM, True)
+        outgate = quant_pass(torch.sigmoid(outgate), self.abMVM, False)
         
         #quantize state / cy scale
-        cy = quant_pass( (quant_pass(forgetgate * cx, self.abNM, True, train) + quant_pass(ingate * cellgate, self.abNM, True, train)) * 1/self.cy_div, self.abNM, True, train)
-        hy = quant_pass(outgate * quant_pass(torch.tanh(cy * self.cy_scale), self.abNM, True, train), self.abNM, True, train)
+        cy = quant_pass( (quant_pass(forgetgate * cx, self.abNM, True) + quant_pass(ingate * cellgate, self.abNM, True)) * 1/self.cy_div, self.abNM, True)
+        hy = quant_pass(outgate * quant_pass(torch.tanh(cy * self.cy_scale), self.abNM, True), self.abNM, True)
 
 
         # hx, cx = state
@@ -234,12 +240,12 @@ class LSTMLayer(nn.Module):
         torch.nn.init.uniform_(self.cell.bias_ih, a = -0, b = 0)
         torch.nn.init.uniform_(self.cell.bias_hh, a = 1, b = 1)
 
-    def forward(self, input, state, train):
+    def forward(self, input, state):
         inputs = input.unbind(0)
         outputs = []
 
         for i in range(len(inputs)):
-            out, state = self.cell(inputs[i], state, train)
+            out, state = self.cell(inputs[i], state)
             outputs += [out]
 
         return torch.stack(outputs), state
@@ -262,8 +268,8 @@ class LinLayer(nn.Module):
         torch.nn.init.uniform_(self.bias, a = -0, b = 0)
 
 
-    def forward(self, input, train):
-        return quant_pass(CustomMM.apply(quant_pass(input, self.ib, True, train), quant_pass(self.weights/self.scale, self.wb, True, train), quant_pass(self.bias/self.scale, self.wb, True, train), self.noise_level, self.scale), self.abMVM, True, train)
+    def forward(self, input):
+        return quant_pass(CustomMM.apply(quant_pass(input, self.ib, True), quant_pass(self.weights/self.scale, self.wb, True), quant_pass(self.bias/self.scale, self.wb, True), self.noise_level, self.scale), self.abMVM, True)
 
 
 class KWS_LSTM(nn.Module):
@@ -332,7 +338,7 @@ class KWS_LSTM(nn.Module):
         #self.finFC = torch.nn.Linear(in_features = self.hidden_dim, out_features = self.output_dim, bias = True)
 
 
-    def forward(self, inputs, train):
+    def forward(self, inputs):
         # init states with zero
         self.hidden_state = (torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device))
 
@@ -340,29 +346,29 @@ class KWS_LSTM(nn.Module):
         if self.n_blocks != 0:
             lstm_out = []
             for i in range(self.n_blocks):
-                temp_out, _ = self.lstmBlocks[i](inputs, self.hidden_state, train)
+                temp_out, _ = self.lstmBlocks[i](inputs, self.hidden_state)
                 lstm_out.append(temp_out)
                 del temp_out
             lstm_out = torch.cat(lstm_out, 2)[-1,:,:]
             if self.poolL:
                 lstm_out = self.poolL(torch.unsqueeze(lstm_out, 1))[:,0,:]
-            lstm_out = quant_pass(lstm_out, self.ib, True, train)
+            lstm_out = quant_pass(lstm_out, self.ib, True)
             lstm_out = F.pad(lstm_out, (0, self.fc_blocks*100 - lstm_out.shape[1]))
         else:
-            lstm_out, _ = self.lstmBlocks(inputs, self.hidden_state, train)
+            lstm_out, _ = self.lstmBlocks(inputs, self.hidden_state)
 
         # FC blocks
         if self.fc_blocks != 0:
             fc_out = []
             for i in range(self.fc_blocks):
-                fc_out.append(self.fcBlocks[i](lstm_out[:,i*100:(i+1)*100], train))
-            fc_out = quant_pass(self.poolL2(torch.unsqueeze(torch.cat(fc_out,1),1))[:,0,:], self.ib, True, train)
+                fc_out.append(self.fcBlocks[i](lstm_out[:,i*100:(i+1)*100]))
+            fc_out = quant_pass(self.poolL2(torch.unsqueeze(torch.cat(fc_out,1),1))[:,0,:], self.ib, True)
             fc_out = F.pad(fc_out, (0, 100 - fc_out.shape[1]))
         else:
         	fc_out = lstm_out[-1,:,:]
 
         # final FC block
-        output = self.finFC(fc_out, train)
+        output = self.finFC(fc_out)
 
         return output
 
