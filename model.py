@@ -269,7 +269,7 @@ class LinLayer(nn.Module):
 
 
     def forward(self, input):
-        return quant_pass(CustomMM.apply(quant_pass(input, self.ib, True), quant_pass(self.weights/self.scale, self.wb, True), quant_pass(self.bias/self.scale, self.wb, True), self.noise_level, self.scale), self.abMVM, True)
+        return quant_pass(CustomMM.apply(quant_pass(input, self.ib, True), quant_pass(self.weights/self.scale, self.wb, True), quant_pass(self.bias/self.scale, self.wb, True), self.noise_level, self.scale, self.wb), self.abMVM, True)
 
 
 class KWS_LSTM(nn.Module):
