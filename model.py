@@ -165,38 +165,23 @@ class LSTMCellQ(nn.Module):
         self.bias_hh = nn.Parameter(torch.randn(4 * hidden_size))
 
     def forward(self, input, state, train):
-        hx, cx = state
+        # hx, cx = state
 
-        gates = (CustomMM.apply(quant_pass(input, self.ib, True, train), quant_pass(self.weight_ih.t()/self.scale1, self.wb, True, train), quant_pass(self.bias_ih.t()/self.scale1, self.wb, True, train), self.noise_level, self.scale2) + CustomMM.apply(quant_pass(hx, self.ib, True, train), quant_pass(self.weight_hh.t()/self.scale2, self.wb, True, train), quant_pass(self.bias_hh.t()/self.scale2, self.wb, True, train), self.noise_level, self.scale2))
+        # gates = (CustomMM.apply(quant_pass(input, self.ib, True, train), quant_pass(self.weight_ih.t()/self.scale1, self.wb, True, train), quant_pass(self.bias_ih.t()/self.scale1, self.wb, True, train), self.noise_level, self.scale2) + CustomMM.apply(quant_pass(hx, self.ib, True, train), quant_pass(self.weight_hh.t()/self.scale2, self.wb, True, train), quant_pass(self.bias_hh.t()/self.scale2, self.wb, True, train), self.noise_level, self.scale2))
 
-        ingate, forgetgate, cellgate, outgate = gates.chunk(4, 1)
+        # ingate, forgetgate, cellgate, outgate = gates.chunk(4, 1)
 
-        # quantize activations -> step functions
-        ingate = quant_pass(torch.sigmoid(ingate), self.abMVM, False, train)
-        forgetgate = quant_pass(torch.sigmoid(forgetgate), self.abMVM, False, train) 
-        cellgate = quant_pass(torch.tanh(cellgate), self.abMVM, True, train)
-        outgate = quant_pass(torch.sigmoid(outgate), self.abMVM, False, train)
+        # # quantize activations -> step functions
+        # ingate = quant_pass(torch.sigmoid(ingate), self.abMVM, False, train)
+        # forgetgate = quant_pass(torch.sigmoid(forgetgate), self.abMVM, False, train) 
+        # cellgate = quant_pass(torch.tanh(cellgate), self.abMVM, True, train)
+        # outgate = quant_pass(torch.sigmoid(outgate), self.abMVM, False, train)
         
-        #quantize state / cy scale
-        cy = quant_pass( (quant_pass(forgetgate * cx, self.abNM, True, train) + quant_pass(ingate * cellgate, self.abNM, True, train)) * 1/self.cy_div, self.abNM, True, train)
-        hy = quant_pass(outgate * quant_pass(torch.tanh(cy * self.cy_scale), self.abNM, True, train), self.abNM, True, train)
+        # #quantize state / cy scale
+        # cy = quant_pass( (quant_pass(forgetgate * cx, self.abNM, True, train) + quant_pass(ingate * cellgate, self.abNM, True, train)) * 1/self.cy_div, self.abNM, True, train)
+        # hy = quant_pass(outgate * quant_pass(torch.tanh(cy * self.cy_scale), self.abNM, True, train), self.abNM, True, train)
 
 
-        return hy, (hy, cy)
-
-class LSTMCell(nn.Module):
-    def __init__(self, input_size, hidden_size):
-        super(LSTMCell, self).__init__()
-        self.input_size = input_size
-        self.hidden_size = hidden_size
-        self.weight_ih = torch.nn.Parameter(torch.randn(4 * hidden_size, input_size))
-        self.weight_hh = torch.nn.Parameter(torch.randn(4 * hidden_size, hidden_size))
-        self.bias_ih = torch.nn.Parameter(torch.randn(4 * hidden_size))
-        self.bias_hh = torch.nn.Parameter(torch.randn(4 * hidden_size))
-
-    #@jit.script_method
-    def forward(self, input, state):
-        # type: (Tensor, Tuple[Tensor, Tensor]) -> Tuple[Tensor, Tuple[Tensor, Tensor]]
         hx, cx = state
         gates = (torch.mm(input, self.weight_ih.t()) + self.bias_ih +
                  torch.mm(hx, self.weight_hh.t()) + self.bias_hh)
@@ -212,48 +197,49 @@ class LSTMCell(nn.Module):
 
         return hy, (hy, cy)
 
-class LSTMLayer(nn.Module):
-    def __init__(self, cell, *cell_args):
-        super(LSTMLayer, self).__init__()
-        self.cell = cell(*cell_args)
-
-    #@jit.script_method
-    def forward(self, input, state):
-        # type: (Tensor, Tuple[Tensor, Tensor]) -> Tuple[Tensor, Tuple[Tensor, Tensor]]
-        inputs = input.unbind(0)
-        outputs = []#torch.jit.annotate(List[Tensor], [])
-        for i in range(len(inputs)):
-            out, state = self.cell(inputs[i], state)
-            outputs += [out]
-        return torch.stack(outputs), state
 
 # class LSTMLayer(nn.Module):
 #     def __init__(self, cell, *cell_args):
 #         super(LSTMLayer, self).__init__()
 #         self.cell = cell(*cell_args)
 
-#         self.cell.scale1, limit1 = limit_scale(cell_args[1], 2, 1.5, cell_args[2])
-#         self.cell.scale2, limit2 = limit_scale(cell_args[0], 2, 1.5, cell_args[2])
-
-#         torch.nn.init.uniform_(self.cell.weight_ih, a = -limit1, b = limit1)
-#         torch.nn.init.uniform_(self.cell.weight_hh, a = -limit2, b = limit2)
-
-#         #torch.nn.init.uniform_(self.cell.weight_ih, a = -np.sqrt(6/cell_args[1]), b = np.sqrt(6/cell_args[1]))
-#         #torch.nn.init.uniform_(self.cell.weight_hh, a = -np.sqrt(6/cell_args[0]), b = np.sqrt(6/cell_args[0]))
-
-#         # http://proceedings.mlr.press/v37/jozefowicz15.pdf
-#         torch.nn.init.uniform_(self.cell.bias_ih, a = -0, b = 0)
-#         torch.nn.init.uniform_(self.cell.bias_hh, a = 1, b = 1)
-
-#     def forward(self, input, state, train):
+#     #@jit.script_method
+#     def forward(self, input, state):
+#         # type: (Tensor, Tuple[Tensor, Tensor]) -> Tuple[Tensor, Tuple[Tensor, Tensor]]
 #         inputs = input.unbind(0)
-#         outputs = []
-
+#         outputs = []#torch.jit.annotate(List[Tensor], [])
 #         for i in range(len(inputs)):
-#             out, state = self.cell(inputs[i], state, train)
+#             out, state = self.cell(inputs[i], state)
 #             outputs += [out]
-
 #         return torch.stack(outputs), state
+
+class LSTMLayer(nn.Module):
+    def __init__(self, cell, *cell_args):
+        super(LSTMLayer, self).__init__()
+        self.cell = cell(*cell_args)
+
+        #self.cell.scale1, limit1 = limit_scale(cell_args[1], 2, 1.5, cell_args[2])
+        #self.cell.scale2, limit2 = limit_scale(cell_args[0], 2, 1.5, cell_args[2])
+
+        #torch.nn.init.uniform_(self.cell.weight_ih, a = -limit1, b = limit1)
+        #torch.nn.init.uniform_(self.cell.weight_hh, a = -limit2, b = limit2)
+
+        #torch.nn.init.uniform_(self.cell.weight_ih, a = -np.sqrt(6/cell_args[1]), b = np.sqrt(6/cell_args[1]))
+        #torch.nn.init.uniform_(self.cell.weight_hh, a = -np.sqrt(6/cell_args[0]), b = np.sqrt(6/cell_args[0]))
+
+        # http://proceedings.mlr.press/v37/jozefowicz15.pdf
+        #torch.nn.init.uniform_(self.cell.bias_ih, a = -0, b = 0)
+        #torch.nn.init.uniform_(self.cell.bias_hh, a = 1, b = 1)
+
+    def forward(self, input, state, train):
+        inputs = input.unbind(0)
+        outputs = []
+
+        for i in range(len(inputs)):
+            out, state = self.cell(inputs[i], state, train)
+            outputs += [out]
+
+        return torch.stack(outputs), state
 
 class LinLayer(nn.Module):
     def __init__(self, inp_dim, out_dim, noise_level, abMVM, ib, wb):
