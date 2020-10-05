@@ -21,7 +21,7 @@ trials = 3
 avail_q = ['gpu@@joshi']
 q_counter = 0
 
-for j in parameter_strings
+for j in parameter_strings:
 	for i in range(trials):
 	    name = ident_word + datetime.datetime.now().strftime("_%d%m%Y_%H%M%S_") + str(i)
 	    with open('jobscripts/'+name+'.script', 'w') as f:
