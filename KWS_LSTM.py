@@ -101,7 +101,7 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
             seg_count += 1
 
     # train
-    x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale, args.inp_mean, args.inp_std)
+    x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
 
     output = model(x_data)
     loss_val = loss_fn(output, y_label)
@@ -116,7 +116,7 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
         # validation
         temp_list = []
         for val_e, (x_vali, y_vali) in enumerate(validation_dataloader):
-            x_data, y_label = pre_processing(x_vali, y_vali, device, mfcc_cuda, args.std_scale, args.inp_mean, args.inp_std)
+            x_data, y_label = pre_processing(x_vali, y_vali, device, mfcc_cuda)
 
             output = model(x_data)
             temp_list.append((output.argmax(dim=1) == y_label).float().mean().item())
@@ -152,7 +152,7 @@ acc_aux = []
 
 for i_batch, sample_batch in enumerate(test_dataloader):
     x_data, y_label = sample_batch
-    x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale, args.inp_mean, args.inp_std)
+    x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
 
     output = model(x_data)
     acc_aux.append((output.argmax(dim=1) == y_label))
