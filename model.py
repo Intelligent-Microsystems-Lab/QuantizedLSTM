@@ -292,7 +292,7 @@ class LinLayer(nn.Module):
 
 
     def forward(self, input):
-        return quant_pass(CustomMM.apply(input, self.weights, self.bias, self.noise_level, 1, self.wb), self.abMVM, 16)
+        return quant_pass(CustomMM.apply(quant_pass(input, self.ib, 4), self.weights, self.bias, self.noise_level, 1, self.wb), self.abMVM, 16)
         #return quant_pass(CustomMM.apply(quant_pass(input, self.ib, True), quant_pass(self.weights/self.scale, self.wb, True), quant_pass(self.bias/self.scale, self.wb, True), self.noise_level, self.scale, self.wb), self.abMVM, True)
 
 
@@ -367,30 +367,32 @@ class KWS_LSTM(nn.Module):
         self.hidden_state = (torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device))
 
 
-        # LSTM blocks
-        if self.n_blocks != 0:
-            lstm_out = []
-            for i in range(self.n_blocks):
-                temp_out, _ = self.lstmBlocks[i](inputs, self.hidden_state)
-                lstm_out.append(temp_out)
-                del temp_out
-            lstm_out = torch.cat(lstm_out, 2)[-1,:,:]
-            if self.poolL:
-                lstm_out = self.poolL(torch.unsqueeze(lstm_out, 1))[:,0,:]
-            lstm_out = quant_pass(lstm_out, self.ib, True)
-            lstm_out = F.pad(lstm_out, (0, self.fc_blocks*100 - lstm_out.shape[1]))
-        else:
-            lstm_out, _ = self.lstmBlocks(inputs, self.hidden_state)
+        # # LSTM blocks
+        # if self.n_blocks != 0:
+        #     lstm_out = []
+        #     for i in range(self.n_blocks):
+        #         temp_out, _ = self.lstmBlocks[i](inputs, self.hidden_state)
+        #         lstm_out.append(temp_out)
+        #         del temp_out
+        #     lstm_out = torch.cat(lstm_out, 2)[-1,:,:]
+        #     if self.poolL:
+        #         lstm_out = self.poolL(torch.unsqueeze(lstm_out, 1))[:,0,:]
+        #     lstm_out = quant_pass(lstm_out, self.ib, True)
+        #     lstm_out = F.pad(lstm_out, (0, self.fc_blocks*100 - lstm_out.shape[1]))
+        # else:
+        #     lstm_out, _ = self.lstmBlocks(inputs, self.hidden_state)
 
-        # FC blocks
-        if self.fc_blocks != 0:
-            fc_out = []
-            for i in range(self.fc_blocks):
-                fc_out.append(self.fcBlocks[i](lstm_out[:,i*100:(i+1)*100]))
-            fc_out = quant_pass(self.poolL2(torch.unsqueeze(torch.cat(fc_out,1),1))[:,0,:], self.ib, True)
-            fc_out = F.pad(fc_out, (0, 100 - fc_out.shape[1]))
-        else:
-        	fc_out = lstm_out[-1,:,:]
+        # # FC blocks
+        # if self.fc_blocks != 0:
+        #     fc_out = []
+        #     for i in range(self.fc_blocks):
+        #         fc_out.append(self.fcBlocks[i](lstm_out[:,i*100:(i+1)*100]))
+        #     fc_out = quant_pass(self.poolL2(torch.unsqueeze(torch.cat(fc_out,1),1))[:,0,:], self.ib, True)
+        #     fc_out = F.pad(fc_out, (0, 100 - fc_out.shape[1]))
+        # else:
+        # 	fc_out = lstm_out[-1,:,:]
+
+        lstm_out, _ = self.lstmBlocks(inputs, self.hidden_state)
 
         # final FC block
         output = self.finFC(fc_out)
