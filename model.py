@@ -165,35 +165,35 @@ class LSTMCellQ(nn.Module):
         self.bias_hh = nn.Parameter(torch.randn(4 * hidden_size))
 
     def forward(self, input, state, train):
-        # hx, cx = state
-
-        # gates = (CustomMM.apply(quant_pass(input, self.ib, True, train), quant_pass(self.weight_ih.t()/self.scale1, self.wb, True, train), quant_pass(self.bias_ih.t()/self.scale1, self.wb, True, train), self.noise_level, self.scale2) + CustomMM.apply(quant_pass(hx, self.ib, True, train), quant_pass(self.weight_hh.t()/self.scale2, self.wb, True, train), quant_pass(self.bias_hh.t()/self.scale2, self.wb, True, train), self.noise_level, self.scale2))
-
-        # ingate, forgetgate, cellgate, outgate = gates.chunk(4, 1)
-
-        # # quantize activations -> step functions
-        # ingate = quant_pass(torch.sigmoid(ingate), self.abMVM, False, train)
-        # forgetgate = quant_pass(torch.sigmoid(forgetgate), self.abMVM, False, train) 
-        # cellgate = quant_pass(torch.tanh(cellgate), self.abMVM, True, train)
-        # outgate = quant_pass(torch.sigmoid(outgate), self.abMVM, False, train)
-        
-        # #quantize state / cy scale
-        # cy = quant_pass( (quant_pass(forgetgate * cx, self.abNM, True, train) + quant_pass(ingate * cellgate, self.abNM, True, train)) * 1/self.cy_div, self.abNM, True, train)
-        # hy = quant_pass(outgate * quant_pass(torch.tanh(cy * self.cy_scale), self.abNM, True, train), self.abNM, True, train)
-
-
         hx, cx = state
-        gates = (torch.mm(input, self.weight_ih.t()) + self.bias_ih +
-                 torch.mm(hx, self.weight_hh.t()) + self.bias_hh)
+
+        gates = (CustomMM.apply(quant_pass(input, self.ib, True, train), quant_pass(self.weight_ih.t()/self.scale1, self.wb, True, train), quant_pass(self.bias_ih.t()/self.scale1, self.wb, True, train), self.noise_level, self.scale2) + CustomMM.apply(quant_pass(hx, self.ib, True, train), quant_pass(self.weight_hh.t()/self.scale2, self.wb, True, train), quant_pass(self.bias_hh.t()/self.scale2, self.wb, True, train), self.noise_level, self.scale2))
+
         ingate, forgetgate, cellgate, outgate = gates.chunk(4, 1)
 
-        ingate = torch.sigmoid(ingate)
-        forgetgate = torch.sigmoid(forgetgate)
-        cellgate = torch.tanh(cellgate)
-        outgate = torch.sigmoid(outgate)
+        # quantize activations -> step functions
+        ingate = quant_pass(torch.sigmoid(ingate), self.abMVM, False, train)
+        forgetgate = quant_pass(torch.sigmoid(forgetgate), self.abMVM, False, train) 
+        cellgate = quant_pass(torch.tanh(cellgate), self.abMVM, True, train)
+        outgate = quant_pass(torch.sigmoid(outgate), self.abMVM, False, train)
+        
+        #quantize state / cy scale
+        cy = quant_pass( (quant_pass(forgetgate * cx, self.abNM, True, train) + quant_pass(ingate * cellgate, self.abNM, True, train)) * 1/self.cy_div, self.abNM, True, train)
+        hy = quant_pass(outgate * quant_pass(torch.tanh(cy * self.cy_scale), self.abNM, True, train), self.abNM, True, train)
 
-        cy = (forgetgate * cx) + (ingate * cellgate)
-        hy = outgate * torch.tanh(cy)
+
+        # hx, cx = state
+        # gates = (torch.mm(input, self.weight_ih.t()) + self.bias_ih +
+        #          torch.mm(hx, self.weight_hh.t()) + self.bias_hh)
+        # ingate, forgetgate, cellgate, outgate = gates.chunk(4, 1)
+
+        # ingate = torch.sigmoid(ingate)
+        # forgetgate = torch.sigmoid(forgetgate)
+        # cellgate = torch.tanh(cellgate)
+        # outgate = torch.sigmoid(outgate)
+
+        # cy = (forgetgate * cx) + (ingate * cellgate)
+        # hy = outgate * torch.tanh(cy)
 
         return hy, (hy, cy)
 
@@ -218,8 +218,8 @@ class LSTMLayer(nn.Module):
         super(LSTMLayer, self).__init__()
         self.cell = cell(*cell_args)
 
-        self.cell.scale1, limit1 = limit_scale(cell_args[1], 2, 1.5, cell_args[2])
-        self.cell.scale2, limit2 = limit_scale(cell_args[0], 2, 1.5, cell_args[2])
+        #self.cell.scale1, limit1 = limit_scale(cell_args[1], 2, 1.5, cell_args[2])
+        #self.cell.scale2, limit2 = limit_scale(cell_args[0], 2, 1.5, cell_args[2])
 
         limit1 = 1.0 / math.sqrt(cell_args[1])
         limit2 = limit1
