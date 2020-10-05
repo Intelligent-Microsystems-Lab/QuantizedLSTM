@@ -173,19 +173,42 @@ class LSTMCellQ(nn.Module):
     def forward(self, input, state):
         hx, cx = state
 
-        gates = (CustomMM.apply(quant_pass(input, self.ib, True), self.weight_ih.t(), self.bias_ih.t(), self.noise_level, self.scale2, self.wb) + CustomMM.apply(quant_pass(hx, self.ib, True), self.weight_hh.t(), self.bias_hh.t(), self.noise_level, self.scale2, self.wb))
+        # MVM
+        gates = (CustomMM.apply(quant_pass(input, self.ib, 128), self.weight_ih.t(), self.bias_ih.t(), self.noise_level, self.scale2, self.wb) + CustomMM.apply(quant_pass(hx, self.ib, 128), self.weight_hh.t(), self.bias_hh.t(), self.noise_level, self.scale2, self.wb))
 
-        ingate, forgetgate, cellgate, outgate = gates.chunk(4, 1)
+        # we might be able to skip this one
+        gates = quant_pass(gates, self.abMVM, 16)
 
-        # quantize activations -> step functions
-        ingate = quant_pass(torch.sigmoid(ingate), self.abMVM, False)
-        forgetgate = quant_pass(torch.sigmoid(forgetgate), self.abMVM, False) 
-        cellgate = quant_pass(torch.tanh(cellgate), self.abMVM, True)
-        outgate = quant_pass(torch.sigmoid(outgate), self.abMVM, False)
+        #i, j, f, o
+        i, j, f, o = gates.chunk(4, 1)
         
-        #quantize state / cy scale
-        cy = quant_pass( (quant_pass(forgetgate * cx, self.abNM, True) + quant_pass(ingate * cellgate, self.abNM, True)) * 1/self.cy_div, self.abNM, True)
-        hy = quant_pass(outgate * quant_pass(torch.tanh(cy * self.cy_scale), self.abNM, True), self.abNM, True)
+        # 
+        forget_gate_out = quant_pass(torch.sigmoid(f), self.abNM, 1)
+        input_gate_out = quant_pass(torch.sigmoid(i), self.abNM, 1)
+        activation_out = quant_pass(torch.tanh(j), self.abNM, 1)
+        output_gate_out = quant_pass(sigmoid(o), self.abNM, 1)
+
+
+        #
+        gated_cell = quant_pass(cx * forget_gate_out, self.abNM, 4)
+        activated_input = quant_pass(input_gate_out * activation_out, self.abNM, 1)
+        new_c = quant_pass(gated_cell + activated_input, self.abNM, 4)
+        activated_cell = quant_pass(torch.tanh(new_c), self.abNM, 1)
+        new_h = quant_pass(activated_cell * output_gate_out, self.abNM, 4)
+
+        return new_h, (new_h, new_c)
+
+        #ingate, forgetgate, cellgate, outgate = gates.chunk(4, 1)
+
+        # # quantize activations -> step functions
+        # ingate = quant_pass(torch.sigmoid(ingate), self.abMVM, False)
+        # forgetgate = quant_pass(torch.sigmoid(forgetgate), self.abMVM, False) 
+        # cellgate = quant_pass(torch.tanh(cellgate), self.abMVM, True)
+        # outgate = quant_pass(torch.sigmoid(outgate), self.abMVM, False)
+        
+        # #quantize state / cy scale
+        # cy = quant_pass( (quant_pass(forgetgate * cx, self.abNM, True) + quant_pass(ingate * cellgate, self.abNM, True)) * 1/self.cy_div, self.abNM, True)
+        # hy = quant_pass(outgate * quant_pass(torch.tanh(cy * self.cy_scale), self.abNM, True), self.abNM, True)
 
 
         # hx, cx = state
@@ -201,7 +224,7 @@ class LSTMCellQ(nn.Module):
         # cy = (forgetgate * cx) + (ingate * cellgate)
         # hy = outgate * torch.tanh(cy)
 
-        return hy, (hy, cy)
+        #return hy, (hy, cy)
 
 
 # class LSTMLayer(nn.Module):
@@ -269,7 +292,8 @@ class LinLayer(nn.Module):
 
 
     def forward(self, input):
-        return quant_pass(CustomMM.apply(quant_pass(input, self.ib, True), quant_pass(self.weights/self.scale, self.wb, True), quant_pass(self.bias/self.scale, self.wb, True), self.noise_level, self.scale, self.wb), self.abMVM, True)
+        return CustomMM.apply(input, self.weights, self.bias, self.noise_level, self.scale, self.wb)
+        #return quant_pass(CustomMM.apply(quant_pass(input, self.ib, True), quant_pass(self.weights/self.scale, self.wb, True), quant_pass(self.bias/self.scale, self.wb, True), self.noise_level, self.scale, self.wb), self.abMVM, True)
 
 
 class KWS_LSTM(nn.Module):
@@ -342,6 +366,7 @@ class KWS_LSTM(nn.Module):
         # init states with zero
         self.hidden_state = (torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device))
 
+
         # LSTM blocks
         if self.n_blocks != 0:
             lstm_out = []
@@ -385,3 +410,5 @@ def pre_processing(x, y, device, mfcc_cuda, std_scale, mean_val, std_val):
     y =  y.view((-1)).to(device)
 
     return x,y
+
+

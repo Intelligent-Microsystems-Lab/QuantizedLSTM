@@ -64,9 +64,9 @@ parser.add_argument("--init-factor", type=float, default=2, help='Init factor fo
 
 parser.add_argument("--noise-injectionT", type=float, default=0, help='Percentage of noise injected to weights')
 #parser.add_argument("--noise-injectionI", type=float, default=0, help='Percentage of noise injected to weights')
-parser.add_argument("--quant-actMVM", type=int, default=0, help='Bits available for MVM activations/state')
-parser.add_argument("--quant-actNM", type=int, default=0, help='Bits available for non-MVM activations/state')
-parser.add_argument("--quant-inp", type=int, default=0, help='Bits available for inputs')
+parser.add_argument("--quant-actMVM", type=int, default=8, help='Bits available for MVM activations/state')
+parser.add_argument("--quant-actNM", type=int, default=8, help='Bits available for non-MVM activations/state')
+parser.add_argument("--quant-inp", type=int, default=8, help='Bits available for inputs')
 parser.add_argument("--quant-w", type=int, default=0, help='Bits available for weights')
 
 parser.add_argument("--cy-div", type=int, default=1, help='CY division')
@@ -126,8 +126,6 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
     # train
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale, args.inp_mean, args.inp_std)
 
-    x_data = quant_pass(x_data, 8, 128)
-
     output = model(x_data)
     loss_val = loss_fn(output, y_label)
     train_acc.append((output.argmax(dim=1) == y_label).float().mean().item())
@@ -142,8 +140,6 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
         temp_list = []
         for val_e, (x_vali, y_vali) in enumerate(validation_dataloader):
             x_data, y_label = pre_processing(x_vali, y_vali, device, mfcc_cuda, args.std_scale, args.inp_mean, args.inp_std)
-            import pdb; pdb.set_trace()
-            x_data = quant_pass(x_data, 8, 128)
 
             output = model(x_data)
             temp_list.append((output.argmax(dim=1) == y_label).float().mean().item())
@@ -180,8 +176,6 @@ acc_aux = []
 for i_batch, sample_batch in enumerate(test_dataloader):
     x_data, y_label = sample_batch
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale, args.inp_mean, args.inp_std)
-
-    #x_data = quant_pass(x_data, 8, 128)
 
     output = model(x_data)
     acc_aux.append((output.argmax(dim=1) == y_label))
