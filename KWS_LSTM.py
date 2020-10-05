@@ -128,7 +128,7 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
 
     x_data = quant_pass(x_data, 8, 128)
 
-    output = model(x_data, train = True)
+    output = model(x_data)
     loss_val = loss_fn(output, y_label)
     train_acc.append((output.argmax(dim=1) == y_label).float().mean().item())
 
@@ -145,7 +145,7 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
 
             x_data = quant_pass(x_data, 8, 128)
 
-            output = model(x_data, train = False)
+            output = model(x_data)
             temp_list.append((output.argmax(dim=1) == y_label).float().mean().item())
         val_acc.append(np.mean(temp_list))
 
@@ -183,7 +183,7 @@ for i_batch, sample_batch in enumerate(test_dataloader):
 
     x_data = quant_pass(x_data, 8, 128)
 
-    output = model(x_data, train = False)
+    output = model(x_data)
     acc_aux.append((output.argmax(dim=1) == y_label))
 
 test_acc = torch.cat(acc_aux).float().mean().item()

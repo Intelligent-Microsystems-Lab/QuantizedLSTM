@@ -69,7 +69,7 @@ class QuantFunc(torch.autograd.Function):
         #ctx.wb = wb
         #ctx.save_for_backward(x)
         # no quantizaton, if x is None or no bits given
-        if (x is None) or (wb is None) or (wb == 0):
+        if (x is None) or (bits is None) or (bits == 0):
             return x
         
         step_d = 2.0 ** (bits - 1)
