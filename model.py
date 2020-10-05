@@ -186,7 +186,7 @@ class LSTMCellQ(nn.Module):
         forget_gate_out = quant_pass(torch.sigmoid(f), self.abNM, 1)
         input_gate_out = quant_pass(torch.sigmoid(i), self.abNM, 1)
         activation_out = quant_pass(torch.tanh(j), self.abNM, 1)
-        output_gate_out = quant_pass(sigmoid(o), self.abNM, 1)
+        output_gate_out = quant_pass(torch.sigmoid(o), self.abNM, 1)
 
 
         #
