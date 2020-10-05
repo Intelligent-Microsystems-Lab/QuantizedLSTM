@@ -292,7 +292,7 @@ class LinLayer(nn.Module):
 
 
     def forward(self, input):
-        return CustomMM.apply(input, self.weights, self.bias, self.noise_level, self.scale, self.wb)
+        return CustomMM.apply(input, self.weights, self.bias, self.noise_level, 1, self.wb)
         #return quant_pass(CustomMM.apply(quant_pass(input, self.ib, True), quant_pass(self.weights/self.scale, self.wb, True), quant_pass(self.bias/self.scale, self.wb, True), self.noise_level, self.scale, self.wb), self.abMVM, True)
 
 
