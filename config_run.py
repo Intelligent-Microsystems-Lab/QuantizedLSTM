@@ -1,4 +1,4 @@
-import os, date
+import os, datetime
 
 ident_word = "Weier_old"
 
