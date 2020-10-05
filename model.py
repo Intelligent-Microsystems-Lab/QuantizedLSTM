@@ -393,6 +393,7 @@ class KWS_LSTM(nn.Module):
         # 	fc_out = lstm_out[-1,:,:]
 
         lstm_out, _ = self.lstmBlocks(inputs, self.hidden_state)
+        fc_out = lstm_out[-1,:,:]
 
         # final FC block
         output = self.finFC(fc_out)
