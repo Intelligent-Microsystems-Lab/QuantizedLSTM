@@ -147,7 +147,7 @@ class CustomMM(torch.autograd.Function):
         if ctx.needs_input_grad[2]:
 	        grad_bias = grad_output.sum(0)
 
-        return grad_input, grad_weight.t(), grad_bias, None, None
+        return grad_input, grad_weight.t(), grad_bias, None, None, None
 
 #https://github.com/pytorch/benchmark/blob/master/rnns/fastrnns/custom_lstms.py#L32
 class LSTMCellQ(nn.Module):
