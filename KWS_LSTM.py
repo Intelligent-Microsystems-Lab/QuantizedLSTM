@@ -129,7 +129,6 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
     x_data = quant_pass(x_data, 8, 128)
 
     output = model(x_data, train = True)
-    
     loss_val = loss_fn(output, y_label)
     train_acc.append((output.argmax(dim=1) == y_label).float().mean().item())
 
@@ -143,6 +142,8 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
         temp_list = []
         for val_e, (x_vali, y_vali) in enumerate(validation_dataloader):
             x_data, y_label = pre_processing(x_vali, y_vali, device, mfcc_cuda, args.std_scale, args.inp_mean, args.inp_std)
+
+            x_data = quant_pass(x_data, 8, 128)
 
             output = model(x_data, train = False)
             temp_list.append((output.argmax(dim=1) == y_label).float().mean().item())
@@ -179,6 +180,8 @@ acc_aux = []
 for i_batch, sample_batch in enumerate(test_dataloader):
     x_data, y_label = sample_batch
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda, args.std_scale, args.inp_mean, args.inp_std)
+
+    x_data = quant_pass(x_data, 8, 128)
 
     output = model(x_data, train = False)
     acc_aux.append((output.argmax(dim=1) == y_label))
