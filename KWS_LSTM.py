@@ -27,56 +27,34 @@ np.random.seed(80085)
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 # general config
-
-# parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speech_commands_v0.02_cough', help='Path to Dataset')
-# parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02_cough', help='Path to Dataset')
 parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speech_commands_v0.02', help='Path to Dataset')
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
+parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
 parser.add_argument("--batch-size", type=int, default=100, help='Batch Size')
 parser.add_argument("--training-steps", type=str, default='10000,10000,10000', help='Training Steps')
 parser.add_argument("--learning-rate", type=str, default='0.0005,0.0001,0.00002', help='Learning Rate')
-parser.add_argument("--lstm-blocks", type=int, default=0, help='How many parallel LSTM blocks') 
-parser.add_argument("--fc-blocks", type=int, default=0, help='How many parallel LSTM blocks') 
-parser.add_argument("--pool-method", type=str, default="avg", help='Pooling method [max/avg]') 
-parser.add_argument("--hidden", type=int, default=118, help='Number of hidden LSTM units') 
 parser.add_argument("--dataloader-num-workers", type=int, default=8, help='Number Workers Dataloader')
 parser.add_argument("--validation-percentage", type=int, default=10, help='Validation Set Percentage')
 parser.add_argument("--testing-percentage", type=int, default=10, help='Testing Set Percentage')
 parser.add_argument("--sample-rate", type=int, default=16000, help='Audio Sample Rate')
 parser.add_argument("--canonical-testing", type=bool, default=False, help='Whether to use the canoncial test data.')
 
-parser.add_argument("--n-mfcc", type=int, default=10, help='Number of mfc coefficients to retain') # 40 before
 parser.add_argument("--background-volume", type=float, default=.1, help='How loud the background noise should be, between 0 and 1.') 
 parser.add_argument("--background-frequency", type=float, default=.8, help='How many of the training samples have background noise mixed in.') 
 parser.add_argument('--silence-percentage', type=float, default=.1, help='How much of the training data should be silence.')
 parser.add_argument('--unknown-percentage', type=float, default=.1, help='How much of the training data should be unknown words.')
 parser.add_argument('--time-shift-ms', type=float, default=100.0, help='Range to randomly shift the training audio by in time.')
-
 parser.add_argument("--win-length", type=int, default=640, help='Window size in ms') # 400
 parser.add_argument("--hop-length", type=int, default=320, help='Length of hop between STFT windows') #320
-parser.add_argument("--std-scale", type=int, default=1, help='Scaling by how many standard deviations (e.g. how many big values will be cut off: 1std = 65%, 2std = 95%), 3std=99%') # 3
 
-parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
-#parser.add_argument("--word-list", nargs='+', type=str, default=['stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
-# parser.add_argument("--word-list", nargs='+', type=str, default=['cough', 'unknown', 'silence'], help='Keywords to be learned')
-parser.add_argument("--global-beta", type=float, default=1.5, help='Globale Beta for quantization')
-parser.add_argument("--init-factor", type=float, default=2, help='Init factor for quantization')
+parser.add_argument("--hidden", type=int, default=118, help='Number of hidden LSTM units') 
+parser.add_argument("--n-mfcc", type=int, default=10, help='Number of mfc coefficients to retain') # 40 before
 
-parser.add_argument("--noise-injectionT", type=float, default=0, help='Percentage of noise injected to weights')
-#parser.add_argument("--noise-injectionI", type=float, default=0, help='Percentage of noise injected to weights')
-parser.add_argument("--quant-actMVM", type=int, default=8, help='Bits available for MVM activations/state')
+parser.add_argument("--noise-injectionT", type=float, default=0.1, help='Percentage of noise injected to weights')
+parser.add_argument("--quant-actMVM", type=int, default=6, help='Bits available for MVM activations/state')
 parser.add_argument("--quant-actNM", type=int, default=8, help='Bits available for non-MVM activations/state')
-parser.add_argument("--quant-inp", type=int, default=8, help='Bits available for inputs')
+parser.add_argument("--quant-inp", type=int, default=4, help='Bits available for inputs')
 parser.add_argument("--quant-w", type=int, default=0, help='Bits available for weights')
-
-parser.add_argument("--cy-div", type=int, default=1, help='CY division')
-parser.add_argument("--cy-scale", type=int, default=1, help='Scaling CY')
-
-# parser.add_argument("--inp-mean", type=float, default=-1.9685, help='Input pre_processing')
-# parser.add_argument("--inp-std", type=float, default=10.8398, help='Input pre_processing')
-
-parser.add_argument("--inp-mean", type=float, default=0, help='Input pre_processing')
-parser.add_argument("--inp-std", type=float, default=1, help='Input pre_processing')
 
 args = parser.parse_args()
 
@@ -85,7 +63,6 @@ args.quant_actNM = args.quant_inp = args.quant_w = args.quant_actMVM
 
 epoch_list = np.cumsum([int(x) for x in args.training_steps.split(',')])
 lr_list = [float(x) for x in args.learning_rate.split(',')]
-
 
 
 mfcc_cuda = torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, log_mels = True, melkwargs = {'win_length' : args.win_length, 'hop_length' : args.hop_length, 'n_fft' : args.win_length, 'pad': 0, 'f_min' : 20, 'f_max': 4000, 'n_mels' : 40}).to(device)
