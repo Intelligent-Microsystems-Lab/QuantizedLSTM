@@ -23,8 +23,8 @@ else:
 
 
 
-# def step_d(bits):
-#     return 2.0 ** (bits - 1)
+def step_d(bits):
+    return 2.0 ** (bits - 1)
 
 # def shift(x):
 #     if x == 0:
@@ -123,6 +123,13 @@ def limit_scale(shape, factor, beta, wb):
 
     return scale, limit.item()
 
+def w_init(fp, wb):
+    if (wb is None) or (wb == 0):
+        return fp
+
+    Wm = 1.5/step_d(torch.tensor([float(wb)]))
+    return Wm if Wm > fp else fp
+
 # noise free weights + biases in backward pass
 class CustomMM(torch.autograd.Function):
     @staticmethod
@@ -173,17 +180,17 @@ class LSTMCellQ(nn.Module):
         self.bias_ih = nn.Parameter(torch.randn(4 * hidden_size))
         self.bias_hh = nn.Parameter(torch.randn(4 * hidden_size))
 
-        self.a1 = nn.Parameter(torch.tensor([128]))
-        self.a2 = nn.Parameter(torch.tensor([16]))
-        self.a3 = nn.Parameter(torch.tensor([1]))
-        self.a4 = nn.Parameter(torch.tensor([1]))
-        self.a5 = nn.Parameter(torch.tensor([1]))
-        self.a6 = nn.Parameter(torch.tensor([1]))
-        self.a7 = nn.Parameter(torch.tensor([4]))
-        self.a8 = nn.Parameter(torch.tensor([1]))
-        self.a9 = nn.Parameter(torch.tensor([4]))
-        self.a10 = nn.Parameter(torch.tensor([1]))
-        self.a12 = nn.Parameter(torch.tensor([4]))
+        self.a1 = nn.Parameter(torch.tensor([128.]))
+        self.a2 = nn.Parameter(torch.tensor([16.]))
+        self.a3 = nn.Parameter(torch.tensor([1.]))
+        self.a4 = nn.Parameter(torch.tensor([1.]))
+        self.a5 = nn.Parameter(torch.tensor([1.]))
+        self.a6 = nn.Parameter(torch.tensor([1.]))
+        self.a7 = nn.Parameter(torch.tensor([4.]))
+        self.a8 = nn.Parameter(torch.tensor([1.]))
+        self.a9 = nn.Parameter(torch.tensor([4.]))
+        self.a10 = nn.Parameter(torch.tensor([1.]))
+        self.a12 = nn.Parameter(torch.tensor([4.]))
 
 
     def forward(self, input, state):
@@ -269,6 +276,9 @@ class LSTMLayer(nn.Module):
         limit1 = 1.0 / math.sqrt(cell_args[1])
         limit2 = limit1
 
+        import pdb; pdb.set_trace()
+        limit1 = w_init(limit1, wb)
+
         torch.nn.init.uniform_(self.cell.weight_ih, a = -limit1, b = limit1)
         torch.nn.init.uniform_(self.cell.weight_hh, a = -limit2, b = limit2)
 
@@ -307,8 +317,11 @@ class LinLayer(nn.Module):
         torch.nn.init.uniform_(self.bias, a = -0, b = 0)
 
 
+        self.a1 = nn.Parameter(torch.tensor([4.]))
+        self.a2 = nn.Parameter(torch.tensor([16.]))
+
     def forward(self, input):
-        return quant_pass(CustomMM.apply(quant_pass(input, self.ib, 4), self.weights, self.bias, self.noise_level, 1, self.wb), self.abMVM, 16)
+        return quant_pass(pact_a(CustomMM.apply(quant_pass(pact_a(input, self.a1), self.ib, self.a1), self.weights, self.bias, self.noise_level, 1, self.wb), self.a2), self.abMVM, self.a2)
         #return quant_pass(CustomMM.apply(quant_pass(input, self.ib, True), quant_pass(self.weights/self.scale, self.wb, True), quant_pass(self.bias/self.scale, self.wb, True), self.noise_level, self.scale, self.wb), self.abMVM, True)
 
 
