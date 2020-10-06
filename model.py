@@ -200,7 +200,7 @@ class LSTMCellQ(nn.Module):
         gates = (CustomMM.apply(quant_pass(pact_a(input, self.a1), self.ib, self.a1), self.weight_ih.t(), self.bias_ih.t(), self.noise_level, self.scale2, self.wb) + CustomMM.apply(hx, self.weight_hh.t(), self.bias_hh.t(), self.noise_level, self.scale2, self.wb))
 
         # we might be able to skip this one
-        gates = quant_pass(pact_a(gates, self.a2), self.abMVM, self.a2)
+        #gates = quant_pass(pact_a(gates, self.a2), self.abMVM, self.a2)
 
         #i, j, f, o
         i, j, f, o = gates.chunk(4, 1)
