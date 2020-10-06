@@ -274,13 +274,13 @@ class LSTMLayer(nn.Module):
         #self.cell.scale2, limit2 = limit_scale(cell_args[0], 2, 1.5, cell_args[2])
 
         limit1 = 1.0 / math.sqrt(cell_args[1])
-        limit2 = limit1
+        limit2 = 1.0 / math.sqrt(cell_args[0])
 
-        import pdb; pdb.set_trace()
-        limit1 = w_init(limit1, wb)
+        limit1 = w_init(limit1, cell_args[2])
+        limit2 = w_init(limit2, cell_args[2])
 
-        torch.nn.init.uniform_(self.cell.weight_ih, a = -limit1, b = limit1)
-        torch.nn.init.uniform_(self.cell.weight_hh, a = -limit2, b = limit2)
+        torch.nn.init.uniform_(self.cell.weight_ih, a = -limit2, b = limit1)
+        torch.nn.init.uniform_(self.cell.weight_hh, a = -limit1, b = limit2)
 
         #torch.nn.init.uniform_(self.cell.weight_ih, a = -np.sqrt(6/cell_args[1]), b = np.sqrt(6/cell_args[1]))
         #torch.nn.init.uniform_(self.cell.weight_hh, a = -np.sqrt(6/cell_args[0]), b = np.sqrt(6/cell_args[0]))
@@ -312,7 +312,10 @@ class LinLayer(nn.Module):
 
         #self.scale, limit_a = limit_scale(inp_dim, 2, 1.5, wb)
 
-        torch.nn.init.uniform_(self.weights, a = -np.sqrt(6/inp_dim), b = np.sqrt(6/inp_dim))
+        limit = np.sqrt(6/inp_dim)
+        limit = w_init(limit, wb)
+
+        torch.nn.init.uniform_(self.weights, a = -limit, b = limit)
         #torch.nn.init.uniform_(self.weights, a = -limit_a, b = limit_a)
         torch.nn.init.uniform_(self.bias, a = -0, b = 0)
 
