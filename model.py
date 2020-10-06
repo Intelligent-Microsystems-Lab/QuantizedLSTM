@@ -104,6 +104,9 @@ class QuantFunc(torch.autograd.Function):
 
         return grad_output, None, None, None
 
+def pact_a(x, a):
+    return torch.sign(x) * .5*(torch.abs(x) - torch.abs(torch.abs(x) - a) + a)
+
 quant_pass = QuantFunc.apply
 
 def limit_scale(shape, factor, beta, wb):
@@ -170,31 +173,44 @@ class LSTMCellQ(nn.Module):
         self.bias_ih = nn.Parameter(torch.randn(4 * hidden_size))
         self.bias_hh = nn.Parameter(torch.randn(4 * hidden_size))
 
+        self.a1 = nn.Parameter(torch.tensor([128]))
+        self.a2 = nn.Parameter(torch.tensor([16]))
+        self.a3 = nn.Parameter(torch.tensor([1]))
+        self.a4 = nn.Parameter(torch.tensor([1]))
+        self.a5 = nn.Parameter(torch.tensor([1]))
+        self.a6 = nn.Parameter(torch.tensor([1]))
+        self.a7 = nn.Parameter(torch.tensor([4]))
+        self.a8 = nn.Parameter(torch.tensor([1]))
+        self.a9 = nn.Parameter(torch.tensor([4]))
+        self.a10 = nn.Parameter(torch.tensor([1]))
+        self.a12 = nn.Parameter(torch.tensor([4]))
+
+
     def forward(self, input, state):
         hx, cx = state
 
         # MVM
-        gates = (CustomMM.apply(quant_pass(input, self.ib, 128), self.weight_ih.t(), self.bias_ih.t(), self.noise_level, self.scale2, self.wb) + CustomMM.apply(quant_pass(hx, self.ib, 128), self.weight_hh.t(), self.bias_hh.t(), self.noise_level, self.scale2, self.wb))
+        gates = (CustomMM.apply(quant_pass(pact_a(input, self.a1), self.ib, self.a1), self.weight_ih.t(), self.bias_ih.t(), self.noise_level, self.scale2, self.wb) + CustomMM.apply(hx, self.weight_hh.t(), self.bias_hh.t(), self.noise_level, self.scale2, self.wb))
 
         # we might be able to skip this one
-        gates = quant_pass(gates, self.abMVM, 16)
+        gates = quant_pass(pact_a(gates, self.a2), self.abMVM, self.a2)
 
         #i, j, f, o
         i, j, f, o = gates.chunk(4, 1)
         
         # 
-        forget_gate_out = quant_pass(torch.sigmoid(f), self.abNM, 1)
-        input_gate_out = quant_pass(torch.sigmoid(i), self.abNM, 1)
-        activation_out = quant_pass(torch.tanh(j), self.abNM, 1)
-        output_gate_out = quant_pass(torch.sigmoid(o), self.abNM, 1)
+        forget_gate_out = quant_pass(pact_a(torch.sigmoid(f), self.a3), self.abNM, self.a3)
+        input_gate_out = quant_pass(pact_a(torch.sigmoid(i), self.a3), self.abNM, self.a3)
+        activation_out = quant_pass(pact_a(torch.tanh(j), self.a3), self.abNM, self.a3)
+        output_gate_out = quant_pass(pact_a(torch.sigmoid(o), self.a3), self.abNM, self.a3)
 
 
         #
-        gated_cell = quant_pass(cx * forget_gate_out, self.abNM, 4)
-        activated_input = quant_pass(input_gate_out * activation_out, self.abNM, 1)
-        new_c = quant_pass(gated_cell + activated_input, self.abNM, 4)
-        activated_cell = quant_pass(torch.tanh(new_c), self.abNM, 1)
-        new_h = quant_pass(activated_cell * output_gate_out, self.abNM, 4)
+        gated_cell = quant_pass(pact_a(cx * forget_gate_out, self.a3), self.abNM, self.a3)
+        activated_input = quant_pass(pact_a(input_gate_out * activation_out, self.a3), self.abNM, self.a3)
+        new_c = quant_pass(pact_a(gated_cell + activated_input, self.a3), self.abNM, self.a3)
+        activated_cell = quant_pass(pact_a(torch.tanh(new_c), self.a3), self.abNM, self.a3)
+        new_h = quant_pass(pact_a(activated_cell * output_gate_out, self.a3), self.abNM, self.a3)
 
         return new_h, (new_h, new_c)
 
