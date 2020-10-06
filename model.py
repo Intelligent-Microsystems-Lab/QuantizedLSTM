@@ -279,8 +279,8 @@ class LSTMLayer(nn.Module):
         limit1 = w_init(limit1, cell_args[2])
         limit2 = w_init(limit2, cell_args[2])
 
-        torch.nn.init.uniform_(self.cell.weight_ih, a = -limit2, b = limit2)
         torch.nn.init.uniform_(self.cell.weight_hh, a = -limit1, b = limit1)
+        torch.nn.init.uniform_(self.cell.weight_ih, a = -limit2, b = limit2)
 
         #torch.nn.init.uniform_(self.cell.weight_ih, a = -np.sqrt(6/cell_args[1]), b = np.sqrt(6/cell_args[1]))
         #torch.nn.init.uniform_(self.cell.weight_hh, a = -np.sqrt(6/cell_args[0]), b = np.sqrt(6/cell_args[0]))
