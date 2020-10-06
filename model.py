@@ -409,9 +409,6 @@ def pre_processing(x, y, device, mfcc_cuda):
     y =  y.view((-1)).to(device)
 
 
-    # splitting into 2
-    import pdb; pdb.set_trace()
-
     return x,y
 
 

@@ -59,8 +59,6 @@ parser.add_argument("--quant-w", type=int, default=0, help='Bits available for w
 args = parser.parse_args()
 
 
-args.quant_actNM = args.quant_inp = args.quant_w = args.quant_actMVM
-
 epoch_list = np.cumsum([int(x) for x in args.training_steps.split(',')])
 lr_list = [float(x) for x in args.learning_rate.split(',')]
 
@@ -77,7 +75,7 @@ train_dataloader = torch.utils.data.DataLoader(speech_dataset_train, batch_size=
 test_dataloader = torch.utils.data.DataLoader(speech_dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
 validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
 
-model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = 1, quant_beta = 1, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = args.noise_injectionT, blocks = 1, pool_method = 'Max', fc_blocks = 0, cy_div = 1, cy_scale = 1).to(device)
+model = KWS_LSTM(input_dim = 20, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = 1, quant_beta = 1, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = args.noise_injectionT, blocks = 1, pool_method = 'Max', fc_blocks = 0, cy_div = 1, cy_scale = 1).to(device) #args.n_mfcc
 model.to(device)
 loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=lr_list[0])  
@@ -87,6 +85,27 @@ seg_count = 1
 train_acc = []
 val_acc = []
 model_uuid = str(uuid.uuid4())
+
+def splitter2(x, x_range):
+    orig_len = x.shape[2]
+    x_res = torch.cat([x]*2, dim = 2)
+    x_res *= 2
+
+    x_res[:,:,:orig_len] -= x_range
+    x_res[:,:,orig_len:] += x_range
+
+    return x_res
+
+    # only for power of two bits
+    # orig_len = s.shape[2]
+    # adjuster_list = [x_range*i for i in range(1,int(np.log2(k)+1))]
+    # adjuster_list = adjuster_list + adjuster_list*-1
+
+    # x_res = torch.cat([x]*k, dim = 2)
+    # x_res *= k
+    # for i in range(k):
+    #     x_res[:,:,(i*orig_len):(orig_len*(i+1))] +=  
+
 
 
 print(args)
@@ -103,6 +122,8 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
     # train
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
 
+    x_data = splitter2(x_data, 128)
+
     output = model(x_data)
     loss_val = loss_fn(output, y_label)
     train_acc.append((output.argmax(dim=1) == y_label).float().mean().item())
@@ -117,6 +138,8 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
         temp_list = []
         for val_e, (x_vali, y_vali) in enumerate(validation_dataloader):
             x_data, y_label = pre_processing(x_vali, y_vali, device, mfcc_cuda)
+
+            x_data = splitter2(x_data, 128)
 
             output = model(x_data)
             temp_list.append((output.argmax(dim=1) == y_label).float().mean().item())
@@ -153,6 +176,8 @@ acc_aux = []
 for i_batch, sample_batch in enumerate(test_dataloader):
     x_data, y_label = sample_batch
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
+
+    x_data = splitter2(x_data, 128)
 
     output = model(x_data)
     acc_aux.append((output.argmax(dim=1) == y_label))
