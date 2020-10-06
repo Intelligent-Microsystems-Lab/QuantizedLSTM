@@ -1,0 +1,11 @@
+#!/bin/csh 
+#$ -M cschaef6@nd.edu 
+#$ -m abe
+#$ -q gpu@@joshi
+#$ -l gpu_card=1
+#$ -N PACT_l2_0.1_0
+#$ -o ./logs/output_PACT_PACT_l2_0.1_0.txt
+#$ -e ./logs/error_PACT_PACT_l2_0.1_0.txt
+module load python
+setenv OMP_NUM_THREADS $NSLOTS
+python KWS_LSTM.py --l2 0.1
