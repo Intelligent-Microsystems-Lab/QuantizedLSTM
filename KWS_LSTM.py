@@ -56,6 +56,8 @@ parser.add_argument("--quant-actNM", type=int, default=8, help='Bits available f
 parser.add_argument("--quant-inp", type=int, default=4, help='Bits available for inputs')
 parser.add_argument("--quant-w", type=int, default=0, help='Bits available for weights')
 
+parser.add_argument("--l2", type=float, default=.005, help='Strength of L2 norm')
+
 args = parser.parse_args()
 
 
@@ -117,7 +119,7 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
     output = model(x_data)
 
     loss_val = loss_fn(output, y_label)
-    loss_val += .005 * torch.norm(torch.cat([model.lstmBlocks.cell.a1, model.lstmBlocks.cell.a3,  model.lstmBlocks.cell.a2,  model.lstmBlocks.cell.a4, model.lstmBlocks.cell.a5, model.lstmBlocks.cell.a6,  model.lstmBlocks.cell.a7,  model.lstmBlocks.cell.a8, model.lstmBlocks.cell.a9, model.lstmBlocks.cell.a10,  model.lstmBlocks.cell.a11, model.finFC.a1, model.finFC.a2]))
+    loss_val += args.l2 * torch.norm(torch.cat([model.lstmBlocks.cell.a1, model.lstmBlocks.cell.a3,  model.lstmBlocks.cell.a2,  model.lstmBlocks.cell.a4, model.lstmBlocks.cell.a5, model.lstmBlocks.cell.a6,  model.lstmBlocks.cell.a7,  model.lstmBlocks.cell.a8, model.lstmBlocks.cell.a9, model.lstmBlocks.cell.a10,  model.lstmBlocks.cell.a11, model.finFC.a1, model.finFC.a2]))
     train_acc.append((output.argmax(dim=1) == y_label).float().mean().item())
 
     loss_val.backward()

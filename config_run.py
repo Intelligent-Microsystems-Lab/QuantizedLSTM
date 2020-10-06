@@ -15,7 +15,7 @@ parameter_strings = [ '--noise-injectionT 0 --quant-actMVM 8 --quant-actNM 8 --q
 #parameter_strings = ['--noise-injectionT 0.1 --quant-actMVM 6 --quant-actNM 8 --quant-inp 4 --quant-w 0']
 
 
-trials = 3
+trials = 1
 
 #avail_q = ['gpu@qa-rtx6k-040.crc.nd.edu', 'gpu@qa-rtx6k-041.crc.nd.edu']
 avail_q = ['gpu@@joshi']

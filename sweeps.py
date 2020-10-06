@@ -1,6 +1,6 @@
 import os
 
-ident_word = "ARM_Replica_custom_noCY"
+ident_word = "PACT"
 
 part1 = "#!/bin/csh \n#$ -M cschaef6@nd.edu \n#$ -m abe\n#$ -q " 
 part11 = "\n#$ -l gpu_card=1\n#$ -N "
@@ -24,8 +24,9 @@ part4 = ".txt\nmodule load python\nsetenv OMP_NUM_THREADS $NSLOTS\npython KWS_LS
 
 #sweep_parameters = {'n-mfcc':[40, 70, 100], 'hop-length':[200, 270], 'std-scale':[1,3,4]}
 
-sweep_parameters = {'n-mfcc':[10,15,20,25,30,35,40,45,50,55,60,65]}
+#sweep_parameters = {'n-mfcc':[10,15,20,25,30,35,40,45,50,55,60,65]}
 
+sweep_parameters = {'l2':[0, .00001, .0001, .001, .01, .1, 1]}
 
 trials = 1
 
