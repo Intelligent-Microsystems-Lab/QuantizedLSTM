@@ -24,10 +24,10 @@ part4 = ".txt\nmodule load python\nsetenv OMP_NUM_THREADS $NSLOTS\npython KWS_LS
 
 #sweep_parameters = {'n-mfcc':[40, 70, 100], 'hop-length':[200, 270], 'std-scale':[1,3,4]}
 
-sweep_parameters = {'noise-injectionT':[0]}
+sweep_parameters = {'n-mfcc':[10,15,20,25,30,35,40,45,50,55,60,65]}
 
 
-trials = 3
+trials = 1
 
 #avail_q = ['gpu@qa-rtx6k-040.crc.nd.edu', 'gpu@qa-rtx6k-041.crc.nd.edu']
 avail_q = ['gpu@@joshi']
