@@ -190,7 +190,7 @@ class LSTMCellQ(nn.Module):
         self.a8 = nn.Parameter(torch.tensor([1.]))
         self.a9 = nn.Parameter(torch.tensor([4.]))
         self.a10 = nn.Parameter(torch.tensor([1.]))
-        self.a12 = nn.Parameter(torch.tensor([4.]))
+        self.a11 = nn.Parameter(torch.tensor([4.]))
 
 
     def forward(self, input, state):
@@ -207,17 +207,17 @@ class LSTMCellQ(nn.Module):
         
         # 
         forget_gate_out = quant_pass(pact_a(torch.sigmoid(f), self.a3), self.abNM, self.a3)
-        input_gate_out = quant_pass(pact_a(torch.sigmoid(i), self.a3), self.abNM, self.a3)
-        activation_out = quant_pass(pact_a(torch.tanh(j), self.a3), self.abNM, self.a3)
-        output_gate_out = quant_pass(pact_a(torch.sigmoid(o), self.a3), self.abNM, self.a3)
+        input_gate_out = quant_pass(pact_a(torch.sigmoid(i), self.a4), self.abNM, self.a4)
+        activation_out = quant_pass(pact_a(torch.tanh(j), self.a5), self.abNM, self.a5)
+        output_gate_out = quant_pass(pact_a(torch.sigmoid(o), self.a6), self.abNM, self.a6)
 
 
         #
-        gated_cell = quant_pass(pact_a(cx * forget_gate_out, self.a3), self.abNM, self.a3)
-        activated_input = quant_pass(pact_a(input_gate_out * activation_out, self.a3), self.abNM, self.a3)
-        new_c = quant_pass(pact_a(gated_cell + activated_input, self.a3), self.abNM, self.a3)
-        activated_cell = quant_pass(pact_a(torch.tanh(new_c), self.a3), self.abNM, self.a3)
-        new_h = quant_pass(pact_a(activated_cell * output_gate_out, self.a3), self.abNM, self.a3)
+        gated_cell = quant_pass(pact_a(cx * forget_gate_out, self.a7), self.abNM, self.a7)
+        activated_input = quant_pass(pact_a(input_gate_out * activation_out, self.a8), self.abNM, self.a8)
+        new_c = quant_pass(pact_a(gated_cell + activated_input, self.a9), self.abNM, self.a9)
+        activated_cell = quant_pass(pact_a(torch.tanh(new_c), self.a10), self.abNM, self.a10)
+        new_h = quant_pass(pact_a(activated_cell * output_gate_out, self.a11), self.abNM, self.a11)
 
         return new_h, (new_h, new_c)
 

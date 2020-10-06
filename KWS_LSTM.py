@@ -115,7 +115,9 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
     #x_data = splitter2(x_data, 128)
 
     output = model(x_data)
+
     loss_val = loss_fn(output, y_label)
+    loss_val += .005 * torch.norm(torch.cat([model.lstmBlocks.cell.a1, model.lstmBlocks.cell.a3,  model.lstmBlocks.cell.a2,  model.lstmBlocks.cell.a4, model.lstmBlocks.cell.a5, model.lstmBlocks.cell.a6,  model.lstmBlocks.cell.a7,  model.lstmBlocks.cell.a8, model.lstmBlocks.cell.a9, model.lstmBlocks.cell.a10,  model.lstmBlocks.cell.a11, model.finFC.a1, model.finFC.a2]))
     train_acc.append((output.argmax(dim=1) == y_label).float().mean().item())
 
     loss_val.backward()
