@@ -98,8 +98,6 @@ def splitter2(x, x_range):
 
     return x_res
 
-
-
 print(args)
 print(model_uuid)
 print("Start Training:")

@@ -211,7 +211,6 @@ class LSTMCellQ(nn.Module):
         activation_out = quant_pass(pact_a(torch.tanh(j), self.a5), self.abNM, self.a5)
         output_gate_out = quant_pass(pact_a(torch.sigmoid(o), self.a6), self.abNM, self.a6)
 
-
         #
         gated_cell = quant_pass(pact_a(cx * forget_gate_out, self.a7), self.abNM, self.a7)
         activated_input = quant_pass(pact_a(input_gate_out * activation_out, self.a8), self.abNM, self.a8)
@@ -389,6 +388,7 @@ class KWS_LSTM(nn.Module):
 
 
         self.lstmBlocks = LSTMLayer(LSTMCellQ, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device, cy_div, cy_scale)
+        self.lstmBlocks2 = LSTMLayer(LSTMCellQ, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device, cy_div, cy_scale)
         # Testing!!!!!
         #self.lstmBlocks = torch.nn.LSTM(input_size = self.input_dim, hidden_size = self.hidden_dim, num_layers = 1, batch_first = False)
         #self.finFC = torch.nn.Linear(in_features = self.hidden_dim, out_features = self.output_dim, bias = True)
@@ -397,6 +397,8 @@ class KWS_LSTM(nn.Module):
     def forward(self, inputs):
         # init states with zero
         self.hidden_state = (torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device))
+
+        self.hidden_state2 = (torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device))
 
 
         # # LSTM blocks
@@ -425,7 +427,10 @@ class KWS_LSTM(nn.Module):
         # 	fc_out = lstm_out[-1,:,:]
 
         lstm_out, _ = self.lstmBlocks(inputs, self.hidden_state)
-        fc_out = lstm_out[-1,:,:]
+        lstm_out2, _ = self.lstmBlocks2(inputs, self.hidden_state)
+
+        #fc_out = lstm_out[-1,:,:]
+        import pdb; pdb.set_trace()
 
         # final FC block
         output = self.finFC(fc_out)
