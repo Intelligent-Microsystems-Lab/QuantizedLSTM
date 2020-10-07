@@ -22,11 +22,14 @@ else:
 
 
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument("--random-seed", type=int, default=80085, help='Random Seed')
 parser.add_argument("--checkpoint", type=str, default='50127940-556e-49d7-95a9-9bf94c182714', help='checkpoint to perfrom SWA on')
 parser.add_argument("--training-cycles", type=int, default=100, help='Training Steps')
 parser.add_argument("--cycle-steps", type=int, default=30, help='Training Steps')
 args_swa = parser.parse_args()
 
+torch.manual_seed(args_swa.random_seed)
+np.random.seed(args_swa.random_seed)
 
 checkpoint_dict = torch.load('./checkpoints/'+args_swa.checkpoint+'.pkl')
 
