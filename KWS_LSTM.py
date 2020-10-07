@@ -57,6 +57,7 @@ parser.add_argument("--quant-inp", type=int, default=8, help='Bits available for
 parser.add_argument("--quant-w", type=int, default=8, help='Bits available for weights')
 
 parser.add_argument("--l2", type=float, default=.01, help='Strength of L2 norm')
+parser.add_argument("--train-a", type=bool, default=True, help='Train Quant Range')
 
 args = parser.parse_args()
 
@@ -79,7 +80,7 @@ train_dataloader = torch.utils.data.DataLoader(speech_dataset_train, batch_size=
 test_dataloader = torch.utils.data.DataLoader(speech_dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
 validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
 
-model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = 1, quant_beta = 1, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = args.noise_injectionT, blocks = 1, pool_method = 'Max', fc_blocks = 0, cy_div = 1, cy_scale = 1).to(device)
+model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = 1, quant_beta = 1, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = args.noise_injectionT, blocks = 1, pool_method = 'Max', fc_blocks = 0, cy_div = 1, cy_scale = 1, train_a = args.train_a).to(device)
 model.to(device)
 loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=lr_list[0])  

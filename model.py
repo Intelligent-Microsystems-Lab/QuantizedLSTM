@@ -61,13 +61,6 @@ class QuantFunc(torch.autograd.Function):
 
         return x01q*x_range
 
-        # new experimental approach 
-        #if train:
-        #    return .5 * quant(x, wb, sign) + .5 * x
-        #else:
-
-        #return quant(x, wb, sign)
-
     @staticmethod
     def backward(ctx, grad_output):
         """
@@ -77,9 +70,6 @@ class QuantFunc(torch.autograd.Function):
 
         STE estimator, no quantization on the backward pass
         """
-        #input, = ctx.saved_tensors
-        #if (input is None) or (ctx.wb is None) or (ctx.wb == 0):
-        #    return grad_output, None, None, None
 
         return grad_output, None, None, None
 
@@ -119,7 +109,7 @@ class CustomMM(torch.autograd.Function):
 
 #https://github.com/pytorch/benchmark/blob/master/rnns/fastrnns/custom_lstms.py#L32
 class LSTMCellQ(nn.Module):
-    def __init__(self, input_size, hidden_size, wb, ib, abMVM, abNM, noise_level, device, cy_div, cy_scale):
+    def __init__(self, input_size, hidden_size, wb, ib, abMVM, abNM, noise_level, device, cy_div, cy_scale, train_a):
         super(LSTMCellQ, self).__init__()
         self.device = device
         self.wb = wb
@@ -138,17 +128,17 @@ class LSTMCellQ(nn.Module):
         self.bias_ih = nn.Parameter(torch.randn(4 * hidden_size))
         self.bias_hh = nn.Parameter(torch.randn(4 * hidden_size))
 
-        self.a1 = nn.Parameter(torch.tensor([128.]))
-        self.a2 = nn.Parameter(torch.tensor([16.]))
-        self.a3 = nn.Parameter(torch.tensor([1.]))
-        self.a4 = nn.Parameter(torch.tensor([1.]))
-        self.a5 = nn.Parameter(torch.tensor([1.]))
-        self.a6 = nn.Parameter(torch.tensor([1.]))
-        self.a7 = nn.Parameter(torch.tensor([4.]))
-        self.a8 = nn.Parameter(torch.tensor([1.]))
-        self.a9 = nn.Parameter(torch.tensor([4.]))
-        self.a10 = nn.Parameter(torch.tensor([1.]))
-        self.a11 = nn.Parameter(torch.tensor([4.]))
+        self.a1 = nn.Parameter(torch.tensor([128.]), requires_grad = train_a)
+        self.a2 = nn.Parameter(torch.tensor([16.]), requires_grad = train_a)
+        self.a3 = nn.Parameter(torch.tensor([1.]), requires_grad = train_a)
+        self.a4 = nn.Parameter(torch.tensor([1.]), requires_grad = train_a)
+        self.a5 = nn.Parameter(torch.tensor([1.]), requires_grad = train_a)
+        self.a6 = nn.Parameter(torch.tensor([1.]), requires_grad = train_a)
+        self.a7 = nn.Parameter(torch.tensor([4.]), requires_grad = train_a)
+        self.a8 = nn.Parameter(torch.tensor([1.]), requires_grad = train_a)
+        self.a9 = nn.Parameter(torch.tensor([4.]), requires_grad = train_a)
+        self.a10 = nn.Parameter(torch.tensor([1.]), requires_grad = train_a)
+        self.a11 = nn.Parameter(torch.tensor([4.]), requires_grad = train_a)
 
 
     def forward(self, input, state):
@@ -157,19 +147,13 @@ class LSTMCellQ(nn.Module):
         # MVM
         gates = (CustomMM.apply(quant_pass(pact_a(input, self.a1), self.ib, self.a1), self.weight_ih.t(), self.bias_ih.t(), self.noise_level, self.scale2, self.wb) + CustomMM.apply(hx, self.weight_hh.t(), self.bias_hh.t(), self.noise_level, self.scale2, self.wb))
 
-        # we might be able to skip this one
-        #gates = quant_pass(pact_a(gates, self.a2), self.abMVM, self.a2)
-
-        #i, j, f, o
         i, j, f, o = gates.chunk(4, 1)
         
-        # 
         forget_gate_out = quant_pass(pact_a(torch.sigmoid(f), self.a3), self.abNM, self.a3)
         input_gate_out = quant_pass(pact_a(torch.sigmoid(i), self.a4), self.abNM, self.a4)
         activation_out = quant_pass(pact_a(torch.tanh(j), self.a5), self.abNM, self.a5)
         output_gate_out = quant_pass(pact_a(torch.sigmoid(o), self.a6), self.abNM, self.a6)
 
-        #
         gated_cell = quant_pass(pact_a(cx * forget_gate_out, self.a7), self.abNM, self.a7)
         activated_input = quant_pass(pact_a(input_gate_out * activation_out, self.a8), self.abNM, self.a8)
         new_c = quant_pass(pact_a(gated_cell + activated_input, self.a9), self.abNM, self.a9)
@@ -225,15 +209,15 @@ class LinLayer(nn.Module):
         torch.nn.init.uniform_(self.bias, a = -0, b = 0)
 
 
-        self.a1 = nn.Parameter(torch.tensor([4.]))
-        self.a2 = nn.Parameter(torch.tensor([16.]))
+        self.a1 = nn.Parameter(torch.tensor([4.]), requires_grad = train_a)
+        self.a2 = nn.Parameter(torch.tensor([16.]), requires_grad = train_a)
 
     def forward(self, input):
         return quant_pass(pact_a(CustomMM.apply(quant_pass(pact_a(input, self.a1), self.ib, self.a1), self.weights, self.bias, self.noise_level, 1, self.wb), self.a2), self.abMVM, self.a2)
 
 
 class KWS_LSTM(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, batch_size, device, quant_factor, quant_beta, wb, abMVM, abNM, blocks, ib, noise_level, pool_method, fc_blocks, cy_div, cy_scale):
+    def __init__(self, input_dim, hidden_dim, output_dim, batch_size, device, quant_factor, quant_beta, wb, abMVM, abNM, blocks, ib, noise_level, pool_method, fc_blocks, cy_div, cy_scale, train_a):
         super(KWS_LSTM, self).__init__()
         self.device = device
         self.batch_size = batch_size
@@ -252,9 +236,9 @@ class KWS_LSTM(nn.Module):
         self.pool_method = pool_method
 
         # final FC layer
-        self.finFC = LinLayer(self.hidden_dim, self.output_dim, noise_level, abMVM, ib, wb)
+        self.finFC = LinLayer(self.hidden_dim, self.output_dim, noise_level, abMVM, ib, wb, train_a = train_a)
 
-        self.lstmBlocks = LSTMLayer(LSTMCellQ, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device, cy_div, cy_scale)
+        self.lstmBlocks = LSTMLayer(LSTMCellQ, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device, cy_div, cy_scale, train_a = train_a)
 
 
     def forward(self, inputs):
