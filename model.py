@@ -192,7 +192,7 @@ class LSTMLayer(nn.Module):
         return torch.stack(outputs), state
 
 class LinLayer(nn.Module):
-    def __init__(self, inp_dim, out_dim, noise_level, abMVM, ib, wb):
+    def __init__(self, inp_dim, out_dim, noise_level, abMVM, ib, wb, train_a):
         super(LinLayer, self).__init__()
         self.abMVM = abMVM
         self.ib = ib
