@@ -8,4 +8,4 @@
 #$ -e ./logs/error_PACT_PACT_l2_0_0.txt
 module load python
 setenv OMP_NUM_THREADS $NSLOTS
-python KWS_LSTM.py --l2 0
+python KWS_LSTM.py --l2 0 --random-seed 193012823
