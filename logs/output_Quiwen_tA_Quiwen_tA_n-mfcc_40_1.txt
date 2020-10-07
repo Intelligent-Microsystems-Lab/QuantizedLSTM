@@ -1,0 +1,10 @@
+Loading python/3.7.3
+  Loading requirement: tcl/8.6.8 gcc/8.3.0
+Traceback (most recent call last):
+  File "KWS_LSTM.py", line 80, in <module>
+    test_dataloader = torch.utils.data.DataLoader(speech_dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
+  File "/afs/crc.nd.edu/user/c/cschaef6/.local/lib/python3.7/site-packages/torch/utils/data/dataloader.py", line 224, in __init__
+    sampler = RandomSampler(dataset, generator=generator)
+  File "/afs/crc.nd.edu/user/c/cschaef6/.local/lib/python3.7/site-packages/torch/utils/data/sampler.py", line 96, in __init__
+    "value, but got num_samples={}".format(self.num_samples))
+ValueError: num_samples should be a positive integer value, but got num_samples=0
