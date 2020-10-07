@@ -8,3 +8,11 @@ Traceback (most recent call last):
   File "/afs/crc.nd.edu/user/c/cschaef6/.local/lib/python3.7/site-packages/torch/utils/data/sampler.py", line 96, in __init__
     "value, but got num_samples={}".format(self.num_samples))
 ValueError: num_samples should be a positive integer value, but got num_samples=0
+Loading python/3.7.3
+  Loading requirement: tcl/8.6.8 gcc/8.3.0
+Traceback (most recent call last):
+  File "KWS_LSTM.py", line 83, in <module>
+    model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = 1, quant_beta = 1, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = args.noise_injectionT, blocks = 1, pool_method = 'Max', fc_blocks = 0, cy_div = 1, cy_scale = 1, train_a = args.train_a).to(device)
+  File "/afs/crc.nd.edu/user/c/cschaef6/Qiuwen/QuantizedLSTM/model.py", line 241, in __init__
+    self.lstmBlocks = LSTMLayer(LSTMCellQ, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device, cy_div, cy_scale, train_a = train_a)
+TypeError: __init__() got an unexpected keyword argument 'train_a'
