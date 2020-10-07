@@ -41,7 +41,7 @@ for i in range(trials):
         for value in sweep_parameters[variable]:
             name = ident_word + "_" +variable + "_" + str(value) + "_" + str(i)
             with open('jobscripts/'+name+'.script', 'w') as f:
-                f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " " + str(value)) + " --random-seed " + str(random_seeds[i])
+                f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " " + str(value)+ " --random-seed " + str(random_seeds[i])) 
             os.system("qsub "+ 'jobscripts/'+name+'.script')
             q_counter += 1
             if q_counter >= len(avail_q):
