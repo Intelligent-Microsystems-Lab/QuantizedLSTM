@@ -1,0 +1,11 @@
+#!/bin/csh 
+#$ -M cschaef6@nd.edu 
+#$ -m abe
+#$ -q gpu@@joshi
+#$ -l gpu_card=1
+#$ -N Quiwen_SWA_checkpoint_4896e49d-eed6-4e82-b28c-480e5c3d5269_0
+#$ -o ./logs/output_Quiwen_SWA_Quiwen_SWA_checkpoint_4896e49d-eed6-4e82-b28c-480e5c3d5269_0.txt
+#$ -e ./logs/error_Quiwen_SWA_Quiwen_SWA_checkpoint_4896e49d-eed6-4e82-b28c-480e5c3d5269_0.txt
+module load python
+setenv OMP_NUM_THREADS $NSLOTS
+python swa.py --checkpoint 4896e49d-eed6-4e82-b28c-480e5c3d5269 --random-seed 193012823

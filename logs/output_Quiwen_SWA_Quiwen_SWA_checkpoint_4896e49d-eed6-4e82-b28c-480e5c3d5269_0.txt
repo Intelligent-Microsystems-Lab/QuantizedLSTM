@@ -1,0 +1,5 @@
+Loading python/3.7.3
+  Loading requirement: tcl/8.6.8 gcc/8.3.0
+usage: swa.py [-h] [--checkpoint CHECKPOINT]
+              [--training-cycles TRAINING_CYCLES] [--cycle-steps CYCLE_STEPS]
+swa.py: error: unrecognized arguments: --random-seed 193012823
