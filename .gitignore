@@ -2,3 +2,4 @@ data/*
 *.DS_Store
 data.nosync/*
 __pycache__/*
+._data.nosync
