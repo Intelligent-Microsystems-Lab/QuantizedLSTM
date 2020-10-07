@@ -21,12 +21,12 @@ if torch.cuda.is_available():
 else:
     device = torch.device("cpu")
 
-torch.manual_seed(80085)
-np.random.seed(80085)
+
 
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 # general config
+parser.add_argument("--random-seed", type=int, default=80085, help='Random Seed')
 parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speech_commands_v0.02', help='Path to Dataset')
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
 parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
@@ -60,6 +60,8 @@ parser.add_argument("--l2", type=float, default=.005, help='Strength of L2 norm'
 
 args = parser.parse_args()
 
+torch.manual_seed(args.random_seed)
+np.random.seed(args.random_seed)
 
 epoch_list = np.cumsum([int(x) for x in args.training_steps.split(',')])
 lr_list = [float(x) for x in args.learning_rate.split(',')]

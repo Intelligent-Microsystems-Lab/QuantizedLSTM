@@ -31,10 +31,7 @@ args_swa = parser.parse_args()
 checkpoint_dict = torch.load('./checkpoints/'+args_swa.checkpoint+'.pkl')
 
 args = checkpoint_dict['arguments']
-
-
 epoch_list = np.cumsum([int(x) for x in args.training_steps.split(',')])
-
 
 
 mfcc_cuda = torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, log_mels = True, melkwargs = {'win_length' : args.win_length, 'hop_length' : args.hop_length, 'n_fft' : args.win_length, 'pad': 0, 'f_min' : 20, 'f_max': 4000, 'n_mels' : 40}).to(device)
@@ -93,7 +90,6 @@ model.load_state_dict(w_swa)
 
 # evaluate model
 acc_aux = []
-model.noise_level = args.noise_injectionI
 for i_batch, sample_batch in enumerate(test_dataloader):
     x_data, y_label = sample_batch
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)

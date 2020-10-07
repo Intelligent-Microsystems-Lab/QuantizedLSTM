@@ -26,9 +26,11 @@ part4 = ".txt\nmodule load python\nsetenv OMP_NUM_THREADS $NSLOTS\npython KWS_LS
 
 #sweep_parameters = {'n-mfcc':[10,15,20,25,30,35,40,45,50,55,60,65]}
 
-sweep_parameters = {'l2':[0, .00001, .0001, .001, .01, .1, 1]}
+sweep_parameters = {'l2':[0, .00001, .001, .01, .1, ], 'n-mfcc':[10, 20, 30, 40, 50, 60, 70, 80]}
 
-trials = 1
+trials = 3
+
+random_seeds = [193012823 ,235899598, 8627169, 103372330, 14339038, 221706254, 46192121, 188833202, 37306063, 171928928]
 
 #avail_q = ['gpu@qa-rtx6k-040.crc.nd.edu', 'gpu@qa-rtx6k-041.crc.nd.edu']
 avail_q = ['gpu@@joshi']
@@ -39,7 +41,7 @@ for i in range(trials):
         for value in sweep_parameters[variable]:
             name = ident_word + "_" +variable + "_" + str(value) + "_" + str(i)
             with open('jobscripts/'+name+'.script', 'w') as f:
-                f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " " + str(value))
+                f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " " + str(value)) + " --random-seed " + str(random_seed[i])
             os.system("qsub "+ 'jobscripts/'+name+'.script')
             q_counter += 1
             if q_counter >= len(avail_q):
