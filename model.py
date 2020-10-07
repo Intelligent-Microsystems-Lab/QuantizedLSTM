@@ -384,31 +384,31 @@ class KWS_LSTM(nn.Module):
 
 
         # final FC layer
-        self.finFC = LinLayer(self.hidden_dim, self.output_dim/12, noise_level, abMVM, ib, wb)
+        self.finFC = LinLayer(self.hidden_dim, int(self.output_dim/12), noise_level, abMVM, ib, wb)
 
-        self.finFC1 = LinLayer(self.hidden_dim, self.output_dim/12, noise_level, abMVM, ib, wb)
+        self.finFC1 = LinLayer(self.hidden_dim, int(self.output_dim/12), noise_level, abMVM, ib, wb)
 
-        self.finFC2 = LinLayer(self.hidden_dim, self.output_dim/12, noise_level, abMVM, ib, wb)
+        self.finFC2 = LinLayer(self.hidden_dim, int(self.output_dim/12), noise_level, abMVM, ib, wb)
 
-        self.finFC3 = LinLayer(self.hidden_dim, self.output_dim/12, noise_level, abMVM, ib, wb)
-
-
-        self.finFC4 = LinLayer(self.hidden_dim, self.output_dim/12, noise_level, abMVM, ib, wb)
-
-        self.finFC5 = LinLayer(self.hidden_dim, self.output_dim/12, noise_level, abMVM, ib, wb)
-
-        self.finFC6 = LinLayer(self.hidden_dim, self.output_dim/12, noise_level, abMVM, ib, wb)
-
-        self.finFC7 = LinLayer(self.hidden_dim, self.output_dim/12, noise_level, abMVM, ib, wb)
+        self.finFC3 = LinLayer(self.hidden_dim, int(self.output_dim/12), noise_level, abMVM, ib, wb)
 
 
-        self.finFC8 = LinLayer(self.hidden_dim, self.output_dim/12, noise_level, abMVM, ib, wb)
+        self.finFC4 = LinLayer(self.hidden_dim, int(self.output_dim/12), noise_level, abMVM, ib, wb)
 
-        self.finFC9 = LinLayer(self.hidden_dim, self.output_dim/12, noise_level, abMVM, ib, wb)
+        self.finFC5 = LinLayer(self.hidden_dim, int(self.output_dim/12), noise_level, abMVM, ib, wb)
 
-        self.finFC10 = LinLayer(self.hidden_dim, self.output_dim/12, noise_level, abMVM, ib, wb)
+        self.finFC6 = LinLayer(self.hidden_dim, int(self.output_dim/12), noise_level, abMVM, ib, wb)
 
-        self.finFC11 = LinLayer(self.hidden_dim, self.output_dim/12, noise_level, abMVM, ib, wb)
+        self.finFC7 = LinLayer(self.hidden_dim, int(self.output_dim/12), noise_level, abMVM, ib, wb)
+
+
+        self.finFC8 = LinLayer(self.hidden_dim, int(self.output_dim/12), noise_level, abMVM, ib, wb)
+
+        self.finFC9 = LinLayer(self.hidden_dim, int(self.output_dim/12), noise_level, abMVM, ib, wb)
+
+        self.finFC10 = LinLayer(self.hidden_dim, int(.output_dim/12), noise_level, abMVM, ib, wb)
+
+        self.finFC11 = LinLayer(self.hidden_dim, int(self.output_dim/12), noise_level, abMVM, ib, wb)
 
 
 
