@@ -384,7 +384,7 @@ class KWS_LSTM(nn.Module):
 
 
         # final FC layer
-        self.finFC = LinLayer(self.hidden_dim, self.output_dim, noise_level, abMVM, ib, wb)
+        self.finFC = LinLayer(self.hidden_dim*2, self.output_dim, noise_level, abMVM, ib, wb)
 
 
         self.lstmBlocks = LSTMLayer(LSTMCellQ, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device, cy_div, cy_scale)
@@ -430,7 +430,7 @@ class KWS_LSTM(nn.Module):
         lstm_out2, _ = self.lstmBlocks2(inputs, self.hidden_state)
 
         #fc_out = lstm_out[-1,:,:]
-        import pdb; pdb.set_trace()
+        fc_out = torch.cat([lstm_out[-1,:,:], lstm_out2[-1,:,:]], dim =1)
 
         # final FC block
         output = self.finFC(fc_out)
