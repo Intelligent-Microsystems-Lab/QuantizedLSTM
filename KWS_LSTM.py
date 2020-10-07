@@ -50,11 +50,11 @@ parser.add_argument("--hop-length", type=int, default=320, help='Length of hop b
 parser.add_argument("--hidden", type=int, default=118, help='Number of hidden LSTM units') 
 parser.add_argument("--n-mfcc", type=int, default=40, help='Number of mfc coefficients to retain') # 40 before
 
-parser.add_argument("--noise-injectionT", type=float, default=0.1, help='Percentage of noise injected to weights')
-parser.add_argument("--quant-actMVM", type=int, default=6, help='Bits available for MVM activations/state')
+parser.add_argument("--noise-injectionT", type=float, default=0, help='Percentage of noise injected to weights')
+parser.add_argument("--quant-actMVM", type=int, default=8, help='Bits available for MVM activations/state')
 parser.add_argument("--quant-actNM", type=int, default=8, help='Bits available for non-MVM activations/state')
-parser.add_argument("--quant-inp", type=int, default=4, help='Bits available for inputs')
-parser.add_argument("--quant-w", type=int, default=0, help='Bits available for weights')
+parser.add_argument("--quant-inp", type=int, default=8, help='Bits available for inputs')
+parser.add_argument("--quant-w", type=int, default=8, help='Bits available for weights')
 
 parser.add_argument("--l2", type=float, default=.01, help='Strength of L2 norm')
 
@@ -114,8 +114,6 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
     # train
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
 
-    #x_data = splitter2(x_data, 128)
-
     output = model(x_data)
 
     loss_val = loss_fn(output, y_label)
@@ -126,14 +124,11 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
     optimizer.step()
     optimizer.zero_grad()
 
-    #print("Step {0:05d} Acc {1:.4f} Loss {1:.4f}".format(e,train_acc[-1],loss_val.item()))
     if (e%100 == 0) or (e == epoch_list[-1]-1):
         # validation
         temp_list = []
         for val_e, (x_vali, y_vali) in enumerate(validation_dataloader):
             x_data, y_label = pre_processing(x_vali, y_vali, device, mfcc_cuda)
-
-            #x_data = splitter2(x_data, 128)
 
             output = model(x_data)
             temp_list.append((output.argmax(dim=1) == y_label).float().mean().item())
@@ -171,13 +166,9 @@ for i_batch, sample_batch in enumerate(test_dataloader):
     x_data, y_label = sample_batch
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
 
-    #x_data = splitter2(x_data, 128)
 
     output = model(x_data)
     acc_aux.append((output.argmax(dim=1) == y_label))
 
 test_acc = torch.cat(acc_aux).float().mean().item()
 print("Test Accuracy: {0:.4f}".format(test_acc))
-
-
-#checkpoint_dict = torch.load('./checkpoints/9c8bf1f3-58e5-4527-8742-2964941cbae1.pkl')
