@@ -406,7 +406,7 @@ class KWS_LSTM(nn.Module):
 
         self.finFC9 = LinLayer(self.hidden_dim, int(self.output_dim/12), noise_level, abMVM, ib, wb)
 
-        self.finFC10 = LinLayer(self.hidden_dim, int(.output_dim/12), noise_level, abMVM, ib, wb)
+        self.finFC10 = LinLayer(self.hidden_dim, int(self.output_dim/12), noise_level, abMVM, ib, wb)
 
         self.finFC11 = LinLayer(self.hidden_dim, int(self.output_dim/12), noise_level, abMVM, ib, wb)
 
