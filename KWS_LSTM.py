@@ -56,8 +56,8 @@ parser.add_argument("--quant-actNM", type=int, default=8, help='Bits available f
 parser.add_argument("--quant-inp", type=int, default=8, help='Bits available for inputs')
 parser.add_argument("--quant-w", type=int, default=8, help='Bits available for weights')
 
-parser.add_argument("--l2", type=float, default=.0, help='Strength of L2 norm')
-parser.add_argument("--train-a", type=bool, default=False, help='Train Quant Range')
+parser.add_argument("--l2", type=float, default=.01, help='Strength of L2 norm')
+parser.add_argument("--train-a", type=bool, default=True, help='Train Quant Range')
 
 args = parser.parse_args()
 
