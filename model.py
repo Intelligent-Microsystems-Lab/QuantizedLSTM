@@ -520,9 +520,7 @@ class KWS_LSTM(nn.Module):
         output11 = self.finFC(lstm_out11[-1,:,:])
         output12 = self.finFC(lstm_out12[-1,:,:])
 
-        import pdb; pdb.set_trace()
-        output = torch.cat([output1, output2, output3, output4, output5, output6, output7, output8
-            , output9, output10, output11, output12])
+        output = torch.stack([output1, output2, output3, output4, output5, output6, output7, output8 , output9, output10, output11, output12])[:,:,0].t()
 
         return output
 
