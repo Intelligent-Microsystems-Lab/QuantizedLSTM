@@ -307,3 +307,22 @@ Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)
 29999     1.5012      0.6900     0.7269     83.4678
 Start Testing:
 Test Accuracy: 0.6952
+Loading python/3.7.3
+  Loading requirement: tcl/8.6.8 gcc/8.3.0
+Traceback (most recent call last):
+  File "KWS_LSTM.py", line 82, in <module>
+    model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = 1, quant_beta = 1, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = args.noise_injectionT, blocks = 1, pool_method = 'Max', fc_blocks = 0, cy_div = 1, cy_scale = 1).to(device)
+  File "/afs/crc.nd.edu/user/c/cschaef6/QuantizedLSTM/model.py", line 387, in __init__
+    self.finFC = LinLayer(self.hidden_dim, self.output_dim/12, noise_level, abMVM, ib, wb)
+  File "/afs/crc.nd.edu/user/c/cschaef6/QuantizedLSTM/model.py", line 309, in __init__
+    self.weights = nn.Parameter(torch.randn(inp_dim, out_dim))
+TypeError: randn(): argument 'size' must be tuple of ints, but found element of type float at pos 2
+Loading python/3.7.3
+  Loading requirement: tcl/8.6.8 gcc/8.3.0
+Traceback (most recent call last):
+  File "KWS_LSTM.py", line 14, in <module>
+    from model import KWS_LSTM, pre_processing, quant_pass
+  File "/afs/crc.nd.edu/user/c/cschaef6/QuantizedLSTM/model.py", line 409
+    self.finFC10 = LinLayer(self.hidden_dim, int(.output_dim/12), noise_level, abMVM, ib, wb)
+                                                 ^
+SyntaxError: invalid syntax
