@@ -22,25 +22,3 @@ def plot_curves(train, val, f_name):
 	plt.tight_layout()
 	plt.savefig("figures/"+ f_name + ".png")
 	plt.close()
-
-# # histogram
-
-# plt.clf()
-# n, bins, patches = plt.hist( model.lstmL.cy_hist , 50, density=True, facecolor='g', alpha=0.75)
-# plt.xlabel('CY value')
-# plt.ylabel('Count')
-# plt.title('Histogram of CY')
-# plt.grid(True)
-# plt.savefig("figures/CY.png")
-# plt.close()
-
-
-
-# plt.clf()
-# n, bins, patches = plt.hist( model.lstmL.hy_hist , 50, density=True, facecolor='g', alpha=0.75)
-# plt.xlabel('HY value')
-# plt.ylabel('Count')
-# plt.title('Histogram of HY')
-# plt.grid(True)
-# plt.savefig("figures/HY.png")
-# plt.close()
