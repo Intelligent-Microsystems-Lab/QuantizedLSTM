@@ -47,7 +47,7 @@ parser.add_argument('--time-shift-ms', type=float, default=100.0, help='Range to
 parser.add_argument("--win-length", type=int, default=640, help='Window size in ms') # 400
 parser.add_argument("--hop-length", type=int, default=320, help='Length of hop between STFT windows') #320
 
-parser.add_argument("--hidden", type=int, default=118, help='Number of hidden LSTM units') 
+parser.add_argument("--hidden", type=int, default=344, help='Number of hidden LSTM units') 
 parser.add_argument("--n-mfcc", type=int, default=40, help='Number of mfc coefficients to retain') # 40 before
 
 parser.add_argument("--noise-injectionT", type=float, default=0, help='Percentage of noise injected to weights')
@@ -56,8 +56,8 @@ parser.add_argument("--quant-actNM", type=int, default=8, help='Bits available f
 parser.add_argument("--quant-inp", type=int, default=8, help='Bits available for inputs')
 parser.add_argument("--quant-w", type=int, default=8, help='Bits available for weights')
 
-parser.add_argument("--l2", type=float, default=.0, help='Strength of L2 norm')
-parser.add_argument("--train-a", type=bool, default=False, help='Train Quant Range')
+parser.add_argument("--l2", type=float, default=.01, help='Strength of L2 norm')
+parser.add_argument("--train-a", type=bool, default=True, help='Train Quant Range')
 
 args = parser.parse_args()
 

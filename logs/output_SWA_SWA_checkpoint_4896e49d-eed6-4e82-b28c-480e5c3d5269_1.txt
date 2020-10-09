@@ -1,0 +1,5 @@
+Loading python/3.7.3
+  Loading requirement: tcl/8.6.8 gcc/8.3.0
+SWA Training
+027c5bdb-5a58-4b06-9bf0-ee23fa8c0322
+Collecting Models
