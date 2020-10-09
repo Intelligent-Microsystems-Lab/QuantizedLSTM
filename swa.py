@@ -23,7 +23,7 @@ else:
 
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("--random-seed", type=int, default=80085, help='Random Seed')
-parser.add_argument("--checkpoint", type=str, default='50127940-556e-49d7-95a9-9bf94c182714', help='checkpoint to perfrom SWA on')
+parser.add_argument("--checkpoint", type=str, default='1d08d7a6-71fe-4843-a777-987e2d0bf724', help='checkpoint to perfrom SWA on')
 parser.add_argument("--training-cycles", type=int, default=100, help='Training Steps')
 parser.add_argument("--cycle-steps", type=int, default=30, help='Training Steps')
 args_swa = parser.parse_args()
@@ -36,8 +36,7 @@ checkpoint_dict = torch.load('./checkpoints/'+args_swa.checkpoint+'.pkl')
 args = checkpoint_dict['arguments']
 epoch_list = np.cumsum([int(x) for x in args.training_steps.split(',')])
 
-
-mfcc_cuda = torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, log_mels = True, melkwargs = {'win_length' : args.win_length, 'hop_length' : args.hop_length, 'n_fft' : args.win_length, 'pad': 0, 'f_min' : 20, 'f_max': 4000, 'n_mels' : 40}).to(device)
+mfcc_cuda = torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, log_mels = True, melkwargs = {'win_length' : args.win_length, 'hop_length' : args.hop_length, 'n_fft' : args.win_length, 'pad': 0, 'f_min' : 20, 'f_max': 4000, 'n_mels' : args.n_mfcc*4}).to(device)
 
 speech_dataset_train = SpeechCommandsGoogle(args.dataset_path_train, 'training', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, args_swa.cycle_steps * args_swa.training_cycles, device, args.background_volume, args.background_frequency, args.silence_percentage, args.unknown_percentage, args.time_shift_ms)
 
