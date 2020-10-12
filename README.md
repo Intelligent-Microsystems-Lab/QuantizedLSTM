@@ -1,6 +1,6 @@
 # QuantizedLSTM
 
-This repository contains code and models for quantized LSTMs based on [Hello Edge: Keyword Spotting on Microcontrollers](https://arxiv.org/abs/1711.07128) and [PACT: Parameterized Clipping Activation for Quantized Neural Networks}(https://arxiv.org/abs/1805.06085). Results are obtained on the [Google Speech Commands v0.2 data set](https://arxiv.org/abs/1804.03209).
+This repository contains code and models for quantized LSTMs based on [Hello Edge: Keyword Spotting on Microcontrollers](https://arxiv.org/abs/1711.07128) and [PACT: Parameterized Clipping Activation for Quantized Neural Networks](https://arxiv.org/abs/1805.06085). Results are obtained on the [Google Speech Commands v0.2 data set](https://arxiv.org/abs/1804.03209).
 
 ## Training
 
