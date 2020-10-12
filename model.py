@@ -488,37 +488,37 @@ class KWS_LSTM(nn.Module):
 
         lstm_out, _ = self.lstmBlocks(inputs, self.hidden_state)
         lstm_out2, _ = self.lstmBlocks2(inputs, self.hidden_state)
-        lstm_out3, _ = self.lstmBlocks(inputs, self.hidden_state)
-        lstm_out4, _ = self.lstmBlocks2(inputs, self.hidden_state)
+        lstm_out3, _ = self.lstmBlocks3(inputs, self.hidden_state)
+        lstm_out4, _ = self.lstmBlocks4(inputs, self.hidden_state)
 
-        lstm_out5, _ = self.lstmBlocks(inputs, self.hidden_state)
-        lstm_out6, _ = self.lstmBlocks2(inputs, self.hidden_state)
-        lstm_out7, _ = self.lstmBlocks(inputs, self.hidden_state)
-        lstm_out8, _ = self.lstmBlocks2(inputs, self.hidden_state)
+        lstm_out5, _ = self.lstmBlocks5(inputs, self.hidden_state)
+        lstm_out6, _ = self.lstmBlocks6(inputs, self.hidden_state)
+        lstm_out7, _ = self.lstmBlocks7(inputs, self.hidden_state)
+        lstm_out8, _ = self.lstmBlocks8(inputs, self.hidden_state)
 
-        lstm_out9, _ = self.lstmBlocks(inputs, self.hidden_state)
-        lstm_out10, _ = self.lstmBlocks2(inputs, self.hidden_state)
-        lstm_out11, _ = self.lstmBlocks(inputs, self.hidden_state)
-        lstm_out12, _ = self.lstmBlocks2(inputs, self.hidden_state)
+        lstm_out9, _ = self.lstmBlocks9(inputs, self.hidden_state)
+        lstm_out10, _ = self.lstmBlocks10(inputs, self.hidden_state)
+        lstm_out11, _ = self.lstmBlocks11(inputs, self.hidden_state)
+        lstm_out12, _ = self.lstmBlocks12(inputs, self.hidden_state)
 
         #fc_out = lstm_out[-1,:,:]
         #fc_out = torch.cat([lstm_out[-1,:,:], lstm_out2[-1,:,:]], dim =1)
 
         # final FC block
         output1 = self.finFC(lstm_out[-1,:,:])
-        output2 = self.finFC(lstm_out2[-1,:,:])
-        output3 = self.finFC(lstm_out3[-1,:,:])
-        output4 = self.finFC(lstm_out4[-1,:,:])
+        output2 = self.finFC1(lstm_out2[-1,:,:])
+        output3 = self.finFC2(lstm_out3[-1,:,:])
+        output4 = self.finFC3(lstm_out4[-1,:,:])
 
-        output5 = self.finFC(lstm_out5[-1,:,:])
-        output6 = self.finFC(lstm_out6[-1,:,:])
-        output7 = self.finFC(lstm_out7[-1,:,:])
-        output8 = self.finFC(lstm_out8[-1,:,:])
+        output5 = self.finFC4(lstm_out5[-1,:,:])
+        output6 = self.finFC5(lstm_out6[-1,:,:])
+        output7 = self.finFC6(lstm_out7[-1,:,:])
+        output8 = self.finFC7(lstm_out8[-1,:,:])
 
-        output9 = self.finFC(lstm_out9[-1,:,:])
-        output10 = self.finFC(lstm_out10[-1,:,:])
-        output11 = self.finFC(lstm_out11[-1,:,:])
-        output12 = self.finFC(lstm_out12[-1,:,:])
+        output9 = self.finFC8(lstm_out9[-1,:,:])
+        output10 = self.finFC9(lstm_out10[-1,:,:])
+        output11 = self.finFC10(lstm_out11[-1,:,:])
+        output12 = self.finFC11(lstm_out12[-1,:,:])
 
         output = torch.stack([output1, output2, output3, output4, output5, output6, output7, output8 , output9, output10, output11, output12])[:,:,0].t()
 
