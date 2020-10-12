@@ -384,31 +384,31 @@ class KWS_LSTM(nn.Module):
 
 
         # final FC layer
-        self.finFC = LinLayer(self.hidden_dim, int(self.output_dim/12), noise_level, abMVM, ib, wb)
+        self.finFC = LinLayer(self.hidden_dim, 1, noise_level, abMVM, ib, wb)
 
-        self.finFC1 = LinLayer(self.hidden_dim, int(self.output_dim/12), noise_level, abMVM, ib, wb)
+        self.finFC1 = LinLayer(self.hidden_dim, 1, noise_level, abMVM, ib, wb)
 
-        self.finFC2 = LinLayer(self.hidden_dim, int(self.output_dim/12), noise_level, abMVM, ib, wb)
+        self.finFC2 = LinLayer(self.hidden_dim, 1, noise_level, abMVM, ib, wb)
 
-        self.finFC3 = LinLayer(self.hidden_dim, int(self.output_dim/12), noise_level, abMVM, ib, wb)
-
-
-        self.finFC4 = LinLayer(self.hidden_dim, int(self.output_dim/12), noise_level, abMVM, ib, wb)
-
-        self.finFC5 = LinLayer(self.hidden_dim, int(self.output_dim/12), noise_level, abMVM, ib, wb)
-
-        self.finFC6 = LinLayer(self.hidden_dim, int(self.output_dim/12), noise_level, abMVM, ib, wb)
-
-        self.finFC7 = LinLayer(self.hidden_dim, int(self.output_dim/12), noise_level, abMVM, ib, wb)
+        self.finFC3 = LinLayer(self.hidden_dim, 1, noise_level, abMVM, ib, wb)
 
 
-        self.finFC8 = LinLayer(self.hidden_dim, int(self.output_dim/12), noise_level, abMVM, ib, wb)
+        self.finFC4 = LinLayer(self.hidden_dim, 2, noise_level, abMVM, ib, wb)
 
-        self.finFC9 = LinLayer(self.hidden_dim, int(self.output_dim/12), noise_level, abMVM, ib, wb)
+        self.finFC5 = LinLayer(self.hidden_dim, 2, noise_level, abMVM, ib, wb)
 
-        self.finFC10 = LinLayer(self.hidden_dim, int(self.output_dim/12), noise_level, abMVM, ib, wb)
+        self.finFC6 = LinLayer(self.hidden_dim, 2, noise_level, abMVM, ib, wb)
 
-        self.finFC11 = LinLayer(self.hidden_dim, int(self.output_dim/12), noise_level, abMVM, ib, wb)
+        self.finFC7 = LinLayer(self.hidden_dim, 2, noise_level, abMVM, ib, wb)
+
+
+        #self.finFC8 = LinLayer(self.hidden_dim, int(self.output_dim/12), noise_level, abMVM, ib, wb)
+
+        #self.finFC9 = LinLayer(self.hidden_dim, int(self.output_dim/12), noise_level, abMVM, ib, wb)
+
+        #self.finFC10 = LinLayer(self.hidden_dim, int(self.output_dim/12), noise_level, abMVM, ib, wb)
+
+        #self.finFC11 = LinLayer(self.hidden_dim, int(self.output_dim/12), noise_level, abMVM, ib, wb)
 
 
 
@@ -422,10 +422,10 @@ class KWS_LSTM(nn.Module):
         self.lstmBlocks7 = LSTMLayer(LSTMCellQ, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device, cy_div, cy_scale)
         self.lstmBlocks8 = LSTMLayer(LSTMCellQ, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device, cy_div, cy_scale)
 
-        self.lstmBlocks9 = LSTMLayer(LSTMCellQ, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device, cy_div, cy_scale)
-        self.lstmBlocks10 = LSTMLayer(LSTMCellQ, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device, cy_div, cy_scale)
-        self.lstmBlocks11 = LSTMLayer(LSTMCellQ, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device, cy_div, cy_scale)
-        self.lstmBlocks12 = LSTMLayer(LSTMCellQ, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device, cy_div, cy_scale)
+        #self.lstmBlocks9 = LSTMLayer(LSTMCellQ, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device, cy_div, cy_scale)
+        #self.lstmBlocks10 = LSTMLayer(LSTMCellQ, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device, cy_div, cy_scale)
+        #self.lstmBlocks11 = LSTMLayer(LSTMCellQ, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device, cy_div, cy_scale)
+        #self.lstmBlocks12 = LSTMLayer(LSTMCellQ, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device, cy_div, cy_scale)
         # Testing!!!!!
         #self.lstmBlocks = torch.nn.LSTM(input_size = self.input_dim, hidden_size = self.hidden_dim, num_layers = 1, batch_first = False)
         #self.finFC = torch.nn.Linear(in_features = self.hidden_dim, out_features = self.output_dim, bias = True)
@@ -452,13 +452,13 @@ class KWS_LSTM(nn.Module):
         self.hidden_state8 = (torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device))
 
 
-        self.hidden_state9 = (torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device))
+        #self.hidden_state9 = (torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device))
 
-        self.hidden_state10 = (torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device))
+        #self.hidden_state10 = (torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device))
 
-        self.hidden_state11 = (torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device))
+        #self.hidden_state11 = (torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device))
 
-        self.hidden_state12 = (torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device))
+        #self.hidden_state12 = (torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device))
 
 
         # # LSTM blocks
@@ -496,10 +496,10 @@ class KWS_LSTM(nn.Module):
         lstm_out7, _ = self.lstmBlocks7(inputs, self.hidden_state)
         lstm_out8, _ = self.lstmBlocks8(inputs, self.hidden_state)
 
-        lstm_out9, _ = self.lstmBlocks9(inputs, self.hidden_state)
-        lstm_out10, _ = self.lstmBlocks10(inputs, self.hidden_state)
-        lstm_out11, _ = self.lstmBlocks11(inputs, self.hidden_state)
-        lstm_out12, _ = self.lstmBlocks12(inputs, self.hidden_state)
+        #lstm_out9, _ = self.lstmBlocks9(inputs, self.hidden_state)
+        #lstm_out10, _ = self.lstmBlocks10(inputs, self.hidden_state)
+        #lstm_out11, _ = self.lstmBlocks11(inputs, self.hidden_state)
+        #lstm_out12, _ = self.lstmBlocks12(inputs, self.hidden_state)
 
         #fc_out = lstm_out[-1,:,:]
         #fc_out = torch.cat([lstm_out[-1,:,:], lstm_out2[-1,:,:]], dim =1)
@@ -515,11 +515,12 @@ class KWS_LSTM(nn.Module):
         output7 = self.finFC6(lstm_out7[-1,:,:])
         output8 = self.finFC7(lstm_out8[-1,:,:])
 
-        output9 = self.finFC8(lstm_out9[-1,:,:])
-        output10 = self.finFC9(lstm_out10[-1,:,:])
-        output11 = self.finFC10(lstm_out11[-1,:,:])
-        output12 = self.finFC11(lstm_out12[-1,:,:])
+        #output9 = self.finFC8(lstm_out9[-1,:,:])
+        #output10 = self.finFC9(lstm_out10[-1,:,:])
+        #output11 = self.finFC10(lstm_out11[-1,:,:])
+        #output12 = self.finFC11(lstm_out12[-1,:,:])
 
+        import pdb; pdb.set_trace()
         output = torch.stack([output1, output2, output3, output4, output5, output6, output7, output8 , output9, output10, output11, output12])[:,:,0].t()
 
         return output
