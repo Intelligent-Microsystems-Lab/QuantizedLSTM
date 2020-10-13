@@ -505,7 +505,7 @@ class KWS_LSTM(nn.Module):
         #fc_out = torch.cat([lstm_out[-1,:,:], lstm_out2[-1,:,:]], dim =1)
 
         # final FC block
-        output1 = self.finFC(lstm_out[-1,:,:])
+        output = self.finFC(lstm_out[-1,:,:])
         # output2 = self.finFC1(lstm_out2[-1,:,:])
         # output3 = self.finFC2(lstm_out3[-1,:,:])
         # output4 = self.finFC3(lstm_out4[-1,:,:])
@@ -522,7 +522,6 @@ class KWS_LSTM(nn.Module):
 
         #output = torch.cat([output1, output2, output3, output4, output5, output6, output7, output8], 1)
 
-        import pdb; pdb.set_trace()
         return output
 
 
