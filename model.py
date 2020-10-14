@@ -52,7 +52,6 @@ def step_d(bits):
 
 
 class bitsplitting(torch.autograd.Function):
-
     @staticmethod
     def forward(ctx, x, bits, n_msb):
 
@@ -61,11 +60,11 @@ class bitsplitting(torch.autograd.Function):
 
         l1 = (2**n_msb) -1
         l2 = 0
-        beta = [0]
+        beta = []
         y = []
 
         for i in range(n_msb):
-            l2 = 2**(n_msb - i)
+            l2 = 2**(n_msb - (i+1))
             beta.append(l2/l1)
 
             y.append( torch.floor( torch.round(l1*x)/l2 ) % 2)
