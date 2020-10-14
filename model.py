@@ -26,30 +26,6 @@ else:
 def step_d(bits):
     return 2.0 ** (bits - 1)
 
-# def shift(x):
-#     if x == 0:
-#         return 1
-#     return 2 ** torch.round(torch.log2(x))
-
-# def clip(x, bits):
-#     if bits == 1:
-#         delta = 0.
-#     else:
-#         delta = 1./step_d(bits)
-#     maxv = +1 - delta
-#     minv = -1 + delta
-#     return torch.clamp(x, float(minv), float(maxv))
-
-# def quant(x, bits, sign):
-#     if bits == 1: # BNN
-#         return torch.sign(x)
-#     else:
-#         if sign:
-#             scale = step_d(bits)
-#         else:
-#             scale = 2.0 ** bits
-#         return torch.round(x * scale ) / scale
-
 
 class bitsplitting(torch.autograd.Function):
     @staticmethod
@@ -68,6 +44,7 @@ class bitsplitting(torch.autograd.Function):
             beta.append(l2/l1)
 
             y.append( torch.floor( torch.round(l1*x)/l2 ) % 2)
+            import pdb; pdb.set_trace()
             y[-1] = y[-1] * beta[-1]
 
         ctx.beta = beta
@@ -360,7 +337,7 @@ class LinLayer(nn.Module):
         # range 0, 1
         inp_range = (pact_a(input, self.a1) + self.a1)/(self.a1*2)
 
-        x_diff_ranges = bitsplitter_pass(inp_range, self.ib, self.n_msb)
+        x_split = bitsplitter_pass(inp_range, self.ib, self.n_msb)
         import pdb; pdb.set_trace()
         #q_inp = quant_pass(inp_range, self.ib, self.a1)
 
