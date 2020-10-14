@@ -368,7 +368,9 @@ class LinLayer(nn.Module):
 
 
 
-        return quant_pass(pact_a(, self.a2), self.abMVM, self.a2)
+
+
+        return 0#quant_pass(pact_a(, self.a2), self.abMVM, self.a2)
         #return quant_pass(CustomMM.apply(quant_pass(input, self.ib, True), quant_pass(self.weights/self.scale, self.wb, True), quant_pass(self.bias/self.scale, self.wb, True), self.noise_level, self.scale, self.wb), self.abMVM, True)
 
 
