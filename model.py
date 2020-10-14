@@ -56,13 +56,16 @@ class bitsplitting(torch.autograd.Function):
     @staticmethod
     def forward(ctx, x, bits, n_msb):
 
+        if bits == None:
+            return x
+
         l1 = (2**n_msb) -1
         l2 = 0
         beta = [0]
         y = []
 
         for i in range(n_msb):
-            l2 = 2**(n_msb - 1)
+            l2 = 2**(n_msb - i)
             beta.append(l2/l1)
 
             y.append( torch.floor( torch.round(l1*x)/l2 ) % 2)
