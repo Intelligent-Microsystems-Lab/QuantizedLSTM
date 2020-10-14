@@ -336,7 +336,7 @@ class LinLayer(nn.Module):
         self.ib = ib
         self.wb = wb
         self.noise_level = noise_level
-        self.n_msb
+        self.n_msb = n_msb
 
         self.weights = nn.Parameter(torch.randn(inp_dim, out_dim))
         self.bias = nn.Parameter(torch.randn(out_dim))
