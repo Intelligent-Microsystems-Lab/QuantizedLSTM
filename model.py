@@ -51,6 +51,34 @@ def step_d(bits):
 #         return torch.round(x * scale ) / scale
 
 
+class bitsplitting(torch.autograd.Function):
+
+    @staticmethod
+    def forward(ctx, x, bits, n_msb):
+
+        l1 = (2**n_msb) -1
+        l2 = 0
+        beta = [0]
+        y = []
+
+        for i in range(n_msb):
+            l2 = 2**(n_msb - 1)
+            beta.append(l2/l1)
+
+            y.append( torch.floor( torch.round(l1*x)/l2 ) % 2)
+            y[-1] = y[-1] * beta[-1]
+
+        ctx.beta = beta
+
+        return torch.stack(y)
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        import pdb; pdb.set_trace()
+        return grad_output, None, None
+
+bitsplitter_pass = bitsplitting.apply
+
 class QuantFunc(torch.autograd.Function):
     """
     We can implement our own custom autograd Functions by subclassing
@@ -104,10 +132,12 @@ class QuantFunc(torch.autograd.Function):
 
         return grad_output, None, None, None
 
+quant_pass = QuantFunc.apply
+
 def pact_a(x, a):
     return torch.sign(x) * .5*(torch.abs(x) - torch.abs(torch.abs(x) - a) + a)
 
-quant_pass = QuantFunc.apply
+
 
 def limit_scale(shape, factor, beta, wb):
     fan_in = shape
@@ -161,7 +191,7 @@ class CustomMM(torch.autograd.Function):
 
 #https://github.com/pytorch/benchmark/blob/master/rnns/fastrnns/custom_lstms.py#L32
 class LSTMCellQ(nn.Module):
-    def __init__(self, input_size, hidden_size, wb, ib, abMVM, abNM, noise_level, device, cy_div, cy_scale):
+    def __init__(self, input_size, hidden_size, wb, ib, abMVM, abNM, noise_level, device, cy_div, cy_scale, n_msb):
         super(LSTMCellQ, self).__init__()
         self.device = device
         self.wb = wb
@@ -175,6 +205,7 @@ class LSTMCellQ(nn.Module):
         self.noise_level = noise_level
         self.input_size = input_size
         self.hidden_size = hidden_size
+        self.n_msb = n_msb
         self.weight_ih = nn.Parameter(torch.randn(4 * hidden_size, input_size))
         self.weight_hh = nn.Parameter(torch.randn(4 * hidden_size, hidden_size))
         self.bias_ih = nn.Parameter(torch.randn(4 * hidden_size))
@@ -299,12 +330,13 @@ class LSTMLayer(nn.Module):
         return torch.stack(outputs), state
 
 class LinLayer(nn.Module):
-    def __init__(self, inp_dim, out_dim, noise_level, abMVM, ib, wb):
+    def __init__(self, inp_dim, out_dim, noise_level, abMVM, ib, wb, n_msb):
         super(LinLayer, self).__init__()
         self.abMVM = abMVM
         self.ib = ib
         self.wb = wb
         self.noise_level = noise_level
+        self.n_msb
 
         self.weights = nn.Parameter(torch.randn(inp_dim, out_dim))
         self.bias = nn.Parameter(torch.randn(out_dim))
@@ -323,12 +355,25 @@ class LinLayer(nn.Module):
         self.a2 = nn.Parameter(torch.tensor([16.]))
 
     def forward(self, input):
-        return quant_pass(pact_a(CustomMM.apply(quant_pass(pact_a(input, self.a1), self.ib, self.a1), self.weights, self.bias, self.noise_level, 1, self.wb), self.a2), self.abMVM, self.a2)
+        # range 0, 1
+        inp_range = (pact_a(input, self.a1) + self.a1)/(self.a1*2)
+
+        x_diff_ranges = bitsplitter_pass(inp_range, self.ib, self.n_msb)
+        import pdb; pdb.set_trace()
+        #q_inp = quant_pass(inp_range, self.ib, self.a1)
+
+
+        mm_out = CustomMM.apply(q_inp, self.weights, self.bias, self.noise_level, 1, self.wb)
+
+
+
+
+        return quant_pass(pact_a(, self.a2), self.abMVM, self.a2)
         #return quant_pass(CustomMM.apply(quant_pass(input, self.ib, True), quant_pass(self.weights/self.scale, self.wb, True), quant_pass(self.bias/self.scale, self.wb, True), self.noise_level, self.scale, self.wb), self.abMVM, True)
 
 
 class KWS_LSTM(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, batch_size, device, quant_factor, quant_beta, wb, abMVM, abNM, blocks, ib, noise_level, pool_method, fc_blocks, cy_div, cy_scale):
+    def __init__(self, input_dim, hidden_dim, output_dim, batch_size, device, quant_factor, quant_beta, wb, abMVM, abNM, blocks, ib, noise_level, pool_method, fc_blocks, cy_div, cy_scale, n_msb):
         super(KWS_LSTM, self).__init__()
         self.device = device
         self.batch_size = batch_size
@@ -345,6 +390,7 @@ class KWS_LSTM(nn.Module):
         self.n_blocks = blocks
         self.fc_blocks = fc_blocks
         self.pool_method = pool_method
+        self.n_msb = n_msb
 
         # # Pooling Layer
         # if pool_method == 'max':
@@ -384,7 +430,7 @@ class KWS_LSTM(nn.Module):
 
 
         # final FC layer
-        self.finFC = LinLayer(self.hidden_dim, 12, noise_level, abMVM, ib, wb)
+        self.finFC = LinLayer(self.hidden_dim, 12, noise_level, abMVM, ib, wb, n_msb)
 
         # self.finFC1 = LinLayer(self.hidden_dim, 1, noise_level, abMVM, ib, wb)
 
@@ -412,7 +458,7 @@ class KWS_LSTM(nn.Module):
 
 
 
-        self.lstmBlocks = LSTMLayer(LSTMCellQ, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device, cy_div, cy_scale)
+        self.lstmBlocks = LSTMLayer(LSTMCellQ, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device, cy_div, cy_scale, n_msb)
         # self.lstmBlocks2 = LSTMLayer(LSTMCellQ, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device, cy_div, cy_scale)
         # self.lstmBlocks3 = LSTMLayer(LSTMCellQ, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device, cy_div, cy_scale)
         # self.lstmBlocks4 = LSTMLayer(LSTMCellQ, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device, cy_div, cy_scale)
