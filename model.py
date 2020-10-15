@@ -229,7 +229,7 @@ class LinLayer(nn.Module):
         self.a2 = nn.Parameter(torch.tensor([16.]))
 
     def forward(self, input):
-        return quant_pass(pact_a(CustomMM.apply(quant_pass(pact_a(input, self.a1), self.ib, self.a1), self.weights, self.bias, self.noise_level, 1, self.wb), self.a2), self.abMVM, self.a2)
+        return quant_pass(pact_a(CustomMM.apply(quant_pass(pact_a(input, self.a1), self.ib, self.a1), self.weights, self.bias, self.noise_level, self.wb), self.a2), self.abMVM, self.a2)
 
 
 class LinLayer_bs(nn.Module):
