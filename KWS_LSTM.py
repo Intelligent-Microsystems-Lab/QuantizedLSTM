@@ -11,7 +11,7 @@ import torch.optim as optim
 import numpy as np
 
 from dataloader import SpeechCommandsGoogle
-from model import KWS_LSTM, pre_processing, quant_pass
+from model import KWS_LSTM, pre_processing
 from figure_scripts import plot_curves
 
 torch.manual_seed(42)
@@ -21,12 +21,11 @@ if torch.cuda.is_available():
 else:
     device = torch.device("cpu")
 
-
-
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 # general config
 parser.add_argument("--random-seed", type=int, default=80085, help='Random Seed')
+parser.add_argument("--method", type=int, default=0, help='Method: 0 - blocks, 1 - bitsplitting')
 parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speech_commands_v0.02', help='Path to Dataset')
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
 parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
@@ -50,14 +49,13 @@ parser.add_argument("--hop-length", type=int, default=320, help='Length of hop b
 parser.add_argument("--hidden", type=int, default=118, help='Number of hidden LSTM units') 
 parser.add_argument("--n-mfcc", type=int, default=40, help='Number of mfc coefficients to retain') # 40 before
 
-parser.add_argument("--noise-injectionT", type=float, default=0, help='Percentage of noise injected to weights')
+parser.add_argument("--noise-injectionT", type=float, default=0.05, help='Percentage of noise injected to weights')
 parser.add_argument("--quant-actMVM", type=int, default=3, help='Bits available for MVM activations/state')
 parser.add_argument("--quant-actNM", type=int, default=8, help='Bits available for non-MVM activations/state')
 parser.add_argument("--quant-inp", type=int, default=3, help='Bits available for inputs')
-parser.add_argument("--quant-w", type=int, default=0, help='Bits available for weights')
+parser.add_argument("--quant-w", type=int, default=8, help='Bits available for weights')
 
 parser.add_argument("--l2", type=float, default=.01, help='Strength of L2 norm')
-
 parser.add_argument("--n-msb", type=int, default=3, help='Number of bit splits')
 
 args = parser.parse_args()
@@ -81,7 +79,13 @@ train_dataloader = torch.utils.data.DataLoader(speech_dataset_train, batch_size=
 test_dataloader = torch.utils.data.DataLoader(speech_dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
 validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
 
-model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), batch_size = args.batch_size, device = device, quant_factor = 1, quant_beta = 1, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = args.noise_injectionT, blocks = 1, pool_method = 'Max', fc_blocks = 0, cy_div = 1, cy_scale = 1, n_msb = args.n_msb).to(device)
+if args.method == 0:
+    model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = args.noise_injectionT, cy_div = 1, cy_scale = 1)
+elif args.method == 1:
+    model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = args.noise_injectionT, cy_div = 1, cy_scale = 1)
+else:
+    raise Exception("Unknown method: Please use 0 for quantized LSTM blocks or 1 for bit splitting.")
+
 model.to(device)
 loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=lr_list[0])  
@@ -116,8 +120,6 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
     # train
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
 
-    #x_data = splitter2(x_data, 128)
-
     output = model(x_data)
 
     loss_val = loss_fn(output, y_label)
@@ -128,14 +130,12 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
     optimizer.step()
     optimizer.zero_grad()
 
-    #print("Step {0:05d} Acc {1:.4f} Loss {1:.4f}".format(e,train_acc[-1],loss_val.item()))
     if (e%100 == 0) or (e == epoch_list[-1]-1):
         # validation
         temp_list = []
         for val_e, (x_vali, y_vali) in enumerate(validation_dataloader):
             x_data, y_label = pre_processing(x_vali, y_vali, device, mfcc_cuda)
 
-            #x_data = splitter2(x_data, 128)
 
             output = model(x_data)
             temp_list.append((output.argmax(dim=1) == y_label).float().mean().item())
@@ -173,7 +173,6 @@ for i_batch, sample_batch in enumerate(test_dataloader):
     x_data, y_label = sample_batch
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
 
-    #x_data = splitter2(x_data, 128)
 
     output = model(x_data)
     acc_aux.append((output.argmax(dim=1) == y_label))
