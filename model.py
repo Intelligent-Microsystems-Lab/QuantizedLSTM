@@ -235,7 +235,7 @@ class LinLayer(nn.Module):
 
 class LinLayer_bs(nn.Module):
     def __init__(self, inp_dim, out_dim, noise_level, abMVM, ib, wb, n_msb):
-        super(LinLayer, self).__init__()
+        super(LinLayer_bs, self).__init__()
         self.abMVM = abMVM
         self.ib = ib
         self.wb = wb
