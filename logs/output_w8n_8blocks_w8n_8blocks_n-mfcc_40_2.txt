@@ -8,3 +8,17 @@ Traceback (most recent call last):
   File "/afs/crc.nd.edu/user/c/cschaef6/QuantizedLSTM/model.py", line 192, in __init__
     self.cell = cell(*cell_args)
 TypeError: __init__() missing 1 required positional argument: 'n_msb'
+Loading python/3.7.3
+  Loading requirement: tcl/8.6.8 gcc/8.3.0
+Namespace(background_frequency=0.8, background_volume=0.1, batch_size=100, canonical_testing=False, dataloader_num_workers=8, dataset_path_test='data.nosync/speech_commands_test_set_v0.02', dataset_path_train='data.nosync/speech_commands_v0.02', hidden=118, hop_length=320, l2=0.01, learning_rate='0.0005,0.0001,0.00002', method=0, n_mfcc=40, n_msb=3, noise_injectionT=0.05, quant_actMVM=3, quant_actNM=8, quant_inp=3, quant_w=8, random_seed=8627169, sample_rate=16000, silence_percentage=0.1, testing_percentage=10, time_shift_ms=100.0, training_steps='10000,10000,10000', unknown_percentage=0.1, validation_percentage=10, win_length=640, word_list=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'])
+f7769cd8-6af9-4000-8cb6-04bcea06a131
+Start Training:
+Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)
+Traceback (most recent call last):
+  File "KWS_LSTM.py", line 123, in <module>
+    output = model(x_data)
+  File "/afs/crc.nd.edu/user/c/cschaef6/.local/lib/python3.7/site-packages/torch/nn/modules/module.py", line 722, in _call_impl
+    result = self.forward(*input, **kwargs)
+  File "/afs/crc.nd.edu/user/c/cschaef6/QuantizedLSTM/model.py", line 308, in forward
+    output1 = self.finFC1(lstm_out[-1,:,:])
+NameError: name 'lstm_out' is not defined
