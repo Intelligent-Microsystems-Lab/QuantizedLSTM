@@ -51,6 +51,7 @@ parser.add_argument("--hidden", type=int, default=118, help='Number of hidden LS
 parser.add_argument("--n-mfcc", type=int, default=40, help='Number of mfc coefficients to retain') # 40 before
 
 parser.add_argument("--noise-injectionT", type=float, default=0.1, help='Percentage of noise injected to weights')
+parser.add_argument("--noise-injectionI", type=float, default=0.1, help='Percentage of noise injected to weights')
 parser.add_argument("--quant-actMVM", type=int, default=6, help='Bits available for MVM activations/state')
 parser.add_argument("--quant-actNM", type=int, default=8, help='Bits available for non-MVM activations/state')
 parser.add_argument("--quant-inp", type=int, default=4, help='Bits available for inputs')
@@ -97,19 +98,10 @@ train_acc = []
 val_acc = []
 model_uuid = str(uuid.uuid4())
 
-def splitter2(x, x_range):
-    orig_len = x.shape[2]
-    x_res = torch.cat([x]*2, dim = 2)
-    x_res *= 2
-
-    x_res[:,:,:orig_len] -= x_range
-    x_res[:,:,orig_len:] += x_range
-
-    return x_res
 
 print(args)
 print(model_uuid)
-print("Start Training:")
+print("Start training:")
 print("Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)")
 start_time = time.time()
 for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
@@ -164,7 +156,7 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
         plot_curves(train_acc, val_acc, model_uuid)
 
 
-print("Start Finetuning with noise:")
+print("Start finetuning with noise:")
 print("Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)")
 model.set_noise(args.noise_injectionT)
 start_time = time.time()
@@ -216,21 +208,20 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, args.finetuning_e
 
 
 # Testing
-print("Start Testing:")
+print("Start testing:")
 checkpoint_dict = torch.load('./checkpoints/'+model_uuid+'.pkl')
 model.load_state_dict(checkpoint_dict['model_dict'])
+model.set_noise(args.noise_injectionI)
 acc_aux = []
 
 for i_batch, sample_batch in enumerate(test_dataloader):
     x_data, y_label = sample_batch
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
 
-
     output = model(x_data)
     acc_aux.append((output.argmax(dim=1) == y_label))
 
 test_acc = torch.cat(acc_aux).float().mean().item()
 print("Test Accuracy: {0:.4f}".format(test_acc))
-
 
 #checkpoint_dict = torch.load('./checkpoints/9c8bf1f3-58e5-4527-8742-2964941cbae1.pkl')
