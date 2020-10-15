@@ -127,7 +127,6 @@ class CustomMM(torch.autograd.Function):
 
         return grad_input, grad_weight.t(), grad_bias, None, None, None
 
-#https://github.com/pytorch/benchmark/blob/master/rnns/fastrnns/custom_lstms.py#L32
 class LSTMCellQ(nn.Module):
     def __init__(self, input_size, hidden_size, wb, ib, abMVM, abNM, noise_level, device, cy_div, cy_scale):
         super(LSTMCellQ, self).__init__()

@@ -49,11 +49,11 @@ parser.add_argument("--hop-length", type=int, default=320, help='Length of hop b
 parser.add_argument("--hidden", type=int, default=118, help='Number of hidden LSTM units') 
 parser.add_argument("--n-mfcc", type=int, default=40, help='Number of mfc coefficients to retain') # 40 before
 
-parser.add_argument("--noise-injectionT", type=float, default=0.1, help='Percentage of noise injected to weights')
-parser.add_argument("--quant-actMVM", type=int, default=3, help='Bits available for MVM activations/state')
+parser.add_argument("--noise-injectionT", type=float, default=0.05, help='Percentage of noise injected to weights')
+parser.add_argument("--quant-actMVM", type=int, default=6, help='Bits available for MVM activations/state')
 parser.add_argument("--quant-actNM", type=int, default=8, help='Bits available for non-MVM activations/state')
-parser.add_argument("--quant-inp", type=int, default=3, help='Bits available for inputs')
-parser.add_argument("--quant-w", type=int, default=0, help='Bits available for weights')
+parser.add_argument("--quant-inp", type=int, default=4, help='Bits available for inputs')
+parser.add_argument("--quant-w", type=int, default=8, help='Bits available for weights')
 
 parser.add_argument("--l2", type=float, default=.01, help='Strength of L2 norm')
 parser.add_argument("--n-msb", type=int, default=3, help='Number of bit splits')
