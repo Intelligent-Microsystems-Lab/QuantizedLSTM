@@ -129,7 +129,7 @@ class CustomMM(torch.autograd.Function):
 
 #https://github.com/pytorch/benchmark/blob/master/rnns/fastrnns/custom_lstms.py#L32
 class LSTMCellQ(nn.Module):
-    def __init__(self, input_size, hidden_size, wb, ib, abMVM, abNM, noise_level, device, cy_div, cy_scale, n_msb):
+    def __init__(self, input_size, hidden_size, wb, ib, abMVM, abNM, noise_level, device, cy_div, cy_scale):
         super(LSTMCellQ, self).__init__()
         self.device = device
         self.wb = wb
@@ -143,7 +143,6 @@ class LSTMCellQ(nn.Module):
         self.noise_level = noise_level
         self.input_size = input_size
         self.hidden_size = hidden_size
-        self.n_msb = n_msb
         self.weight_ih = nn.Parameter(torch.randn(4 * hidden_size, input_size))
         self.weight_hh = nn.Parameter(torch.randn(4 * hidden_size, hidden_size))
         self.bias_ih = nn.Parameter(torch.randn(4 * hidden_size))
@@ -215,13 +214,12 @@ class LSTMLayer(nn.Module):
         return torch.stack(outputs), state
 
 class LinLayer(nn.Module):
-    def __init__(self, inp_dim, out_dim, noise_level, abMVM, ib, wb, n_msb):
+    def __init__(self, inp_dim, out_dim, noise_level, abMVM, ib, wb):
         super(LinLayer, self).__init__()
         self.abMVM = abMVM
         self.ib = ib
         self.wb = wb
         self.noise_level = noise_level
-        self.n_msb = n_msb
 
         self.weights = nn.Parameter(torch.randn(inp_dim, out_dim))
         self.bias = nn.Parameter(torch.randn(out_dim))
