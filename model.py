@@ -305,7 +305,7 @@ class KWS_LSTM(nn.Module):
 
 
         # final FC blocks
-        output1 = self.finFC1(lstm_out[-1,:,:])
+        output1 = self.finFC1(lstm_out1[-1,:,:])
         output2 = self.finFC2(lstm_out2[-1,:,:])
         output3 = self.finFC3(lstm_out3[-1,:,:])
         output4 = self.finFC4(lstm_out4[-1,:,:])
