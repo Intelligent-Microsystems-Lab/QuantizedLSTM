@@ -25,13 +25,14 @@ parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.A
 
 # general config
 parser.add_argument("--random-seed", type=int, default=80085, help='Random Seed')
-parser.add_argument("--method", type=int, default=1, help='Method: 0 - blocks, 1 - bitsplitting')
+parser.add_argument("--method", type=int, default=0, help='Method: 0 - blocks, 1 - bitsplitting')
 parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speech_commands_v0.02', help='Path to Dataset')
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
 parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
 parser.add_argument("--batch-size", type=int, default=100, help='Batch Size')
 parser.add_argument("--training-steps", type=str, default='10000,10000,10000', help='Training Steps')
 parser.add_argument("--learning-rate", type=str, default='0.0005,0.0001,0.00002', help='Learning Rate')
+parser.add_argument("--finetuning-epochs", type=int, default=10000, help='Number of epochs for finetuning')
 parser.add_argument("--dataloader-num-workers", type=int, default=8, help='Number Workers Dataloader')
 parser.add_argument("--validation-percentage", type=int, default=10, help='Validation Set Percentage')
 parser.add_argument("--testing-percentage", type=int, default=10, help='Testing Set Percentage')
@@ -49,11 +50,11 @@ parser.add_argument("--hop-length", type=int, default=320, help='Length of hop b
 parser.add_argument("--hidden", type=int, default=118, help='Number of hidden LSTM units') 
 parser.add_argument("--n-mfcc", type=int, default=40, help='Number of mfc coefficients to retain') # 40 before
 
-parser.add_argument("--noise-injectionT", type=float, default=0.05, help='Percentage of noise injected to weights')
+parser.add_argument("--noise-injectionT", type=float, default=0.1, help='Percentage of noise injected to weights')
 parser.add_argument("--quant-actMVM", type=int, default=6, help='Bits available for MVM activations/state')
 parser.add_argument("--quant-actNM", type=int, default=8, help='Bits available for non-MVM activations/state')
 parser.add_argument("--quant-inp", type=int, default=4, help='Bits available for inputs')
-parser.add_argument("--quant-w", type=int, default=8, help='Bits available for weights')
+parser.add_argument("--quant-w", type=int, default=None, help='Bits available for weights')
 
 parser.add_argument("--l2", type=float, default=.01, help='Strength of L2 norm')
 parser.add_argument("--n-msb", type=int, default=3, help='Number of bit splits')
@@ -80,9 +81,9 @@ test_dataloader = torch.utils.data.DataLoader(speech_dataset_test, batch_size=ar
 validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
 
 if args.method == 0:
-    model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = args.noise_injectionT)
+    model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = 0)
 elif args.method == 1:
-    model = KWS_LSTM_bs(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = args.noise_injectionT, n_msb = args.n_msb)
+    model = KWS_LSTM_bs(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = 0, n_msb = args.n_msb)
 else:
     raise Exception("Unknown method: Please use 0 for quantized LSTM blocks or 1 for bit splitting.")
 
@@ -117,6 +118,57 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
             param_group['lr'] = lr_list[seg_count]
             seg_count += 1
 
+    # train
+    x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
+
+    output = model(x_data)
+
+    loss_val = loss_fn(output, y_label)
+    loss_val += args.l2 * torch.norm(model.get_a())
+    train_acc.append((output.argmax(dim=1) == y_label).float().mean().item())
+
+    loss_val.backward()
+    optimizer.step()
+    optimizer.zero_grad()
+
+    if (e%100 == 0) or (e == epoch_list[-1]-1):
+        # validation
+        temp_list = []
+        for val_e, (x_vali, y_vali) in enumerate(validation_dataloader):
+            x_data, y_label = pre_processing(x_vali, y_vali, device, mfcc_cuda)
+
+
+            output = model(x_data)
+            temp_list.append((output.argmax(dim=1) == y_label).float().mean().item())
+        val_acc.append(np.mean(temp_list))
+
+        if best_acc < val_acc[-1]:
+            best_acc = val_acc[-1]
+            checkpoint_dict = {
+                'model_dict' : model.state_dict(), 
+                'optimizer'  : optimizer.state_dict(),
+                'epoch'      : e, 
+                'best_vali'  : best_acc, 
+                'arguments'  : args,
+                'train_loss' : loss_val,
+                'train_curve': train_acc,
+                'val_curve'  : val_acc
+            }
+            torch.save(checkpoint_dict, './checkpoints/'+model_uuid+'.pkl')
+            del checkpoint_dict
+
+        train_time = time.time() - start_time
+        start_time = time.time()
+    
+        print("{0:05d}     {1:.4f}      {2:.4f}     {3:.4f}     {4:.4f}".format(e, loss_val, train_acc[-1], best_acc, train_time))
+        plot_curves(train_acc, val_acc, model_uuid)
+
+
+print("Start Finetuning with noise:")
+print("Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)")
+model.set_noise(args.noise_injectionT)
+start_time = time.time()
+for e, (x_data, y_label) in enumerate(islice(train_dataloader, args.finetuning_epochs)):
     # train
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
 
