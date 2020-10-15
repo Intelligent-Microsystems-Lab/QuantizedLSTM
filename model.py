@@ -236,7 +236,7 @@ class LinLayer(nn.Module):
         self.a2 = nn.Parameter(torch.tensor([16.]))
 
     def forward(self, input):
-        return quant_pass(CustomMM.apply(quant_pass(input, self.ib, True), quant_pass(self.weights/self.scale, self.wb, True), quant_pass(self.bias/self.scale, self.wb, True), self.noise_level, self.scale, self.wb), self.abMVM, True)
+        return quant_pass(pact_a(CustomMM.apply(quant_pass(pact_a(input, self.a1), self.ib, self.a1), self.weights, self.bias, self.noise_level, 1, self.wb), self.a2), self.abMVM, self.a2)
 
 
 class KWS_LSTM(nn.Module):
