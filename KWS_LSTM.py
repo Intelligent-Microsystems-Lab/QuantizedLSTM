@@ -158,6 +158,10 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
 
 print("Start finetuning with noise:")
 print("Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)")
+best_acc = 0
+seg_count = 1
+train_acc = []
+val_acc = []
 model.set_noise(args.noise_injectionT)
 start_time = time.time()
 for e, (x_data, y_label) in enumerate(islice(train_dataloader, args.finetuning_epochs)):
