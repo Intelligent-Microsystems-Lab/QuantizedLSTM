@@ -47,7 +47,7 @@ class bitsplitting(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, grad_output):
-        #import pdb; pdb.set_trace()
+        import pdb; pdb.set_trace()
         return grad_output, None, None
 
 bitsplitter_pass = bitsplitting.apply
@@ -84,7 +84,7 @@ class QuantFunc(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, grad_output):
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
         return grad_output, None, None, None
 
 quant_pass = QuantFunc.apply
