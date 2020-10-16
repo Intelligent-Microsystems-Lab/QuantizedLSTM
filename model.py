@@ -348,7 +348,7 @@ class LinLayer_bmm(nn.Module):
         self.noise_level = noise_level
 
         self.weights = nn.Parameter(torch.randn(n_blocks, inp_dim, out_dim))
-        self.bias = nn.Parameter(torch.randn(n_blocks, out_dim))
+        self.bias = nn.Parameter(torch.randn(n_blocks, 1, out_dim))
 
 
         limit = np.sqrt(6/inp_dim)
