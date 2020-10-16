@@ -70,6 +70,8 @@ class QuantFunc(torch.autograd.Function):
                 x01q =  torch.round(x01 * step_d ) / step_d
 
                 x_list.append(x01q*x_range[i])
+            import pdb; pdb.set_trace()
+            beta_coef.unsqueeze(1).unsqueeze(1).expand(self.n_msb,input.shape[1],self.out_dim)
             x = torch.stack(x_list)
 
         else:
@@ -96,7 +98,8 @@ def pact_a_bmm(x, a):
     x_list = []
     for i in range(x.shape[0]):
         x_list.append(torch.sign(x[i]) * .5 * (torch.abs(x[i]) - torch.abs(torch.abs(x[i]) - a[i]) + a[i]))
-
+    import pdb; pdb.set_trace()
+    beta_coef.unsqueeze(1).unsqueeze(1).expand(self.n_msb,input.shape[1],self.out_dim)
     return torch.stack(x_list)
 
 def limit_scale(shape, factor, beta, wb):
@@ -210,8 +213,18 @@ class LSTMCellQ_bs(nn.Module):
     def forward(self, input, state):
         hx, cx = state
 
+        inp01 = (pact_a(input, self.a1) + self.a1)/(self.a1*2)
+        inp_msb, beta_coef = bitsplitter_pass(inp01, 1, self.n_msb)
+
+        # this quant needs to be better
+        out = ((CustomMM_bmm.apply(inp_msb, self.weight_ih, self.bias_ih, self.noise_level, self.wb) > .5) * 1.) + ((CustomMM_bmm.apply(inp_msb, self.weight_hh, self.bias_hh, self.noise_level, self.wb) > .5) * 1.)
+
+        part1 =  (beta_coef.unsqueeze(1).unsqueeze(1).expand(3,100,12) * out).sum(0)
+
+
+        gates = part1 + part2
         # MVM
-        gates = (CustomMM.apply(quant_pass(pact_a(input, self.a1), self.ib, self.a1), self.weight_ih, self.bias_ih, self.noise_level, self.wb) + CustomMM.apply(hx, self.weight_hh, self.bias_hh, self.noise_level, self.wb))
+        #gates = (CustomMM.apply(quant_pass(pact_a(input, self.a1), self.ib, self.a1), self.weight_ih, self.bias_ih, self.noise_level, self.wb) + CustomMM.apply(hx, self.weight_hh, self.bias_hh, self.noise_level, self.wb))
 
         #i, j, f, o
         i, j, f, o = gates.chunk(4, 1)
@@ -349,6 +362,7 @@ class LinLayer_bs(nn.Module):
         self.wb = wb
         self.n_msb = n_msb
         self.noise_level = noise_level
+        self.out_dim = out_dim
 
         self.weights = nn.Parameter(torch.randn(n_msb, inp_dim, out_dim))
         self.bias = nn.Parameter(torch.randn(n_msb, 1, out_dim))
@@ -368,10 +382,12 @@ class LinLayer_bs(nn.Module):
         inp01 = (pact_a(input, self.a1) + self.a1)/(self.a1*2)
         inp_msb, beta_coef = bitsplitter_pass(inp01, 1, self.n_msb)
 
+        # this quant needs to be better
         out = (CustomMM_bmm.apply(inp_msb, self.weights, self.bias, self.noise_level, self.wb) > .5) * 1.
         
         # consolidate
-        return (beta_coef.unsqueeze(1).unsqueeze(1).expand(3,100,12) * out).sum(0)
+        import pdb; pdb.set_trace()
+        return (beta_coef.unsqueeze(1).unsqueeze(1).expand(self.n_msb,input.shape[1],self.out_dim) * out).sum(0)
 
 
 
@@ -409,7 +425,7 @@ class KWS_LSTM_bs(nn.Module):
         return output
 
     def get_a(self):
-        return torch.cat([self.lstmBlocks1.cell.a1, self.lstmBlocks1.cell.a3, self.lstmBlocks1.cell.a2,  self.lstmBlocks1.cell.a4, self.lstmBlocks1.cell.a5, self.lstmBlocks1.cell.a6, self.lstmBlocks1.cell.a7, self.lstmBlocks1.cell.a8, self.lstmBlocks1.cell.a9, self.lstmBlocks1.cell.a10,  self.lstmBlocks1.cell.a11, self.finFC1.a1, self.finFC1.a2])/13
+        return torch.cat([self.lstmBlocks.cell.a1, self.lstmBlocks.cell.a3, self.lstmBlocks.cell.a2,  self.lstmBlocks.cell.a4, self.lstmBlocks.cell.a5, self.lstmBlocks.cell.a6, self.lstmBlocks.cell.a7, self.lstmBlocks.cell.a8, self.lstmBlocks.cell.a9, self.lstmBlocks.cell.a10,  self.lstmBlocks.cell.a11, self.finFC.a1, self.finFC.a2])/13
 
 
 class KWS_LSTM_bmm(nn.Module):
