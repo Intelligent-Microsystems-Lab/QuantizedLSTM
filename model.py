@@ -174,6 +174,8 @@ class CustomMM_bmm(torch.autograd.Function):
         if ctx.needs_input_grad[2]:
             grad_bias = grad_output.sum(1)
 
+        import pdb; pdb.set_trace()
+
         return grad_input, grad_weight.permute(0,2,1), grad_bias, None, None, None
 
 
