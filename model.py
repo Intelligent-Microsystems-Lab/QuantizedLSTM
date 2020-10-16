@@ -61,18 +61,28 @@ class QuantFunc(torch.autograd.Function):
         step_d = 2.0 ** (bits - 1)
 
         if len(x_range) > 1:
-            x_list = []
-            for i in range(len(x_range)):
-                x_scaled = x[i]/x_range[i]
+            x_range = x_range.unsqueeze(1).unsqueeze(1).expand(x.shape)
 
-                x01 = torch.clamp(x_scaled,-1+(1./step_d),1-(1./step_d))
+            x_scaled = x/x_range
 
-                x01q =  torch.round(x01 * step_d ) / step_d
+            x01 = torch.clamp(x_scaled,-1+(1./step_d),1-(1./step_d))
 
-                x_list.append(x01q*x_range[i])
-            import pdb; pdb.set_trace()
-            beta_coef.unsqueeze(1).unsqueeze(1).expand(self.n_msb,input.shape[1],self.out_dim)
-            x = torch.stack(x_list)
+            x01q =  torch.round(x01 * step_d ) / step_d
+
+            x = x01q*x_range
+
+            # x_list = []
+            # for i in range(len(x_range)):
+            #     x_scaled = x[i]/x_range[i]
+
+            #     x01 = torch.clamp(x_scaled,-1+(1./step_d),1-(1./step_d))
+
+            #     x01q =  torch.round(x01 * step_d ) / step_d
+
+            #     x_list.append(x01q*x_range[i])
+            # import pdb; pdb.set_trace()
+            # beta_coef.unsqueeze(1).unsqueeze(1).expand(self.n_msb,input.shape[1],self.out_dim)
+            # x = torch.stack(x_list)
 
         else:
             x_scaled = x/x_range
@@ -95,11 +105,14 @@ def pact_a(x, a):
     return torch.sign(x) * .5*(torch.abs(x) - torch.abs(torch.abs(x) - a) + a)
 
 def pact_a_bmm(x, a):
-    x_list = []
-    for i in range(x.shape[0]):
-        x_list.append(torch.sign(x[i]) * .5 * (torch.abs(x[i]) - torch.abs(torch.abs(x[i]) - a[i]) + a[i]))
-    import pdb; pdb.set_trace()
-    beta_coef.unsqueeze(1).unsqueeze(1).expand(self.n_msb,input.shape[1],self.out_dim)
+    # x_list = []
+    # for i in range(x.shape[0]):
+    #     x_list.append(torch.sign(x[i]) * .5 * (torch.abs(x[i]) - torch.abs(torch.abs(x[i]) - a[i]) + a[i]))
+    # import pdb; pdb.set_trace()
+
+    a = a.unsqueeze(1).unsqueeze(1).expand(x.shape)
+    torch.sign(x) * .5 * (torch.abs(x) - torch.abs(torch.abs(x) - a) + a)
+
     return torch.stack(x_list)
 
 def limit_scale(shape, factor, beta, wb):
@@ -386,6 +399,7 @@ class LinLayer_bs(nn.Module):
         out = (CustomMM_bmm.apply(inp_msb, self.weights, self.bias, self.noise_level, self.wb) > .5) * 1.
         
         # consolidate
+        import pdb; pdb.set_trace()
         return (beta_coef.unsqueeze(1).unsqueeze(1).expand(self.n_msb,input.shape[1],self.out_dim) * out).sum(0)
 
 
