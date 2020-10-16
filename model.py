@@ -70,7 +70,6 @@ class QuantFunc(torch.autograd.Function):
                 x01q =  torch.round(x01 * step_d ) / step_d
 
                 x_list.append(x01q*x_range[i])
-            import pdb; pdb.set_trace()
             x = torch.stack(x_list)
 
         else:
