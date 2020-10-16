@@ -78,7 +78,7 @@ class bitsplitting(torch.autograd.Function):
             beta.append(l2/l1)
 
             y.append( torch.floor( torch.round(l1*x)/l2 ) % 2)
-            y[-1] = y[-1] #* beta[-1]
+            y[-1] = y[-1]
 
         ctx.beta = beta
 
