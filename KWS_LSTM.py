@@ -11,7 +11,7 @@ import torch.optim as optim
 import numpy as np
 
 from dataloader import SpeechCommandsGoogle
-from model import KWS_LSTM, KWS_LSTM_bs, KWS_LSTM_bmm, pre_processing
+from model import KWS_LSTM_bs, KWS_LSTM_bmm, pre_processing
 from figure_scripts import plot_curves
 
 torch.manual_seed(42)
@@ -25,7 +25,7 @@ parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.A
 
 # general config
 parser.add_argument("--random-seed", type=int, default=80085, help='Random Seed')
-parser.add_argument("--method", type=int, default=0, help='Method: 0 - blocks, 1 - bitsplitting')
+parser.add_argument("--method", type=int, default=1, help='Method: 0 - blocks, 1 - bitsplitting')
 parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speech_commands_v0.02', help='Path to Dataset')
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
 parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
