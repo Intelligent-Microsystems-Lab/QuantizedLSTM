@@ -88,3 +88,10 @@ Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)
 08100     0.5892      0.8400     0.8576     313.4211
 08200     0.4954      0.8400     0.8605     321.0988
 08300     0.5739      0.7600     0.8605     285.5892
+Loading python/3.7.3
+  Loading requirement: tcl/8.6.8 gcc/8.3.0
+Namespace(background_frequency=0.8, background_volume=0.1, batch_size=100, canonical_testing=False, dataloader_num_workers=8, dataset_path_test='data.nosync/speech_commands_test_set_v0.02', dataset_path_train='data.nosync/speech_commands_v0.02', finetuning_epochs=10000, hidden=118, hop_length=320, l2=0.01, learning_rate='0.0005,0.0001,0.00002', method=0, n_mfcc=40, n_msb=3, noise_injectionI=0.1, noise_injectionT=0.1, quant_actMVM=6, quant_actNM=8, quant_inp=4, quant_w=None, random_seed=8627169, sample_rate=16000, silence_percentage=0.1, testing_percentage=10, time_shift_ms=100.0, training_steps='10000,10000,10000', unknown_percentage=0.1, validation_percentage=10, win_length=640, word_list=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'])
+7db0f1bb-2ee2-4624-9f0e-495c5917251c
+Start training:
+Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)
+08400     0.4996      0.8500     0.8605     304.5053

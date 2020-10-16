@@ -1,6 +1,6 @@
 import os
 
-ident_word = "blocks8_ft"
+ident_word = "blocks8_ft_bmm"
 
 part1 = "#!/bin/csh \n#$ -M cschaef6@nd.edu \n#$ -m abe\n#$ -q " 
 part11 = "\n#$ -l gpu_card=1\n#$ -N "
