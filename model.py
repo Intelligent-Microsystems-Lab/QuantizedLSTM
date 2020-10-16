@@ -582,8 +582,7 @@ class KWS_LSTM_bmm(nn.Module):
 
 
     def get_a(self):
-        import pdb; pdb.set_trace()
-        return torch.cat([self.lstmBlocks.cell.a1, self.lstmBlocks.cell.a3, self.lstmBlocks.cell.a2,  self.lstmBlocks.cell.a4, self.lstmBlocks.cell.a5, self.lstmBlocks.cell.a6, self.lstmBlocks.cell.a7, self.lstmBlocks.cell.a8, self.lstmBlocks.cell.a9, self.lstmBlocks.cell.a10,  self.lstmBlocks.cell.a11, self.finFC1.a1, self.finFC1.a2])/104
+        return torch.cat([self.lstmBlocks.cell.a1, self.lstmBlocks.cell.a3, self.lstmBlocks.cell.a2,  self.lstmBlocks.cell.a4, self.lstmBlocks.cell.a5, self.lstmBlocks.cell.a6, self.lstmBlocks.cell.a7, self.lstmBlocks.cell.a8, self.lstmBlocks.cell.a9, self.lstmBlocks.cell.a10,  self.lstmBlocks.cell.a11, self.finFC1.a1, self.finFC1.a2, self.finFC2.a1, self.finFC2.a2,  self.finFC3.a1, self.finFC3.a2,  self.finFC4.a1, self.finFC4.a2,  self.finFC5.a1, self.finFC5.a2,  self.finFC6.a1, self.finFC6.a2,  self.finFC7.a1, self.finFC7.a2,  self.finFC8.a1, self.finFC8.a2])/104
 
 
 def pre_processing(x, y, device, mfcc_cuda):
