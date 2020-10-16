@@ -43,7 +43,7 @@ class bitsplitting(torch.autograd.Function):
 
         ctx.beta = beta
 
-        return torch.stack(y), torch.tensor(beta)
+        return torch.stack(y), torch.tensor(beta).to(x.device)
 
     @staticmethod
     def backward(ctx, grad_output):
@@ -368,14 +368,11 @@ class LinLayer_bs(nn.Module):
         inp01 = (pact_a(input, self.a1) + self.a1)/(self.a1*2)
         inp_msb, beta_coef = bitsplitter_pass(inp01, 1, self.n_msb)
 
-        import pdb; pdb.set_trace()
-        out = quant_pass(CustomMM_bmm.apply(inp_msb, self.weights, self.bias, self.noise_level, self.wb), 1, torch.tensor([1]))
+        out = (CustomMM_bmm.apply(inp_msb, self.weights, self.bias, self.noise_level, self.wb) > .5) * 1.
         
+        # consolidate
+        return (beta_coef.unsqueeze(1).unsqueeze(1).expand(3,100,12) * out).sum(0)
 
-        
-
-
-        return quant_pass(pact_a(CustomMM.apply(q_input, self.weights, self.bias, self.noise_level, 1, self.wb), self.a2), self.abMVM, self.a2)
 
 
 class KWS_LSTM_bs(nn.Module):
