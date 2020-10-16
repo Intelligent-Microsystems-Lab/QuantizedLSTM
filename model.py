@@ -63,6 +63,7 @@ class QuantFunc(torch.autograd.Function):
         if len(x_range) > 1:
 
             for i in len(range(x_range)):
+                import pdb; pdb.set_trace()
                 x_scaled = x[i]/x_range[i]
 
                 x01 = torch.clamp(x_scaled,-1+(1./step_d),1-(1./step_d))
@@ -262,10 +263,10 @@ class LSTMCellQ_bmm(nn.Module):
     def forward(self, input, state):
         hx, cx = state
 
-        import pdb; pdb.set_trace()
-
         # MVM
         gates = (CustomMM.apply(quant_pass(pact_a_bmm(input.repeat(self.n_blocks, 1, 1), self.a1), self.ib, self.a1), self.weight_ih.t(), self.bias_ih.t(), self.noise_level, self.wb) + CustomMM.apply(hx, self.weight_hh.t(), self.bias_hh.t(), self.noise_level, self.wb))
+
+        import pdb; pdb.set_trace()
 
         #i, j, f, o
         i, j, f, o = gates.chunk(4, 1)
