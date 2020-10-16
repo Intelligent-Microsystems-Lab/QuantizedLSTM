@@ -43,7 +43,7 @@ class bitsplitting(torch.autograd.Function):
 
         ctx.beta = beta
 
-        return torch.stack(y), beta
+        return torch.stack(y), torch.tensor(beta)
 
     @staticmethod
     def backward(ctx, grad_output):
