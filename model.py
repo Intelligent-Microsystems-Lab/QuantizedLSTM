@@ -111,9 +111,9 @@ def pact_a_bmm(x, a):
     # import pdb; pdb.set_trace()
 
     a = a.unsqueeze(1).unsqueeze(1).expand(x.shape)
-    torch.sign(x) * .5 * (torch.abs(x) - torch.abs(torch.abs(x) - a) + a)
+    return torch.sign(x) * .5 * (torch.abs(x) - torch.abs(torch.abs(x) - a) + a)
 
-    return torch.stack(x_list)
+    #return torch.stack(x_list)
 
 def limit_scale(shape, factor, beta, wb):
     fan_in = shape
