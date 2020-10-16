@@ -552,15 +552,15 @@ class KWS_LSTM_bmm(nn.Module):
 
 
         # final FC blocks
-        output1 = self.finFC1(lstm_out1[-1,0,:,:])
-        output2 = self.finFC2(lstm_out2[-1,1,:,:])
-        output3 = self.finFC3(lstm_out3[-1,2,:,:])
-        output4 = self.finFC4(lstm_out4[-1,3,:,:])
+        output1 = self.finFC1(lstm_out[-1,0,:,:])
+        output2 = self.finFC2(lstm_out[-1,1,:,:])
+        output3 = self.finFC3(lstm_out[-1,2,:,:])
+        output4 = self.finFC4(lstm_out[-1,3,:,:])
 
-        output5 = self.finFC5(lstm_out5[-1,4,:,:])
-        output6 = self.finFC6(lstm_out6[-1,5,:,:])
-        output7 = self.finFC7(lstm_out7[-1,6,:,:])
-        output8 = self.finFC8(lstm_out8[-1,7,:,:])
+        output5 = self.finFC5(lstm_out[-1,4,:,:])
+        output6 = self.finFC6(lstm_out[-1,5,:,:])
+        output7 = self.finFC7(lstm_out[-1,6,:,:])
+        output8 = self.finFC8(lstm_out[-1,7,:,:])
 
         output = torch.cat([output1, output2, output3, output4, output5, output6, output7, output8], 1)
 
