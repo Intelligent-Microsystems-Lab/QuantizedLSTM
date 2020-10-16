@@ -61,7 +61,7 @@ class QuantFunc(torch.autograd.Function):
         step_d = 2.0 ** (bits - 1)
 
         if len(x_range) > 1:
-
+            x_list = []
             for i in range(len(x_range)):
                 x_scaled = x[i]/x_range[i]
 
@@ -69,7 +69,9 @@ class QuantFunc(torch.autograd.Function):
 
                 x01q =  torch.round(x01 * step_d ) / step_d
 
-                x[i] = x01q*x_range[i]
+                x_list.append(x01q*x_range[i])
+                import pdb; pdb.set_trace()
+                x = torch.stack(x_list)
 
         else:
             x_scaled = x/x_range
@@ -93,9 +95,12 @@ def pact_a(x, a):
     return torch.sign(x) * .5*(torch.abs(x) - torch.abs(torch.abs(x) - a) + a)
 
 def pact_a_bmm(x, a):
+    x_list = []
     for i in range(x.shape[0]):
-        x[i] = torch.sign(x[i]) * .5*(torch.abs(x[i]) - torch.abs(torch.abs(x[i]) - a[i]) + a[i])
-    return x
+        x_list.append(torch.sign(x[i]) * .5*(torch.abs(x[i]) - torch.abs(torch.abs(x[i]) - a[i]) + a[i]))
+    import pdb; pdb.set_trace()
+
+    return torch.stack(x_list)
 
 def limit_scale(shape, factor, beta, wb):
     fan_in = shape
