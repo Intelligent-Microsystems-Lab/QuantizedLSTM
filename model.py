@@ -60,13 +60,27 @@ class QuantFunc(torch.autograd.Function):
         
         step_d = 2.0 ** (bits - 1)
 
-        x_scaled = x/x_range
+        if len(x_range) > 1:
 
-        x01 = torch.clamp(x_scaled,-1+(1./step_d),1-(1./step_d))
+            for i in len(x_range):
+                x_scaled = x[i]/x_range[i]
 
-        x01q =  torch.round(x01 * step_d ) / step_d
+                x01 = torch.clamp(x_scaled,-1+(1./step_d),1-(1./step_d))
 
-        return x01q*x_range
+                x01q =  torch.round(x01 * step_d ) / step_d
+
+                x[i] = x01q*x_range[i]
+
+        else:
+            x_scaled = x/x_range
+
+            x01 = torch.clamp(x_scaled,-1+(1./step_d),1-(1./step_d))
+
+            x01q =  torch.round(x01 * step_d ) / step_d
+
+            x = x01q*x_range
+
+        return x
 
     @staticmethod
     def backward(ctx, grad_output):
@@ -251,7 +265,7 @@ class LSTMCellQ_bmm(nn.Module):
         import pdb; pdb.set_trace()
 
         # MVM
-        gates = (CustomMM.apply(quant_pass(pact_a_bmm(input.repeat(self.n_blocks, 1), self.a1), self.ib, self.a1), self.weight_ih.t(), self.bias_ih.t(), self.noise_level, self.wb) + CustomMM.apply(hx, self.weight_hh.t(), self.bias_hh.t(), self.noise_level, self.wb))
+        gates = (CustomMM.apply(quant_pass(pact_a_bmm(input.repeat(self.n_blocks, 1, 1), self.a1), self.ib, self.a1), self.weight_ih.t(), self.bias_ih.t(), self.noise_level, self.wb) + CustomMM.apply(hx, self.weight_hh.t(), self.bias_hh.t(), self.noise_level, self.wb))
 
         #i, j, f, o
         i, j, f, o = gates.chunk(4, 1)
