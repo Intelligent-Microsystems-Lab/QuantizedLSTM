@@ -366,11 +366,10 @@ class LinLayer_bs(nn.Module):
 
     def forward(self, input):
         inp01 = (pact_a(input, self.a1) + self.a1)/(self.a1*2)
-        inp_msb, beta_coef = bitsplitter_pass(inp01, 3, self.n_msb)
+        inp_msb, beta_coef = bitsplitter_pass(inp01, 1, self.n_msb)
 
-
+        out = quant_pass(CustomMM_bmm.apply(inp_msb, self.weights, self.bias, self.noise_level, self.wb), 1, 1)
         import pdb; pdb.set_trace()
-        CustomMM_bmm.apply(inp_msb, self.weights, self.bias, self.noise_level, 1, self.wb)
 
         
 
@@ -396,7 +395,7 @@ class KWS_LSTM_bs(nn.Module):
         self.lstmBlocks = LSTMLayer(LSTMCellQ_bs, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device)
 
         # final FC layer
-        self.finFC = LinLayer_bs(self.hidden_dim, 1, noise_level, abMVM, ib, wb, n_msb)
+        self.finFC = LinLayer_bs(self.hidden_dim, output_dim, noise_level, abMVM, ib, wb, n_msb)
 
 
     def forward(self, inputs):
