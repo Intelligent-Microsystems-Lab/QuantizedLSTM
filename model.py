@@ -559,7 +559,7 @@ class KWS_LSTM_bmm(nn.Module):
         self.lstmBlocks = LSTMLayer(LSTMCellQ_bmm, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, 8, self.device)
 
         # final FC layer
-        self.finFC = LinLayer(self.hidden_dim, 2, noise_level, abMVM, ib, wb, 8)
+        self.finFC = LinLayer_bmm(self.hidden_dim, 2, noise_level, abMVM, ib, wb, 8)
 
 
     def forward(self, inputs):
