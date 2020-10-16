@@ -95,7 +95,7 @@ def pact_a(x, a):
 def pact_a_bmm(x, a):
     x_list = []
     for i in range(x.shape[0]):
-        x_list.append(torch.sign(x[i]) * .5*(torch.abs(x[i]) - torch.abs(torch.abs(x[i]) - a[i]) + a[i]))
+        x_list.append(torch.sign(x[i]) * .5 * (torch.abs(x[i]) - torch.abs(torch.abs(x[i]) - a[i]) + a[i]))
 
     return torch.stack(x_list)
 
@@ -339,6 +339,32 @@ class LinLayer(nn.Module):
     def forward(self, input):
         return quant_pass(pact_a(CustomMM.apply(quant_pass(pact_a(input, self.a1), self.ib, self.a1), self.weights, self.bias, self.noise_level, self.wb), self.a2), self.abMVM, self.a2)
 
+class LinLayer_bmm(nn.Module):
+    def __init__(self, inp_dim, out_dim, noise_level, abMVM, ib, wb, n_blocks):
+        super(LinLayer_bmm, self).__init__()
+        self.abMVM = abMVM
+        self.ib = ib
+        self.wb = wb
+        self.noise_level = noise_level
+
+        self.weights = nn.Parameter(torch.randn(n_blocks, inp_dim, out_dim))
+        self.bias = nn.Parameter(torch.randn(n_blocks, out_dim))
+
+
+        limit = np.sqrt(6/inp_dim)
+        limit = w_init(limit, wb)
+
+        torch.nn.init.uniform_(self.weights, a = -limit, b = limit)
+        torch.nn.init.uniform_(self.bias, a = -0, b = 0)
+
+
+        self.a1 = nn.Parameter(torch.tensor([4.]*n_blocks))
+        self.a2 = nn.Parameter(torch.tensor([16.]*n_blocks))
+
+    def forward(self, input):
+        import pdb; pdb.set_trace()
+        return quant_pass(pact_a_bmm(CustomMM_bmm.apply(quant_pass(pact_a_bmm(input, self.a1), self.ib, self.a1), self.weights, self.bias, self.noise_level, self.wb), self.a2), self.abMVM, self.a2)
+
 
 class LinLayer_bs(nn.Module):
     def __init__(self, inp_dim, out_dim, noise_level, abMVM, ib, wb, n_msb):
@@ -533,16 +559,7 @@ class KWS_LSTM_bmm(nn.Module):
         self.lstmBlocks = LSTMLayer(LSTMCellQ_bmm, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, 8, self.device)
 
         # final FC layer
-        self.finFC1 = LinLayer(self.hidden_dim, 1, noise_level, abMVM, ib, wb)
-        self.finFC2 = LinLayer(self.hidden_dim, 1, noise_level, abMVM, ib, wb)
-        self.finFC3 = LinLayer(self.hidden_dim, 1, noise_level, abMVM, ib, wb)
-        self.finFC4 = LinLayer(self.hidden_dim, 1, noise_level, abMVM, ib, wb)
-
-
-        self.finFC5 = LinLayer(self.hidden_dim, 2, noise_level, abMVM, ib, wb)
-        self.finFC6 = LinLayer(self.hidden_dim, 2, noise_level, abMVM, ib, wb)
-        self.finFC7 = LinLayer(self.hidden_dim, 2, noise_level, abMVM, ib, wb)
-        self.finFC8 = LinLayer(self.hidden_dim, 2, noise_level, abMVM, ib, wb)
+        self.finFC = LinLayer(self.hidden_dim, 2, noise_level, abMVM, ib, wb, 8)
 
 
     def forward(self, inputs):
@@ -555,17 +572,10 @@ class KWS_LSTM_bmm(nn.Module):
 
 
         # final FC blocks
-        output1 = self.finFC1(lstm_out[-1,0,:,:])
-        output2 = self.finFC2(lstm_out[-1,1,:,:])
-        output3 = self.finFC3(lstm_out[-1,2,:,:])
-        output4 = self.finFC4(lstm_out[-1,3,:,:])
+        output = self.finFC(lstm_out[-1,:,:,:])
 
-        output5 = self.finFC5(lstm_out[-1,4,:,:])
-        output6 = self.finFC6(lstm_out[-1,5,:,:])
-        output7 = self.finFC7(lstm_out[-1,6,:,:])
-        output8 = self.finFC8(lstm_out[-1,7,:,:])
-
-        output = torch.cat([output1, output2, output3, output4, output5, output6, output7, output8], 1)
+        
+        output = torch.cat([output[0] + output[1], output[2] + output[3], output[4] + output[5], output[6] + output[7], output[8], output[9], output[10], output[11], output[12], output[13], output[14], output[15]], 1)
 
         return output
 
