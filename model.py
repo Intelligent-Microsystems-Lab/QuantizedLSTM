@@ -84,6 +84,7 @@ class QuantFunc(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, grad_output):
+        import pdb; pdb.set_trace()
         return grad_output, None, None, None
 
 quant_pass = QuantFunc.apply
@@ -164,6 +165,7 @@ class CustomMM_bmm(torch.autograd.Function):
         input, weight, bias = ctx.saved_tensors
         grad_input = grad_weight = grad_bias = None
 
+        import pdb; pdb.set_trace()
         if ctx.needs_input_grad[0]:
             grad_input = grad_output.bmm(weight.t())
         if ctx.needs_input_grad[1]:
