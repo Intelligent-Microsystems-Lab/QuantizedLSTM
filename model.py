@@ -181,10 +181,10 @@ class LSTMCellQ_bs(nn.Module):
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.n_msb = n_msb
-        self.weight_ih = nn.Parameter(torch.randn(n_msb, input_size, 4 * hidden_size))
-        self.weight_hh = nn.Parameter(torch.randn(n_msb, hidden_size, 4 * hidden_size))
-        self.bias_ih = nn.Parameter(torch.randn(n_msb, 1, 4 * hidden_size))
-        self.bias_hh = nn.Parameter(torch.randn(n_msb, 1, 4 * hidden_size))
+        self.weight_ih = nn.Parameter(torch.randn(1, input_size, 4 * hidden_size))
+        self.weight_hh = nn.Parameter(torch.randn(1, hidden_size, 4 * hidden_size))
+        self.bias_ih = nn.Parameter(torch.randn(1, 1, 4 * hidden_size))
+        self.bias_hh = nn.Parameter(torch.randn(1, 1, 4 * hidden_size))
 
         self.a1 = nn.Parameter(torch.tensor([128.] ))
         self.a2 = nn.Parameter(torch.tensor([16.] ))
@@ -202,6 +202,7 @@ class LSTMCellQ_bs(nn.Module):
     def forward(self, input, state):
         hx, cx = state
 
+        import pdb; pdb.set_trace()
         inp01 = (pact_a(input, self.a1) + self.a1)/(self.a1*2)
         inp_msb, beta_coef = bitsplitter_pass(inp01, 1, self.n_msb)
         out = ((CustomMM_bmm.apply(inp_msb, self.weight_ih, self.bias_ih, self.noise_level, self.wb) > .5) * 1.) 
@@ -246,8 +247,8 @@ class LinLayer_bs(nn.Module):
         self.noise_level = noise_level
         self.out_dim = out_dim
 
-        self.weights = nn.Parameter(torch.randn(n_msb, inp_dim, out_dim))
-        self.bias = nn.Parameter(torch.randn(n_msb, 1, out_dim))
+        self.weights = nn.Parameter(torch.randn(1, inp_dim, out_dim))
+        self.bias = nn.Parameter(torch.randn(1, 1, out_dim))
 
 
         limit = np.sqrt(6/inp_dim)
@@ -263,6 +264,8 @@ class LinLayer_bs(nn.Module):
     def forward(self, input):
         inp01 = (pact_a(input, self.a1) + self.a1)/(self.a1*2)
         inp_msb, beta_coef = bitsplitter_pass(inp01, 1, self.n_msb)
+
+        import pdb; pdb.set_trace()
 
         # this quant needs to be better
         out = (CustomMM_bmm.apply(inp_msb, self.weights, self.bias, self.noise_level, self.wb) > .5) * 1.
