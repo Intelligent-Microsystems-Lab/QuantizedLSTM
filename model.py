@@ -582,7 +582,8 @@ class KWS_LSTM_bmm(nn.Module):
 
 
     def get_a(self):
-        return torch.cat([self.lstmBlocks1.cell.a1, self.lstmBlocks1.cell.a3, self.lstmBlocks1.cell.a2,  self.lstmBlocks1.cell.a4, self.lstmBlocks1.cell.a5, self.lstmBlocks1.cell.a6, self.lstmBlocks1.cell.a7, self.lstmBlocks1.cell.a8, self.lstmBlocks1.cell.a9, self.lstmBlocks1.cell.a10,  self.lstmBlocks1.cell.a11, self.finFC1.a1, self.finFC1.a2])/104
+        import pdb; pdb.set_trace()
+        return torch.cat([self.lstmBlocks.cell.a1, self.lstmBlocks.cell.a3, self.lstmBlocks.cell.a2,  self.lstmBlocks.cell.a4, self.lstmBlocks.cell.a5, self.lstmBlocks.cell.a6, self.lstmBlocks.cell.a7, self.lstmBlocks.cell.a8, self.lstmBlocks.cell.a9, self.lstmBlocks.cell.a10,  self.lstmBlocks.cell.a11, self.finFC1.a1, self.finFC1.a2])/104
 
 
 def pre_processing(x, y, device, mfcc_cuda):
