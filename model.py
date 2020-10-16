@@ -231,22 +231,16 @@ class LSTMCellQ_bs(nn.Module):
     def forward(self, input, state):
         hx, cx = state
 
-        import pdb; pdb.set_trace()
-        inp_msb, beta_coef = bitsplitter_sym_pass(pact_a(input, self.a1), self.ib, self.n_msb)
+        inp_msb, beta_coef = bitsplitter_sym_pass(pact_a(input, self.a1)/self.a1, self.ib, self.n_msb)
         out = CustomMM_bmm.apply(inp_msb, self.weight_ih.expand(self.n_msb, self.weight_ih.shape[1], self.weight_ih.shape[2]), self.bias_ih.expand(self.n_msb, 1, self.bias_ih.shape[2]), self.noise_level, self.wb)
+        out_q = quant_pass(out, self.abMVM, torch.tensor([1]).to(input.device))
+        part1 = (beta_coef.unsqueeze(1).unsqueeze(1).expand(out_q.shape) * out_q).sum(0) * self.a1
 
 
-        quant_pass(x/beta[-1], bits, torch.tensor([1]).to(x.device))
-
-        part1 =  (beta_coef.unsqueeze(1).unsqueeze(1).expand(out.shape) * out).sum(0)
-
-
-        inp_msb, beta_coef = bitsplitter_pass(pact_a(hx, self.a11), self.abMVM, self.n_msb)
+        inp_msb, beta_coef = bitsplitter_sym_pass(pact_a(hx, self.a11)/self.a11, self.ib, self.n_msb)
         out = CustomMM_bmm.apply(inp_msb, self.weight_hh.expand(self.n_msb, self.weight_hh.shape[1], self.weight_hh.shape[2]), self.bias_hh.expand(self.n_msb, 1, self.bias_hh.shape[2]), self.noise_level, self.wb)
-
-
-
-        part2 =  (beta_coef.unsqueeze(1).unsqueeze(1).expand(out.shape) * out).sum(0)
+        out_q = quant_pass(out, self.abMVM, torch.tensor([1]).to(input.device))
+        part2 = (beta_coef.unsqueeze(1).unsqueeze(1).expand(out_q.shape) * out_q).sum(0) * self.a11
 
         gates = part1 + part2
         # MVM
@@ -296,13 +290,20 @@ class LinLayer_bs(nn.Module):
         self.a2 = nn.Parameter(torch.tensor([16.]))
 
     def forward(self, input):
-        inp_msb, beta_coef = bitsplitter_sym_pass(pact_a(input, self.a1), self.abMVM, self.n_msb)
 
-        # this quant needs to be better
-        out = (CustomMM_bmm.apply(inp_msb, self.weights.expand(self.n_msb, self.weights.shape[1], self.weights.shape[2]), self.bias.expand(self.n_msb, 1, self.bias.shape[2]), self.noise_level, self.wb) > .5) * 1.
+        inp_msb, beta_coef = bitsplitter_sym_pass(pact_a(input, self.a1)/self.a1, self.ib, self.n_msb)
+        out = CustomMM_bmm.apply(inp_msb, self.weights.expand(self.n_msb, self.weights.shape[1], self.weights.shape[2]), self.bias.expand(self.n_msb, 1, self.bias.shape[2]), self.noise_level, self.wb)
+        out_q = quant_pass(out, self.abMVM, torch.tensor([1]).to(input.device))
+        return (beta_coef.unsqueeze(1).unsqueeze(1).expand(out_q.shape) * out_q).sum(0) * self.a1
+
+
+        # inp_msb, beta_coef = bitsplitter_sym_pass(pact_a(input, self.a1), self.abMVM, self.n_msb)
+
+        # # this quant needs to be better
+        # out = (CustomMM_bmm.apply(inp_msb, self.weights.expand(self.n_msb, self.weights.shape[1], self.weights.shape[2]), self.bias.expand(self.n_msb, 1, self.bias.shape[2]), self.noise_level, self.wb) > .5) * 1.
         
-        # consolidate
-        return (beta_coef.unsqueeze(1).unsqueeze(1).expand(self.n_msb,input.shape[0],self.out_dim) * out).sum(0)
+        # # consolidate
+        # return (beta_coef.unsqueeze(1).unsqueeze(1).expand(self.n_msb,input.shape[0],self.out_dim) * out).sum(0)
 
 
 
