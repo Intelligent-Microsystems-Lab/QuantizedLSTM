@@ -70,8 +70,8 @@ class QuantFunc(torch.autograd.Function):
                 x01q =  torch.round(x01 * step_d ) / step_d
 
                 x_list.append(x01q*x_range[i])
-                import pdb; pdb.set_trace()
-                x = torch.stack(x_list)
+            import pdb; pdb.set_trace()
+            x = torch.stack(x_list)
 
         else:
             x_scaled = x/x_range
@@ -98,7 +98,6 @@ def pact_a_bmm(x, a):
     x_list = []
     for i in range(x.shape[0]):
         x_list.append(torch.sign(x[i]) * .5*(torch.abs(x[i]) - torch.abs(torch.abs(x[i]) - a[i]) + a[i]))
-    import pdb; pdb.set_trace()
 
     return torch.stack(x_list)
 
