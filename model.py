@@ -362,7 +362,6 @@ class LinLayer_bmm(nn.Module):
         self.a2 = nn.Parameter(torch.tensor([16.]*n_blocks))
 
     def forward(self, input):
-        import pdb; pdb.set_trace()
         return quant_pass(pact_a_bmm(CustomMM_bmm.apply(quant_pass(pact_a_bmm(input, self.a1), self.ib, self.a1), self.weights, self.bias, self.noise_level, self.wb), self.a2), self.abMVM, self.a2)
 
 
@@ -575,7 +574,7 @@ class KWS_LSTM_bmm(nn.Module):
         output = self.finFC(lstm_out[-1,:,:,:])
 
         
-        output = torch.cat([output[0] + output[1], output[2] + output[3], output[4] + output[5], output[6] + output[7], output[8], output[9], output[10], output[11], output[12], output[13], output[14], output[15]], 1)
+        output = torch.cat([output[0,:,0] + output[0,:,1], output[1,:,0] + output[1,:,1], output[2,:,0] + output[2,:,1], output[3,:,0] + output[3,:,1], output[4,:,0], output[4,:,1], output[5,:,0], output[5,:,1], output[6,:,0], output[6,:,1], output[7,:,0], output[7,:,1]], 1)
 
         return output
 
