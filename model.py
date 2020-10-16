@@ -241,10 +241,10 @@ class LSTMCellQ_bmm(nn.Module):
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.n_blocks = n_blocks
-        self.weight_ih = nn.Parameter(torch.randn(n_blocks, 4 * hidden_size, input_size))
-        self.weight_hh = nn.Parameter(torch.randn(n_blocks, 4 * hidden_size, hidden_size))
-        self.bias_ih = nn.Parameter(torch.randn(n_blocks, 4 * hidden_size))
-        self.bias_hh = nn.Parameter(torch.randn(n_blocks, 4 * hidden_size))
+        self.weight_ih = nn.Parameter(torch.randn(n_blocks, input_size, 4 * hidden_size))
+        self.weight_hh = nn.Parameter(torch.randn(n_blocks, hidden_size, 4 * hidden_size))
+        self.bias_ih = nn.Parameter(torch.randn(n_blocks, 1, 4 * hidden_size))
+        self.bias_hh = nn.Parameter(torch.randn(n_blocks, 1, 4 * hidden_size))
 
         self.a1 = nn.Parameter(torch.tensor([128.] * n_blocks))
         self.a2 = nn.Parameter(torch.tensor([16.] * n_blocks))
@@ -263,7 +263,7 @@ class LSTMCellQ_bmm(nn.Module):
         hx, cx = state
 
         # MVM
-        gates = (CustomMM.apply(quant_pass(pact_a_bmm(input.repeat(self.n_blocks, 1, 1), self.a1), self.ib, self.a1), self.weight_ih.t(), self.bias_ih.t(), self.noise_level, self.wb) + CustomMM.apply(hx, self.weight_hh.t(), self.bias_hh.t(), self.noise_level, self.wb))
+        gates = (CustomMM.apply(quant_pass(pact_a_bmm(input.repeat(self.n_blocks, 1, 1), self.a1), self.ib, self.a1), self.weight_ih, self.bias_ih, self.noise_level, self.wb) + CustomMM.apply(hx, self.weight_hh, self.bias_hh, self.noise_level, self.wb))
 
         import pdb; pdb.set_trace()
 
