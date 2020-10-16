@@ -226,6 +226,7 @@ class LSTMCellQ_bmm(nn.Module):
         self.noise_level = noise_level
         self.input_size = input_size
         self.hidden_size = hidden_size
+        self.n_blocks = n_blocks
         self.weight_ih = nn.Parameter(torch.randn(n_blocks, 4 * hidden_size, input_size))
         self.weight_hh = nn.Parameter(torch.randn(n_blocks, 4 * hidden_size, hidden_size))
         self.bias_ih = nn.Parameter(torch.randn(n_blocks, 4 * hidden_size))
@@ -250,7 +251,7 @@ class LSTMCellQ_bmm(nn.Module):
         import pdb; pdb.set_trace()
 
         # MVM
-        gates = (CustomMM.apply(quant_pass(pact_a_bmm(input.repeat(n_blocks, 1), self.a1), self.ib, self.a1), self.weight_ih.t(), self.bias_ih.t(), self.noise_level, self.wb) + CustomMM.apply(hx, self.weight_hh.t(), self.bias_hh.t(), self.noise_level, self.wb))
+        gates = (CustomMM.apply(quant_pass(pact_a_bmm(input.repeat(self.n_blocks, 1), self.a1), self.ib, self.a1), self.weight_ih.t(), self.bias_ih.t(), self.noise_level, self.wb) + CustomMM.apply(hx, self.weight_hh.t(), self.bias_hh.t(), self.noise_level, self.wb))
 
         #i, j, f, o
         i, j, f, o = gates.chunk(4, 1)
