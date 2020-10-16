@@ -62,8 +62,7 @@ class QuantFunc(torch.autograd.Function):
 
         if len(x_range) > 1:
 
-            for i in len(range(x_range)):
-                import pdb; pdb.set_trace()
+            for i in range(len(x_range)):
                 x_scaled = x[i]/x_range[i]
 
                 x01 = torch.clamp(x_scaled,-1+(1./step_d),1-(1./step_d))
