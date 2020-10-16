@@ -43,7 +43,7 @@ class bitsplitting(torch.autograd.Function):
 
         ctx.beta = beta
 
-        return torch.stack(y)
+        return torch.stack(y), beta
 
     @staticmethod
     def backward(ctx, grad_output):
@@ -76,6 +76,11 @@ quant_pass = QuantFunc.apply
 
 def pact_a(x, a):
     return torch.sign(x) * .5*(torch.abs(x) - torch.abs(torch.abs(x) - a) + a)
+
+def pact_a_bmm(x, a):
+    for i in range(x.shape[0]):
+        x[i] = torch.sign(x[i]) * .5*(torch.abs(x[i]) - torch.abs(torch.abs(x[i]) - a[i]) + a[i])
+    return x
 
 def limit_scale(shape, factor, beta, wb):
     fan_in = shape
@@ -125,6 +130,36 @@ class CustomMM(torch.autograd.Function):
 
         return grad_input, grad_weight.t(), grad_bias, None, None, None
 
+
+
+class CustomMM_bmm(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, input, weight, bias, nl, wb):
+        noise_w = torch.randn(weight.shape, device = input.device) * weight.max() * nl
+        bias_w  = torch.randn(bias.shape, device = bias.device) * bias.max() * nl
+
+        wq = quant_pass(weight, wb, 1.)
+        bq = quant_pass(bias, wb, 1.)
+
+        ctx.save_for_backward(input, weight, bias)
+        output = input.bmm(wq + noise_w) + bq + bias_w
+        return output
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        input, weight, bias = ctx.saved_tensors
+        grad_input = grad_weight = grad_bias = None
+
+        if ctx.needs_input_grad[0]:
+            grad_input = grad_output.bmm(weight.t())
+        if ctx.needs_input_grad[1]:
+            grad_weight = grad_output.t().bmm(input)
+        if ctx.needs_input_grad[2]:
+            grad_bias = grad_output.sum(0)
+
+        return grad_input, grad_weight.t(), grad_bias, None, None, None
+
+
 class LSTMCellQ(nn.Module):
     def __init__(self, input_size, hidden_size, wb, ib, abMVM, abNM, noise_level, device):
         super(LSTMCellQ, self).__init__()
@@ -152,6 +187,61 @@ class LSTMCellQ(nn.Module):
         self.a9 = nn.Parameter(torch.tensor([4.]))
         self.a10 = nn.Parameter(torch.tensor([1.]))
         self.a11 = nn.Parameter(torch.tensor([4.]))
+
+
+    def forward(self, input, state):
+        hx, cx = state
+
+        # MVM
+        gates = (CustomMM.apply(quant_pass(pact_a(input.repeat(n_blocks, 1), self.a1), self.ib, self.a1), self.weight_ih.t(), self.bias_ih.t(), self.noise_level, self.wb) + CustomMM.apply(hx, self.weight_hh.t(), self.bias_hh.t(), self.noise_level, self.wb))
+
+        #i, j, f, o
+        i, j, f, o = gates.chunk(4, 1)
+        
+        # 
+        forget_gate_out = quant_pass(pact_a(torch.sigmoid(f), self.a3), self.abNM, self.a3)
+        input_gate_out = quant_pass(pact_a(torch.sigmoid(i), self.a4), self.abNM, self.a4)
+        activation_out = quant_pass(pact_a(torch.tanh(j), self.a5), self.abNM, self.a5)
+        output_gate_out = quant_pass(pact_a(torch.sigmoid(o), self.a6), self.abNM, self.a6)
+
+        #
+        gated_cell = quant_pass(pact_a(cx * forget_gate_out, self.a7), self.abNM, self.a7)
+        activated_input = quant_pass(pact_a(input_gate_out * activation_out, self.a8), self.abNM, self.a8)
+        new_c = quant_pass(pact_a(gated_cell + activated_input, self.a9), self.abNM, self.a9)
+        activated_cell = quant_pass(pact_a(torch.tanh(new_c), self.a10), self.abNM, self.a10)
+        new_h = quant_pass(pact_a(activated_cell * output_gate_out, self.a11), self.abNM, self.a11)
+
+        return new_h, (new_h, new_c)
+
+
+
+class LSTMCellQ_bmm(nn.Module):
+    def __init__(self, input_size, hidden_size, wb, ib, abMVM, abNM, noise_level, n_blocks, device):
+        super(LSTMCellQ, self).__init__()
+        self.device = device
+        self.wb = wb
+        self.ib = ib
+        self.abMVM = abMVM
+        self.abNM  = abNM
+        self.noise_level = noise_level
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.weight_ih = nn.Parameter(torch.randn(n_blocks, 4 * hidden_size, input_size))
+        self.weight_hh = nn.Parameter(torch.randn(n_blocks, 4 * hidden_size, hidden_size))
+        self.bias_ih = nn.Parameter(torch.randn(n_blocks, 4 * hidden_size))
+        self.bias_hh = nn.Parameter(torch.randn(n_blocks, 4 * hidden_size))
+
+        self.a1 = nn.Parameter(torch.tensor([128.] * n_blocks))
+        self.a2 = nn.Parameter(torch.tensor([16.] * n_blocks))
+        self.a3 = nn.Parameter(torch.tensor([1.] * n_blocks))
+        self.a4 = nn.Parameter(torch.tensor([1.] * n_blocks))
+        self.a5 = nn.Parameter(torch.tensor([1.] * n_blocks))
+        self.a6 = nn.Parameter(torch.tensor([1.] * n_blocks))
+        self.a7 = nn.Parameter(torch.tensor([4.] * n_blocks))
+        self.a8 = nn.Parameter(torch.tensor([1.] * n_blocks))
+        self.a9 = nn.Parameter(torch.tensor([4.] * n_blocks))
+        self.a10 = nn.Parameter(torch.tensor([1.] * n_blocks))
+        self.a11 = nn.Parameter(torch.tensor([4.] * n_blocks))
 
 
     def forward(self, input, state):
@@ -256,6 +346,11 @@ class LinLayer_bs(nn.Module):
         self.a2 = nn.Parameter(torch.tensor([16.]))
 
     def forward(self, input):
+        inp01 = (pact_a(input, self.a1) + self.a1)/(self.a1*2)
+        inp_msb, beta_coef = bitsplitter_pass(inp01, 3, self.n_msb)
+
+
+
         q_input = quant_pass(pact_a(input, self.a1), self.ib, self.a1)
 
         import pdb; pdb.set_trace()
@@ -401,13 +496,86 @@ class KWS_LSTM_bs(nn.Module):
     def get_a(self):
         return torch.cat([self.lstmBlocks1.cell.a1, self.lstmBlocks1.cell.a3, self.lstmBlocks1.cell.a2,  self.lstmBlocks1.cell.a4, self.lstmBlocks1.cell.a5, self.lstmBlocks1.cell.a6, self.lstmBlocks1.cell.a7, self.lstmBlocks1.cell.a8, self.lstmBlocks1.cell.a9, self.lstmBlocks1.cell.a10,  self.lstmBlocks1.cell.a11, self.finFC1.a1, self.finFC1.a2])/13
 
+
+
+class KWS_LSTM_bmm(nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim, device, wb, abMVM, abNM, ib, noise_level):
+        super(KWS_LSTM_bmm, self).__init__()
+        self.device = device
+        self.noise_level = noise_level
+        self.wb = wb
+        self.abMVM = abMVM
+        self.abNM = abNM
+        self.ib = ib
+        self.hidden_dim = hidden_dim
+        self.input_dim = input_dim
+        self.output_dim = output_dim
+
+        # LSTM layer
+        self.lstmBlocks = LSTMLayer(LSTMCellQ_bmm, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, 8, self.device)
+
+        # final FC layer
+        self.finFC1 = LinLayer(self.hidden_dim, 1, noise_level, abMVM, ib, wb)
+        self.finFC2 = LinLayer(self.hidden_dim, 1, noise_level, abMVM, ib, wb)
+        self.finFC3 = LinLayer(self.hidden_dim, 1, noise_level, abMVM, ib, wb)
+        self.finFC4 = LinLayer(self.hidden_dim, 1, noise_level, abMVM, ib, wb)
+
+
+        self.finFC5 = LinLayer(self.hidden_dim, 2, noise_level, abMVM, ib, wb)
+        self.finFC6 = LinLayer(self.hidden_dim, 2, noise_level, abMVM, ib, wb)
+        self.finFC7 = LinLayer(self.hidden_dim, 2, noise_level, abMVM, ib, wb)
+        self.finFC8 = LinLayer(self.hidden_dim, 2, noise_level, abMVM, ib, wb)
+
+
+    def forward(self, inputs):
+        # init states with zero
+        self.hidden_state = (torch.zeros(8, inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(8, inputs.shape[1], self.hidden_dim, device = self.device))
+        
+
+        # LSTM blocks
+        lstm_out, _ = self.lstmBlocks(inputs, self.hidden_state)
+
+
+        # final FC blocks
+        output1 = self.finFC1(lstm_out1[-1,:,:])
+        output2 = self.finFC2(lstm_out2[-1,:,:])
+        output3 = self.finFC3(lstm_out3[-1,:,:])
+        output4 = self.finFC4(lstm_out4[-1,:,:])
+
+        output5 = self.finFC5(lstm_out5[-1,:,:])
+        output6 = self.finFC6(lstm_out6[-1,:,:])
+        output7 = self.finFC7(lstm_out7[-1,:,:])
+        output8 = self.finFC8(lstm_out8[-1,:,:])
+
+        output = torch.cat([output1, output2, output3, output4, output5, output6, output7, output8], 1)
+
+        return output
+
+    def set_noise(self, nl):
+        self.noise_level = nl
+
+        self.lstmBlocks1.cell.noise_level = nl
+        self.lstmBlocks2.cell.noise_level = nl
+        self.lstmBlocks3.cell.noise_level = nl
+        self.lstmBlocks4.cell.noise_level = nl
+        self.lstmBlocks5.cell.noise_level = nl
+        self.lstmBlocks6.cell.noise_level = nl
+        self.lstmBlocks7.cell.noise_level = nl
+        self.lstmBlocks8.cell.noise_level = nl
+
+        self.finFC1.noise_level = nl
+
+
+    def get_a(self):
+        return torch.cat([self.lstmBlocks1.cell.a1, self.lstmBlocks1.cell.a3, self.lstmBlocks1.cell.a2,  self.lstmBlocks1.cell.a4, self.lstmBlocks1.cell.a5, self.lstmBlocks1.cell.a6, self.lstmBlocks1.cell.a7, self.lstmBlocks1.cell.a8, self.lstmBlocks1.cell.a9, self.lstmBlocks1.cell.a10,  self.lstmBlocks1.cell.a11, self.finFC1.a1, self.finFC1.a2])/104
+
+
 def pre_processing(x, y, device, mfcc_cuda):
     batch_size = x.shape[0]
 
     x =  mfcc_cuda(x.to(device))
     x =  x.permute(2,0,1)
     y =  y.view((-1)).to(device)
-
 
     return x,y
 
