@@ -85,7 +85,6 @@ class QuantFunc(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, grad_output):
-        #import pdb; pdb.set_trace()
         return grad_output, None, None, None
 
 quant_pass = QuantFunc.apply
@@ -168,15 +167,14 @@ class CustomMM_bmm(torch.autograd.Function):
         input, weight, bias = ctx.saved_tensors
         grad_input = grad_weight = grad_bias = None
 
-        import pdb; pdb.set_trace()
         if ctx.needs_input_grad[0]:
-            grad_input = grad_output.bmm(weight.t())
+            grad_input = grad_output.bmm(weight.permute(0,2,1))
         if ctx.needs_input_grad[1]:
-            grad_weight = grad_output.t().bmm(input)
+            grad_weight = grad_output.permute(0,2,1).bmm(input)
         if ctx.needs_input_grad[2]:
-            grad_bias = grad_output.sum(0)
+            grad_bias = grad_output.sum(1)
 
-        return grad_input, grad_weight.t(), grad_bias, None, None, None
+        return grad_input, grad_weight.permute(0,2,1), grad_bias, None, None, None
 
 
 class LSTMCellQ(nn.Module):
