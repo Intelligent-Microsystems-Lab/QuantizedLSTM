@@ -11,7 +11,7 @@ import torch.optim as optim
 import numpy as np
 
 from dataloader import SpeechCommandsGoogle
-from model import KWS_LSTM, KWS_LSTM_bs, pre_processing
+from model import KWS_LSTM, KWS_LSTM_bs, KWS_LSTM_bmm, pre_processing
 from figure_scripts import plot_curves
 
 torch.manual_seed(42)
