@@ -269,8 +269,7 @@ class LinLayer_bs(nn.Module):
         out = (CustomMM_bmm.apply(inp_msb, self.weights, self.bias, self.noise_level, self.wb) > .5) * 1.
         
         # consolidate
-        import pdb; pdb.set_trace()
-        return (beta_coef.unsqueeze(1).unsqueeze(1).expand(self.n_msb,input.shape[1],self.out_dim) * out).sum(0)
+        return (beta_coef.unsqueeze(1).unsqueeze(1).expand(self.n_msb,input.shape[0],self.out_dim) * out).sum(0)
 
 
 
