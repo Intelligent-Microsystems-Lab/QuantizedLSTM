@@ -265,10 +265,8 @@ class LSTMCellQ_bmm(nn.Module):
         # MVM
         gates = (CustomMM_bmm.apply(quant_pass(pact_a_bmm(input.repeat(self.n_blocks, 1, 1), self.a1), self.ib, self.a1), self.weight_ih, self.bias_ih, self.noise_level, self.wb) + CustomMM_bmm.apply(hx, self.weight_hh, self.bias_hh, self.noise_level, self.wb))
 
-        import pdb; pdb.set_trace()
-
         #i, j, f, o
-        i, j, f, o = gates.chunk(4, 1)
+        i, j, f, o = gates.chunk(4, 2)
         
         # 
         forget_gate_out = quant_pass(pact_a_bmm(torch.sigmoid(f), self.a3), self.abNM, self.a3)
@@ -552,6 +550,7 @@ class KWS_LSTM_bmm(nn.Module):
         # LSTM blocks
         lstm_out, _ = self.lstmBlocks(inputs, self.hidden_state)
 
+        import pdb; pdb.set_trace()
 
         # final FC blocks
         output1 = self.finFC1(lstm_out1[-1,:,:])
