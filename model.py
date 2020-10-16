@@ -85,7 +85,7 @@ class bitsplitting(torch.autograd.Function):
         return torch.stack(y), torch.tensor(beta).to(x.device)
 
     @staticmethod
-    def backward(ctx, grad_output):
+    def backward(ctx, grad_output, hello):
         import pdb; pdb.set_trace()
         return grad_output, None, None
 
