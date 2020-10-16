@@ -39,7 +39,7 @@ class bitsplitting(torch.autograd.Function):
             beta.append(l2/l1)
 
             y.append( torch.floor( torch.round(l1*x)/l2 ) % 2)
-            y[-1] = y[-1] * beta[-1]
+            y[-1] = y[-1] #* beta[-1]
 
         ctx.beta = beta
 
@@ -350,8 +350,8 @@ class LinLayer_bs(nn.Module):
         self.n_msb = n_msb
         self.noise_level = noise_level
 
-        self.weights = nn.Parameter(torch.randn(inp_dim, out_dim))
-        self.bias = nn.Parameter(torch.randn(out_dim))
+        self.weights = nn.Parameter(torch.randn(n_msb, inp_dim, out_dim))
+        self.bias = nn.Parameter(torch.randn(n_msb, 1, out_dim))
 
 
         limit = np.sqrt(6/inp_dim)
@@ -369,10 +369,10 @@ class LinLayer_bs(nn.Module):
         inp_msb, beta_coef = bitsplitter_pass(inp01, 3, self.n_msb)
 
 
-
-        q_input = quant_pass(pact_a(input, self.a1), self.ib, self.a1)
-
         import pdb; pdb.set_trace()
+        CustomMM_bmm.apply(inp_msb, self.weights, self.bias, self.noise_level, 1, self.wb)
+
+        
 
 
         return quant_pass(pact_a(CustomMM.apply(q_input, self.weights, self.bias, self.noise_level, 1, self.wb), self.a2), self.abMVM, self.a2)
