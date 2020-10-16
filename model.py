@@ -368,8 +368,9 @@ class LinLayer_bs(nn.Module):
         inp01 = (pact_a(input, self.a1) + self.a1)/(self.a1*2)
         inp_msb, beta_coef = bitsplitter_pass(inp01, 1, self.n_msb)
 
-        out = quant_pass(CustomMM_bmm.apply(inp_msb, self.weights, self.bias, self.noise_level, self.wb), 1, 1)
         import pdb; pdb.set_trace()
+        out = quant_pass(CustomMM_bmm.apply(inp_msb, self.weights, self.bias, self.noise_level, self.wb), 1, torch.tensor([1]))
+        
 
         
 
