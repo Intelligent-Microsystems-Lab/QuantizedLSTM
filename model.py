@@ -202,16 +202,15 @@ class LSTMCellQ_bs(nn.Module):
     def forward(self, input, state):
         hx, cx = state
 
-        import pdb; pdb.set_trace()
         inp01 = (pact_a(input, self.a1) + self.a1)/(self.a1*2)
         inp_msb, beta_coef = bitsplitter_pass(inp01, 1, self.n_msb)
-        out = ((CustomMM_bmm.apply(inp_msb, self.weight_ih, self.bias_ih, self.noise_level, self.wb) > .5) * 1.) 
+        out = ((CustomMM_bmm.apply(inp_msb, self.weight_ih.expand(self.n_msb, self.weight_ih.shape[1], self.weight_ih.shape[2]), self.bias_ih.expand(self.n_msb, 1, self.bias_ih.shape[2]), self.noise_level, self.wb) > .5) * 1.) 
         part1 =  (beta_coef.unsqueeze(1).unsqueeze(1).expand(out.shape) * out).sum(0)*(self.a1*2) - self.a1
 
 
         inp01 = (pact_a(hx, self.a11) + self.a1)/(self.a11*2)
         inp_msb, beta_coef = bitsplitter_pass(inp01, 1, self.n_msb)
-        out = ((CustomMM_bmm.apply(inp_msb, self.weight_hh, self.bias_hh, self.noise_level, self.wb) > .5) * 1.)
+        out = ((CustomMM_bmm.apply(inp_msb, self.weight_hh.expand(self.n_msb, self.weight_hh.shape[1], self.weight_hh.shape[2]), self.bias_hh.expand(self.n_msb, 1, self.bias_hh.shape[2]), self.noise_level, self.wb) > .5) * 1.)
         part2 =  (beta_coef.unsqueeze(1).unsqueeze(1).expand(out.shape) * out).sum(0)*(self.a11*2) - self.a11
 
         gates = part1 + part2
@@ -265,10 +264,8 @@ class LinLayer_bs(nn.Module):
         inp01 = (pact_a(input, self.a1) + self.a1)/(self.a1*2)
         inp_msb, beta_coef = bitsplitter_pass(inp01, 1, self.n_msb)
 
-        import pdb; pdb.set_trace()
-
         # this quant needs to be better
-        out = (CustomMM_bmm.apply(inp_msb, self.weights, self.bias, self.noise_level, self.wb) > .5) * 1.
+        out = (CustomMM_bmm.apply(inp_msb, self.weights.expand(self.n_msb, self.weights.shape[1], self.weights.shape[2]), self.bias.expand(self.n_msb, 1, self.bias.shape[2]), self.noise_level, self.wb) > .5) * 1.
         
         # consolidate
         return (beta_coef.unsqueeze(1).unsqueeze(1).expand(self.n_msb,input.shape[0],self.out_dim) * out).sum(0)
