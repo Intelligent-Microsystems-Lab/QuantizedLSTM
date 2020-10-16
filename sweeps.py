@@ -28,9 +28,9 @@ part4 = ".txt\nmodule load python\nsetenv OMP_NUM_THREADS $NSLOTS\npython KWS_LS
 
 #sweep_parameters = {'l2':[0, .00001, .001, .01, .1, ], 'n-mfcc':[10, 20, 30, 40, 50, 60, 70, 80]}
 
-sweep_parameters = {'noise-injectionT':[.1]}
+sweep_parameters = {'method':[0,1]}
 
-trials = 1
+trials = 3
 
 random_seeds = [193012823 ,235899598, 8627169, 103372330, 14339038, 221706254, 46192121, 188833202, 37306063, 171928928]
 
