@@ -495,6 +495,13 @@ class KWS_LSTM(nn.Module):
         self.lstmBlocks8.cell.noise_level = nl
 
         self.finFC1.noise_level = nl
+        self.finFC2.noise_level = nl
+        self.finFC3.noise_level = nl
+        self.finFC4.noise_level = nl
+        self.finFC5.noise_level = nl
+        self.finFC6.noise_level = nl
+        self.finFC7.noise_level = nl
+        self.finFC8.noise_level = nl
 
 
     def get_a(self):
@@ -573,24 +580,15 @@ class KWS_LSTM_bmm(nn.Module):
         # final FC blocks
         output = self.finFC(lstm_out[-1,:,:,:])
 
-        
+        import pdb; pdb.set_trace()
         output = torch.cat([output[0,:,0] + output[0,:,1], output[1,:,0] + output[1,:,1], output[2,:,0] + output[2,:,1], output[3,:,0] + output[3,:,1], output[4,:,0], output[4,:,1], output[5,:,0], output[5,:,1], output[6,:,0], output[6,:,1], output[7,:,0], output[7,:,1]], 1)
 
         return output
 
     def set_noise(self, nl):
         self.noise_level = nl
-
-        self.lstmBlocks1.cell.noise_level = nl
-        self.lstmBlocks2.cell.noise_level = nl
-        self.lstmBlocks3.cell.noise_level = nl
-        self.lstmBlocks4.cell.noise_level = nl
-        self.lstmBlocks5.cell.noise_level = nl
-        self.lstmBlocks6.cell.noise_level = nl
-        self.lstmBlocks7.cell.noise_level = nl
-        self.lstmBlocks8.cell.noise_level = nl
-
-        self.finFC1.noise_level = nl
+        self.lstmBlocks.cell.noise_level = nl
+        self.finFC.noise_level = nl
 
 
     def get_a(self):
