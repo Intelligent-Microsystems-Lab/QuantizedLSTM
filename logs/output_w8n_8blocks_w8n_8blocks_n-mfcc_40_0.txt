@@ -22,3 +22,46 @@ Traceback (most recent call last):
   File "/afs/crc.nd.edu/user/c/cschaef6/QuantizedLSTM/model.py", line 308, in forward
     output1 = self.finFC1(lstm_out[-1,:,:])
 NameError: name 'lstm_out' is not defined
+Loading python/3.7.3
+  Loading requirement: tcl/8.6.8 gcc/8.3.0
+Namespace(background_frequency=0.8, background_volume=0.1, batch_size=100, canonical_testing=False, dataloader_num_workers=8, dataset_path_test='data.nosync/speech_commands_test_set_v0.02', dataset_path_train='data.nosync/speech_commands_v0.02', hidden=118, hop_length=320, l2=0.01, learning_rate='0.0005,0.0001,0.00002', method=0, n_mfcc=40, n_msb=3, noise_injectionT=0.05, quant_actMVM=6, quant_actNM=8, quant_inp=4, quant_w=8, random_seed=193012823, sample_rate=16000, silence_percentage=0.1, testing_percentage=10, time_shift_ms=100.0, training_steps='10000,10000,10000', unknown_percentage=0.1, validation_percentage=10, win_length=640, word_list=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'])
+bfbb35c5-7ef0-415f-b954-d61bcc9fce23
+Start Training:
+Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)
+00000     2.5634      0.1400     0.0836     88.5234
+00100     2.1960      0.3300     0.2804     344.8098
+00200     1.8484      0.4200     0.4085     351.6718
+00300     1.6384      0.4500     0.4863     353.2334
+00400     1.3793      0.5500     0.5593     346.3406
+00500     1.4234      0.5700     0.6081     344.5709
+00600     1.1552      0.6200     0.6468     346.1347
+00700     1.0150      0.7000     0.6825     349.4330
+00800     0.9658      0.6900     0.7062     344.7746
+00900     0.8814      0.7400     0.7073     343.2329
+01000     0.9857      0.6900     0.7273     343.8004
+01100     0.9904      0.6300     0.7319     342.1378
+01200     0.8119      0.7200     0.7420     341.5330
+01300     0.8185      0.7400     0.7534     345.3643
+01400     1.0007      0.6500     0.7551     348.2796
+01500     0.7242      0.8200     0.7622     348.1386
+01600     0.7946      0.7900     0.7627     344.1017
+01700     0.9491      0.7100     0.7718     368.1496
+01800     0.8795      0.7500     0.7732     377.7124
+01900     0.8335      0.7200     0.7735     389.3877
+02000     0.7804      0.7700     0.7887     386.5714
+02100     0.9708      0.6900     0.7887     379.0895
+02200     0.8243      0.7000     0.7887     361.3013
+02300     0.8373      0.7600     0.7930     369.2953
+02400     0.9069      0.7000     0.7949     379.0415
+02500     0.7596      0.7600     0.7949     377.4776
+02600     0.8497      0.7300     0.7949     377.8569
+02700     0.6471      0.8100     0.8010     379.6993
+02800     0.9206      0.7100     0.8033     400.7455
+02900     0.7709      0.8000     0.8033     395.2400
+03000     0.7731      0.7500     0.8038     368.1514
+03100     0.8131      0.7300     0.8110     387.0615
+03200     0.7824      0.6900     0.8110     381.4683
+03300     0.7577      0.7400     0.8110     389.5369
+03400     0.7216      0.8000     0.8161     385.5216
+03500     0.6154      0.8200     0.8161     390.2028
+03600     0.7857      0.7400     0.8161     402.8582
