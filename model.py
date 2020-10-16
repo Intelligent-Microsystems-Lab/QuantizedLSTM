@@ -193,7 +193,7 @@ class LSTMCellQ(nn.Module):
         hx, cx = state
 
         # MVM
-        gates = (CustomMM.apply(quant_pass(pact_a(input.repeat(n_blocks, 1), self.a1), self.ib, self.a1), self.weight_ih.t(), self.bias_ih.t(), self.noise_level, self.wb) + CustomMM.apply(hx, self.weight_hh.t(), self.bias_hh.t(), self.noise_level, self.wb))
+        gates = (CustomMM.apply(quant_pass(pact_a(input, self.a1), self.ib, self.a1), self.weight_ih.t(), self.bias_ih.t(), self.noise_level, self.wb) + CustomMM.apply(hx, self.weight_hh.t(), self.bias_hh.t(), self.noise_level, self.wb))
 
         #i, j, f, o
         i, j, f, o = gates.chunk(4, 1)
@@ -250,7 +250,7 @@ class LSTMCellQ_bmm(nn.Module):
         import pdb; pdb.set_trace()
 
         # MVM
-        gates = (CustomMM.apply(quant_pass(pact_a_bmm(input, self.a1), self.ib, self.a1), self.weight_ih.t(), self.bias_ih.t(), self.noise_level, self.wb) + CustomMM.apply(hx, self.weight_hh.t(), self.bias_hh.t(), self.noise_level, self.wb))
+        gates = (CustomMM.apply(quant_pass(pact_a_bmm(input.repeat(n_blocks, 1), self.a1), self.ib, self.a1), self.weight_ih.t(), self.bias_ih.t(), self.noise_level, self.wb) + CustomMM.apply(hx, self.weight_hh.t(), self.bias_hh.t(), self.noise_level, self.wb))
 
         #i, j, f, o
         i, j, f, o = gates.chunk(4, 1)
