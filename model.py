@@ -247,6 +247,8 @@ class LSTMCellQ_bmm(nn.Module):
     def forward(self, input, state):
         hx, cx = state
 
+        import pdb; pdb.set_trace()
+
         # MVM
         gates = (CustomMM.apply(quant_pass(pact_a(input, self.a1), self.ib, self.a1), self.weight_ih.t(), self.bias_ih.t(), self.noise_level, self.wb) + CustomMM.apply(hx, self.weight_hh.t(), self.bias_hh.t(), self.noise_level, self.wb))
 
