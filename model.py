@@ -171,7 +171,7 @@ class CustomMM_bmm(torch.autograd.Function):
 
 
 class LSTMCellQ_bs(nn.Module):
-    def __init__(self, input_size, hidden_size, wb, ib, abMVM, abNM, noise_level, device):
+    def __init__(self, input_size, hidden_size, wb, ib, abMVM, abNM, noise_level, n_msb, device):
         super(LSTMCellQ_bs, self).__init__()
         self.device = device
         self.wb = wb
@@ -181,6 +181,7 @@ class LSTMCellQ_bs(nn.Module):
         self.noise_level = noise_level
         self.input_size = input_size
         self.hidden_size = hidden_size
+        self.n_msb = n_msb
         self.weight_ih = nn.Parameter(torch.randn(input_size, 4 * hidden_size))
         self.weight_hh = nn.Parameter(torch.randn(hidden_size, 4 * hidden_size))
         self.bias_ih = nn.Parameter(torch.randn( 4 * hidden_size))
@@ -204,12 +205,14 @@ class LSTMCellQ_bs(nn.Module):
 
         inp01 = (pact_a(input, self.a1) + self.a1)/(self.a1*2)
         inp_msb, beta_coef = bitsplitter_pass(inp01, 1, self.n_msb)
+        out = ((CustomMM_bmm.apply(inp_msb, self.weight_ih, self.bias_ih, self.noise_level, self.wb) > .5) * 1.) 
+        part1 =  (beta_coef.unsqueeze(1).unsqueeze(1).expand(out.shape) * out).sum(0) - self.a1
 
-        # this quant needs to be better
-        out = ((CustomMM_bmm.apply(inp_msb, self.weight_ih, self.bias_ih, self.noise_level, self.wb) > .5) * 1.) + ((CustomMM_bmm.apply(inp_msb, self.weight_hh, self.bias_hh, self.noise_level, self.wb) > .5) * 1.)
 
-        part1 =  (beta_coef.unsqueeze(1).unsqueeze(1).expand(3,100,12) * out).sum(0)
-
+        inp01 = (pact_a(hx, self.a11) + self.a1)/(self.a11*2)
+        inp_msb, beta_coef = bitsplitter_pass(inp01, 1, self.n_msb)
+        out = ((CustomMM_bmm.apply(inp_msb, self.weight_hh, self.bias_hh, self.noise_level, self.wb) > .5) * 1.)
+        part2 =  (beta_coef.unsqueeze(1).unsqueeze(1).expand(out.shape) * out).sum(0) - self.a11
 
         gates = part1 + part2
         # MVM
@@ -286,7 +289,7 @@ class KWS_LSTM_bs(nn.Module):
         self.n_msb = n_msb
 
         # LSTM layer
-        self.lstmBlocks = LSTMLayer(LSTMCellQ_bs, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.device)
+        self.lstmBlocks = LSTMLayer(LSTMCellQ_bs, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.n_msb, self.device)
 
         # final FC layer
         self.finFC = LinLayer_bs(self.hidden_dim, output_dim, noise_level, abMVM, ib, wb, n_msb)
