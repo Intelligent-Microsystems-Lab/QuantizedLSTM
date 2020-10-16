@@ -182,10 +182,10 @@ class LSTMCellQ_bs(nn.Module):
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.n_msb = n_msb
-        self.weight_ih = nn.Parameter(torch.randn(input_size, 4 * hidden_size))
-        self.weight_hh = nn.Parameter(torch.randn(hidden_size, 4 * hidden_size))
-        self.bias_ih = nn.Parameter(torch.randn( 4 * hidden_size))
-        self.bias_hh = nn.Parameter(torch.randn( 4 * hidden_size))
+        self.weight_ih = nn.Parameter(torch.randn(n_msb, input_size, 4 * hidden_size))
+        self.weight_hh = nn.Parameter(torch.randn(n_msb, hidden_size, 4 * hidden_size))
+        self.bias_ih = nn.Parameter(torch.randn(n_msb, 1, 4 * hidden_size))
+        self.bias_hh = nn.Parameter(torch.randn(n_msb, 1, 4 * hidden_size))
 
         self.a1 = nn.Parameter(torch.tensor([128.] ))
         self.a2 = nn.Parameter(torch.tensor([16.] ))
