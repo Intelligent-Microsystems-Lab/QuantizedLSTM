@@ -65,6 +65,41 @@ class CustomMM(torch.autograd.Function):
 
 
 
+# test = test.to(device)
+# out, beta_coef = bitsplitter_sym_pass(test, 3, 2) 
+# test_out = (beta_coef.unsqueeze(1).expand(out.shape) * out).sum(0)
+
+
+class bitsplitting(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x, bits, n_msb):
+        if bits == None or n_msb == None:
+            return x
+
+        l1 = (2**n_msb) -1
+        l2 = 0
+        beta = []
+        y = []
+
+        for i in range(n_msb):
+            l2 = 2**(n_msb - (i+1))
+            beta.append(l2/l1)
+
+            y.append( torch.floor( torch.round(l1*x)/l2 ) % 2)
+            y[-1] = y[-1]
+
+        ctx.beta = beta
+
+        return torch.stack(y), torch.tensor(beta).to(x.device)
+
+    @staticmethod
+    def backward(ctx, grad_output, grad_beta):
+        return grad_output.sum(0), None, None
+
+bitsplitter_pass = bitsplitting.apply
+
+
+
 #######################
 # old/slow(?) models
 #######################

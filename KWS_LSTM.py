@@ -25,7 +25,7 @@ parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.A
 
 # general config
 parser.add_argument("--random-seed", type=int, default=80085, help='Random Seed')
-parser.add_argument("--method", type=int, default=1, help='Method: 0 - blocks, 1 - bitsplitting')
+parser.add_argument("--method", type=int, default=0, help='Method: 0 - blocks, 1 - bitsplitting')
 parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speech_commands_v0.02', help='Path to Dataset')
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
 parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
@@ -50,8 +50,8 @@ parser.add_argument("--hop-length", type=int, default=320, help='Length of hop b
 parser.add_argument("--hidden", type=int, default=118, help='Number of hidden LSTM units') 
 parser.add_argument("--n-mfcc", type=int, default=40, help='Number of mfc coefficients to retain') # 40 before
 
-parser.add_argument("--noise-injectionT", type=float, default=0.1, help='Percentage of noise injected to weights')
-parser.add_argument("--noise-injectionI", type=float, default=0.1, help='Percentage of noise injected to weights')
+parser.add_argument("--noise-injectionT", type=float, default=0.0, help='Percentage of noise injected to weights')
+parser.add_argument("--noise-injectionI", type=float, default=0.0, help='Percentage of noise injected to weights')
 parser.add_argument("--quant-actMVM", type=int, default=6, help='Bits available for MVM activations/state')
 parser.add_argument("--quant-actNM", type=int, default=8, help='Bits available for non-MVM activations/state')
 parser.add_argument("--quant-inp", type=int, default=4, help='Bits available for inputs')

@@ -104,7 +104,7 @@ class bitsplitting_sym(torch.autograd.Function):
         if bits == None or n_msb == None:
             return x
 
-        beta = torch.tensor([1.]).to(x.device)
+        beta = torch.tensor([1.], requires_grad = False).to(x.device)
         y = []
 
         for i in range(n_msb):
@@ -119,40 +119,6 @@ class bitsplitting_sym(torch.autograd.Function):
         return grad_output.sum(0), None, None
 
 bitsplitter_sym_pass = bitsplitting_sym.apply
-
-# test = test.to(device)
-# out, beta_coef = bitsplitter_sym_pass(test, 3, 2) 
-# test_out = (beta_coef.unsqueeze(1).expand(out.shape) * out).sum(0)
-
-
-class bitsplitting(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, x, bits, n_msb):
-        if bits == None or n_msb == None:
-            return x
-
-        l1 = (2**n_msb) -1
-        l2 = 0
-        beta = []
-        y = []
-
-        for i in range(n_msb):
-            l2 = 2**(n_msb - (i+1))
-            beta.append(l2/l1)
-
-            y.append( torch.floor( torch.round(l1*x)/l2 ) % 2)
-            y[-1] = y[-1]
-
-        ctx.beta = beta
-
-        return torch.stack(y), torch.tensor(beta).to(x.device)
-
-    @staticmethod
-    def backward(ctx, grad_output, grad_beta):
-        return grad_output.sum(0), None, None
-
-bitsplitter_pass = bitsplitting.apply
-
 
 
 def pact_a(x, a):
@@ -297,16 +263,6 @@ class LinLayer_bs(nn.Module):
         return (beta_coef.unsqueeze(1).unsqueeze(1).expand(out_q.shape) * out_q).sum(0) * self.a1
 
 
-        # inp_msb, beta_coef = bitsplitter_sym_pass(pact_a(input, self.a1), self.abMVM, self.n_msb)
-
-        # # this quant needs to be better
-        # out = (CustomMM_bmm.apply(inp_msb, self.weights.expand(self.n_msb, self.weights.shape[1], self.weights.shape[2]), self.bias.expand(self.n_msb, 1, self.bias.shape[2]), self.noise_level, self.wb) > .5) * 1.
-        
-        # # consolidate
-        # return (beta_coef.unsqueeze(1).unsqueeze(1).expand(self.n_msb,input.shape[0],self.out_dim) * out).sum(0)
-
-
-
 class KWS_LSTM_bs(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, device, wb, abMVM, abNM, ib, noise_level, n_msb):
         super(KWS_LSTM_bs, self).__init__()
@@ -339,6 +295,11 @@ class KWS_LSTM_bs(nn.Module):
         output = self.finFC(lstm_out[-1,:,:])
 
         return output
+
+    def set_noise(self, nl):
+        self.noise_level = nl
+        self.lstmBlocks.cell.noise_level = nl
+        self.finFC.noise_level = nl
 
     def get_a(self):
         return torch.cat([self.lstmBlocks.cell.a1, self.lstmBlocks.cell.a3, self.lstmBlocks.cell.a2,  self.lstmBlocks.cell.a4, self.lstmBlocks.cell.a5, self.lstmBlocks.cell.a6, self.lstmBlocks.cell.a7, self.lstmBlocks.cell.a8, self.lstmBlocks.cell.a9, self.lstmBlocks.cell.a10,  self.lstmBlocks.cell.a11, self.finFC.a1, self.finFC.a2])/13
