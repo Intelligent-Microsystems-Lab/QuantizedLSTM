@@ -11,7 +11,8 @@ import torch.optim as optim
 import numpy as np
 
 from dataloader import SpeechCommandsGoogle
-from model import KWS_LSTM_bs, KWS_LSTM_bmm, pre_processing, max_w
+import model as model_lib
+from model import KWS_LSTM_bs, KWS_LSTM_bmm, pre_processing
 from figure_scripts import plot_curves
 
 torch.manual_seed(42)
@@ -64,7 +65,7 @@ parser.add_argument("--max-w", type=float, default=.5, help='Maximumg weight')
 
 args = parser.parse_args()
 
-max_w = args.max_w
+model_lib.max_w = args.max_w
 
 torch.manual_seed(args.random_seed)
 np.random.seed(args.random_seed)

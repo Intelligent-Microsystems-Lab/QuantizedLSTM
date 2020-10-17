@@ -146,6 +146,7 @@ class CustomMM_bmm(torch.autograd.Function):
 
         noise_w = torch.randn(weight.shape, device = input.device) * max_w * nl
         bias_w  = torch.randn(bias.shape, device = bias.device) * max_w * nl
+        weight = torch.clamp(weight, -max_w, max_w)
         print(max_w)
 
         wq = quant_pass(weight, wb, 1.)
