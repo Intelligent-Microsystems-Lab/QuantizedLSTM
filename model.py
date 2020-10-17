@@ -535,10 +535,10 @@ class LSTMCellQ(nn.Module):
         i, j, f, o = gates.chunk(4, 1)
         
         # 
-        forget_gate_out = quant_pass(pact_a(torch.sigmoid(f), self.a3), self.abNM, self.a3)
-        input_gate_out = quant_pass(pact_a(torch.sigmoid(i), self.a4), self.abNM, self.a4)
-        activation_out = quant_pass(pact_a(torch.tanh(j), self.a5), self.abNM, self.a5)
-        output_gate_out = quant_pass(pact_a(torch.sigmoid(o), self.a6), self.abNM, self.a6)
+        forget_gate_out = quant_pass(pact_a(torch.sigmoid(f), self.a3), self.abMVM, self.a3)
+        input_gate_out = quant_pass(pact_a(torch.sigmoid(i), self.a4), self.abMVM, self.a4)
+        activation_out = quant_pass(pact_a(torch.tanh(j), self.a5), self.abMVM, self.a5)
+        output_gate_out = quant_pass(pact_a(torch.sigmoid(o), self.a6), self.abMVM, self.a6)
 
         #
         gated_cell = quant_pass(pact_a(cx * forget_gate_out, self.a7), self.abNM, self.a7)
