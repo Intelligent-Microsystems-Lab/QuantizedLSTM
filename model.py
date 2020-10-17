@@ -21,6 +21,7 @@ else:
     device = torch.device("cpu")
 
 max_w = 1
+pact_a = True
 
 def pre_processing(x, y, device, mfcc_cuda):
     batch_size = x.shape[0]
@@ -124,9 +125,13 @@ bitsplitter_sym_pass = bitsplitting_sym.apply
 
 
 def pact_a(x, a):
+    if not pact_a:
+        return x
     return torch.sign(x) * .5*(torch.abs(x) - torch.abs(torch.abs(x) - a) + a)
 
 def pact_a_bmm(x, a):
+    if not pact_a:
+        return x
     a = a.unsqueeze(1).unsqueeze(1).expand(x.shape)
     return torch.sign(x) * .5 * (torch.abs(x) - torch.abs(torch.abs(x) - a) + a)
 
