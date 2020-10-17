@@ -439,6 +439,33 @@ class KWS_LSTM_bmm(nn.Module):
 
 
 
+class CustomMM(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, input, weight, bias, nl, wb):
+        noise_w = torch.randn(weight.shape, device = input.device) * weight.max() * nl
+        bias_w  = torch.randn(bias.shape, device = bias.device) * bias.max() * nl
+
+        wq = quant_pass(weight, wb, 1.)
+        bq = quant_pass(bias, wb, 1.)
+
+        ctx.save_for_backward(input, weight, bias)
+        output = input.mm(wq + noise_w) + bq + bias_w
+        return output
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        input, weight, bias = ctx.saved_tensors
+        grad_input = grad_weight = grad_bias = None
+
+        if ctx.needs_input_grad[0]:
+            grad_input = grad_output.mm(weight.t())
+        if ctx.needs_input_grad[1]:
+            grad_weight = grad_output.t().mm(input)
+        if ctx.needs_input_grad[2]:
+            grad_bias = grad_output.sum(0)
+
+        return grad_input, grad_weight.t(), grad_bias, None, None, None
+
 
 
 class LinLayer(nn.Module):
