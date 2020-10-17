@@ -11,7 +11,7 @@ import torch.optim as optim
 import numpy as np
 
 from dataloader import SpeechCommandsGoogle
-from model import KWS_LSTM_bs, KWS_LSTM_bmm, pre_processing, KWS_LSTM
+from model import KWS_LSTM_bs, KWS_LSTM_bmm, pre_processing, max_w
 from figure_scripts import plot_curves
 
 torch.manual_seed(42)
@@ -50,8 +50,8 @@ parser.add_argument("--hop-length", type=int, default=320, help='Length of hop b
 parser.add_argument("--hidden", type=int, default=118, help='Number of hidden LSTM units') 
 parser.add_argument("--n-mfcc", type=int, default=40, help='Number of mfc coefficients to retain') # 40 before
 
-parser.add_argument("--noise-injectionT", type=float, default=0., help='Percentage of noise injected to weights')
-parser.add_argument("--noise-injectionI", type=float, default=0., help='Percentage of noise injected to weights')
+parser.add_argument("--noise-injectionT", type=float, default=0.1, help='Percentage of noise injected to weights')
+parser.add_argument("--noise-injectionI", type=float, default=0.1, help='Percentage of noise injected to weights')
 parser.add_argument("--quant-actMVM", type=int, default=6, help='Bits available for MVM activations/state')
 parser.add_argument("--quant-actNM", type=int, default=8, help='Bits available for non-MVM activations/state')
 parser.add_argument("--quant-inp", type=int, default=4, help='Bits available for inputs')
@@ -60,7 +60,11 @@ parser.add_argument("--quant-w", type=int, default=None, help='Bits available fo
 parser.add_argument("--l2", type=float, default=.01, help='Strength of L2 norm')
 parser.add_argument("--n-msb", type=int, default=8, help='Number of bit splits')
 
+parser.add_argument("--max-w", type=float, default=.5, help='Maximumg weight')
+
 args = parser.parse_args()
+
+max_w = args.max_w
 
 torch.manual_seed(args.random_seed)
 np.random.seed(args.random_seed)
@@ -82,7 +86,7 @@ test_dataloader = torch.utils.data.DataLoader(speech_dataset_test, batch_size=ar
 validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
 
 if args.method == 0:
-    model = KWS_LSTM(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = 0)
+    model = KWS_LSTM_bmm(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = 0)
 elif args.method == 1:
     model = KWS_LSTM_bs(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = 0, n_msb = args.n_msb)
 else:
@@ -230,8 +234,3 @@ print("Test Accuracy: {0:.4f}".format(test_acc))
 
 #checkpoint_dict = torch.load('./checkpoints/9c8bf1f3-58e5-4527-8742-2964941cbae1.pkl')
 
-
-# Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)
-# 00000     2.7942      0.1200     0.0895     13.7833
-# 00100     2.2523      0.2300     0.2405     48.1635
-# 00200     1.8205      0.4400     0.4153     47.0832

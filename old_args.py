@@ -104,6 +104,37 @@ bitsplitter_pass = bitsplitting.apply
 # old/slow(?) models
 #######################
 
+
+
+class CustomMM(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, input, weight, bias, nl, wb):
+        noise_w = torch.randn(weight.shape, device = input.device) * weight.max() * nl
+        bias_w  = torch.randn(bias.shape, device = bias.device) * bias.max() * nl
+
+        wq = quant_pass(weight, wb, 1.)
+        bq = quant_pass(bias, wb, 1.)
+
+        ctx.save_for_backward(input, weight, bias)
+        output = input.mm(wq + noise_w) + bq + bias_w
+        return output
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        input, weight, bias = ctx.saved_tensors
+        grad_input = grad_weight = grad_bias = None
+
+        if ctx.needs_input_grad[0]:
+            grad_input = grad_output.mm(weight.t())
+        if ctx.needs_input_grad[1]:
+            grad_weight = grad_output.t().mm(input)
+        if ctx.needs_input_grad[2]:
+            grad_bias = grad_output.sum(0)
+
+        return grad_input, grad_weight.t(), grad_bias, None, None, None
+
+
+
 class LinLayer(nn.Module):
     def __init__(self, inp_dim, out_dim, noise_level, abMVM, ib, wb):
         super(LinLayer, self).__init__()
@@ -171,10 +202,10 @@ class LSTMCellQ(nn.Module):
         i, j, f, o = gates.chunk(4, 1)
         
         # 
-        forget_gate_out = quant_pass(pact_a(torch.sigmoid(f), self.a3), self.abNM, self.a3)
-        input_gate_out = quant_pass(pact_a(torch.sigmoid(i), self.a4), self.abNM, self.a4)
-        activation_out = quant_pass(pact_a(torch.tanh(j), self.a5), self.abNM, self.a5)
-        output_gate_out = quant_pass(pact_a(torch.sigmoid(o), self.a6), self.abNM, self.a6)
+        forget_gate_out = quant_pass(pact_a(torch.sigmoid(f), self.a3), self.abMVM, self.a3)
+        input_gate_out = quant_pass(pact_a(torch.sigmoid(i), self.a4), self.abMVM, self.a4)
+        activation_out = quant_pass(pact_a(torch.tanh(j), self.a5), self.abMVM, self.a5)
+        output_gate_out = quant_pass(pact_a(torch.sigmoid(o), self.a6), self.abMVM, self.a6)
 
         #
         gated_cell = quant_pass(pact_a(cx * forget_gate_out, self.a7), self.abNM, self.a7)
@@ -291,3 +322,4 @@ class KWS_LSTM(nn.Module):
 
     def get_a(self):
         return torch.cat([self.lstmBlocks1.cell.a1, self.lstmBlocks1.cell.a3, self.lstmBlocks1.cell.a2,  self.lstmBlocks1.cell.a4, self.lstmBlocks1.cell.a5, self.lstmBlocks1.cell.a6, self.lstmBlocks1.cell.a7, self.lstmBlocks1.cell.a8, self.lstmBlocks1.cell.a9, self.lstmBlocks1.cell.a10,  self.lstmBlocks1.cell.a11, self.finFC1.a1, self.finFC1.a2, self.lstmBlocks2.cell.a1, self.lstmBlocks2.cell.a3, self.lstmBlocks2.cell.a2,  self.lstmBlocks2.cell.a4, self.lstmBlocks2.cell.a5, self.lstmBlocks2.cell.a6, self.lstmBlocks2.cell.a7, self.lstmBlocks2.cell.a8, self.lstmBlocks2.cell.a9, self.lstmBlocks2.cell.a10,  self.lstmBlocks2.cell.a11, self.finFC2.a1, self.finFC2.a2, self.lstmBlocks3.cell.a1, self.lstmBlocks3.cell.a3, self.lstmBlocks3.cell.a2,  self.lstmBlocks3.cell.a4, self.lstmBlocks3.cell.a5, self.lstmBlocks3.cell.a6, self.lstmBlocks3.cell.a7, self.lstmBlocks3.cell.a8, self.lstmBlocks3.cell.a9, self.lstmBlocks3.cell.a10,  self.lstmBlocks3.cell.a11, self.finFC3.a1, self.finFC3.a2, self.lstmBlocks4.cell.a1, self.lstmBlocks4.cell.a3, self.lstmBlocks4.cell.a2,  self.lstmBlocks4.cell.a4, self.lstmBlocks4.cell.a5, self.lstmBlocks4.cell.a6, self.lstmBlocks4.cell.a7, self.lstmBlocks4.cell.a8, self.lstmBlocks4.cell.a9, self.lstmBlocks4.cell.a10,  self.lstmBlocks4.cell.a11, self.finFC4.a1, self.finFC4.a2, self.lstmBlocks5.cell.a1, self.lstmBlocks5.cell.a3, self.lstmBlocks5.cell.a2,  self.lstmBlocks5.cell.a4, self.lstmBlocks5.cell.a5, self.lstmBlocks5.cell.a6, self.lstmBlocks5.cell.a7, self.lstmBlocks5.cell.a8, self.lstmBlocks5.cell.a9, self.lstmBlocks5.cell.a10,  self.lstmBlocks5.cell.a11, self.finFC5.a1, self.finFC5.a2, self.lstmBlocks6.cell.a1, self.lstmBlocks6.cell.a3, self.lstmBlocks6.cell.a2,  self.lstmBlocks6.cell.a4, self.lstmBlocks6.cell.a5, self.lstmBlocks6.cell.a6, self.lstmBlocks6.cell.a7, self.lstmBlocks6.cell.a8, self.lstmBlocks6.cell.a9, self.lstmBlocks6.cell.a10,  self.lstmBlocks6.cell.a11, self.finFC6.a1, self.finFC6.a2, self.lstmBlocks7.cell.a1, self.lstmBlocks7.cell.a3, self.lstmBlocks7.cell.a2,  self.lstmBlocks7.cell.a4, self.lstmBlocks7.cell.a5, self.lstmBlocks7.cell.a6, self.lstmBlocks7.cell.a7, self.lstmBlocks7.cell.a8, self.lstmBlocks7.cell.a9, self.lstmBlocks7.cell.a10,  self.lstmBlocks7.cell.a11, self.finFC7.a1, self.finFC7.a2, self.lstmBlocks8.cell.a1, self.lstmBlocks8.cell.a3, self.lstmBlocks8.cell.a2,  self.lstmBlocks8.cell.a4, self.lstmBlocks8.cell.a5, self.lstmBlocks8.cell.a6, self.lstmBlocks8.cell.a7, self.lstmBlocks8.cell.a8, self.lstmBlocks8.cell.a9, self.lstmBlocks8.cell.a10,  self.lstmBlocks8.cell.a11, self.finFC8.a1, self.finFC8.a2])/104
+
