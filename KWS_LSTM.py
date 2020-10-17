@@ -229,3 +229,9 @@ test_acc = torch.cat(acc_aux).float().mean().item()
 print("Test Accuracy: {0:.4f}".format(test_acc))
 
 #checkpoint_dict = torch.load('./checkpoints/9c8bf1f3-58e5-4527-8742-2964941cbae1.pkl')
+
+
+# Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)
+# 00000     2.7942      0.1200     0.0895     13.7833
+# 00100     2.2523      0.2300     0.2405     48.1635
+# 00200     1.8205      0.4400     0.4153     47.0832
