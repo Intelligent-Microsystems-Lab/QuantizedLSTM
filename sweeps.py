@@ -1,7 +1,7 @@
 import os
 import numpy as np
 
-ident_word = "max_w"
+ident_word = "train_noise"
 
 part1 = "#!/bin/csh \n#$ -M cschaef6@nd.edu \n#$ -m abe\n#$ -q " 
 part11 = "\n#$ -l gpu_card=1\n#$ -N "
@@ -29,9 +29,15 @@ part4 = ".txt\nmodule load python\nsetenv OMP_NUM_THREADS $NSLOTS\npython KWS_LS
 
 #sweep_parameters = {'l2':[0, .00001, .001, .01, .1, ], 'n-mfcc':[10, 20, 30, 40, 50, 60, 70, 80]}
 
-sweep_parameters = {'max-w': list(np.round(np.arange(0.01, .25, .01), 2 )) }
 
-trials = 1
+
+#sweep_parameters = {'max-w': list(np.round(np.arange(0.01, .25, .01), 2 )) }
+
+sweep_parameters = {'noise-injectionT': list(np.round(np.arange(0.10, .20, .01), 2 ))   }
+
+#sweep_parameters = {'learning-rate': list(np.round(np.arange(0.10, .20, .01), 2 ))   }
+
+trials = 3
 
 random_seeds = [193012823 ,235899598, 8627169, 103372330, 14339038, 221706254, 46192121, 188833202, 37306063, 171928928]
 
