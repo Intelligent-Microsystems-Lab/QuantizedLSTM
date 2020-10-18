@@ -1,4 +1,5 @@
 import os
+import numpy as np
 
 ident_word = "max_w"
 
