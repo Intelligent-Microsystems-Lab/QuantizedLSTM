@@ -1,6 +1,6 @@
 import os
 
-ident_word = "no_quant"
+ident_word = "max_w"
 
 part1 = "#!/bin/csh \n#$ -M cschaef6@nd.edu \n#$ -m abe\n#$ -q " 
 part11 = "\n#$ -l gpu_card=1\n#$ -N "
@@ -28,7 +28,7 @@ part4 = ".txt\nmodule load python\nsetenv OMP_NUM_THREADS $NSLOTS\npython KWS_LS
 
 #sweep_parameters = {'l2':[0, .00001, .001, .01, .1, ], 'n-mfcc':[10, 20, 30, 40, 50, 60, 70, 80]}
 
-sweep_parameters = {'hidden':[50,100,118,150,200,300,400]}
+sweep_parameters = {'max-w': list(np.round(np.arange(0.01, .25, .01), 2 )) }
 
 trials = 1
 
