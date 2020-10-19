@@ -56,8 +56,7 @@ class LSTMLayer(nn.Module):
         inputs = input.unbind(0)
         outputs = []
 
-        import pdb; pdb.set_trace()
-        w_mask = torch.bernoulli(torch.tensor([self.drop_p]))
+        w_mask = torch.bernoulli(torch.ones_like(self.cell.weight_hh)*(1-self.drop_p))
 
         for i in range(len(inputs)):
             out, state = self.cell(inputs[i], state, w_mask)
