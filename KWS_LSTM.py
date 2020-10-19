@@ -89,7 +89,7 @@ test_dataloader = torch.utils.data.DataLoader(speech_dataset_test, batch_size=ar
 validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
 
 if args.method == 0:
-    model = KWS_LSTM_bmm(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = 0, drop_p = args.drop_p)
+    model = KWS_LSTM_bmm(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = 0, drop_p = args.drop_p, n_msb = args.n_msb)
 elif args.method == 1:
     model = KWS_LSTM_bs(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = 0, n_msb = args.n_msb)
 else:
@@ -110,10 +110,12 @@ print(args)
 print(model_uuid)
 print("Start training with DropConnect:")
 print("Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)")
-model.set_noise(args.noise_injectionT)
+model.set_noise(0)
 model.set_drop_p(args.drop_p)
 start_time = time.time()
 for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
+    model.set_noise(args.noise_injectionT)
+    model.set_drop_p(args.drop_p)
     if e in epoch_list:
         for param_group in optimizer.param_groups:
             param_group['lr'] = lr_list[seg_count]
@@ -133,6 +135,9 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
     optimizer.zero_grad()
 
     if (e%100 == 0) or (e == epoch_list[-1]-1):
+        model.set_noise(args.noise_injectionI)
+        model.set_drop_p(0)
+
         # validation
         temp_list = []
         for val_e, (x_vali, y_vali) in enumerate(validation_dataloader):
@@ -171,10 +176,10 @@ best_acc = 0
 seg_count = 1
 train_acc = []
 val_acc = []
-model.set_noise(args.noise_injectionT)
-model.set_drop_p(0)
 start_time = time.time()
 for e, (x_data, y_label) in enumerate(islice(train_dataloader, args.finetuning_epochs)):
+    model.set_noise(args.noise_injectionT)
+    model.set_drop_p(0)
     # train
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
 
@@ -189,6 +194,8 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, args.finetuning_e
     optimizer.zero_grad()
 
     if (e%100 == 0) or (e == epoch_list[-1]-1):
+        model.set_noise(args.noise_injectionI)
+        model.set_drop_p(0)
         # validation
         temp_list = []
         for val_e, (x_vali, y_vali) in enumerate(validation_dataloader):
