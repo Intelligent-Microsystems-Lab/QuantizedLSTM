@@ -34,9 +34,10 @@ def pre_processing(x, y, device, mfcc_cuda):
 
 
 class LSTMLayer(nn.Module):
-    def __init__(self, cell, *cell_args):
+    def __init__(self, cell, drop_p, *cell_args):
         super(LSTMLayer, self).__init__()
         self.cell = cell(*cell_args)
+        self.drop_p = drop_p
 
         limit1 = 1.0 / math.sqrt(cell_args[1])
         limit2 = 1.0 / math.sqrt(cell_args[0])
@@ -55,8 +56,11 @@ class LSTMLayer(nn.Module):
         inputs = input.unbind(0)
         outputs = []
 
+        import pdb; pdb.set_trace()
+        w_mask = torch.bernoulli(torch.tensor([self.drop_p]))
+
         for i in range(len(inputs)):
-            out, state = self.cell(inputs[i], state)
+            out, state = self.cell(inputs[i], state, w_mask)
             outputs += [out]
 
         return torch.stack(outputs), state
@@ -318,9 +322,8 @@ class KWS_LSTM_bs(nn.Module):
 
 
 class LSTMCellQ_bmm(nn.Module):
-    def __init__(self, input_size, hidden_size, wb, ib, abMVM, abNM, noise_level, n_blocks, device):
+    def __init__(self, input_size, hidden_size, wb, ib, abMVM, abNM, noise_level, n_blocks):
         super(LSTMCellQ_bmm, self).__init__()
-        self.device = device
         self.wb = wb
         self.ib = ib
         self.abMVM = abMVM
@@ -347,11 +350,11 @@ class LSTMCellQ_bmm(nn.Module):
         self.a11 = nn.Parameter(torch.tensor([4.] * n_blocks))
 
 
-    def forward(self, input, state):
+    def forward(self, input, state, w_mask):
         hx, cx = state
 
         # MVM
-        gates = (CustomMM_bmm.apply(quant_pass(pact_a_bmm(input.repeat(self.n_blocks, 1, 1), self.a1), self.ib, self.a1), self.weight_ih, self.bias_ih, self.noise_level, self.wb) + CustomMM_bmm.apply(quant_pass(pact_a_bmm(hx, self.a11), self.ib, self.a11), self.weight_hh, self.bias_hh, self.noise_level, self.wb))
+        gates = (CustomMM_bmm.apply(quant_pass(pact_a_bmm(input.repeat(self.n_blocks, 1, 1), self.a1), self.ib, self.a1), self.weight_ih, self.bias_ih, self.noise_level, self.wb) + CustomMM_bmm.apply(quant_pass(pact_a_bmm(hx, self.a11), self.ib, self.a11), self.weight_hh * w_mask, self.bias_hh, self.noise_level, self.wb))
 
         #i, j, f, o
         i, j, f, o = gates.chunk(4, 2)
@@ -378,6 +381,7 @@ class LinLayer_bmm(nn.Module):
         self.ib = ib
         self.wb = wb
         self.noise_level = noise_level
+        self.drop_p = drop_p
 
         self.weights = nn.Parameter(torch.randn(n_blocks, inp_dim, out_dim))
         self.bias = nn.Parameter(torch.randn(n_blocks, 1, out_dim))
@@ -389,7 +393,6 @@ class LinLayer_bmm(nn.Module):
         torch.nn.init.uniform_(self.weights, a = -limit, b = limit)
         torch.nn.init.uniform_(self.bias, a = -0, b = 0)
 
-
         self.a1 = nn.Parameter(torch.tensor([4.]*n_blocks))
         self.a2 = nn.Parameter(torch.tensor([16.]*n_blocks))
 
@@ -398,7 +401,7 @@ class LinLayer_bmm(nn.Module):
 
 
 class KWS_LSTM_bmm(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, device, wb, abMVM, abNM, ib, noise_level):
+    def __init__(self, input_dim, hidden_dim, output_dim, device, wb, abMVM, abNM, ib, noise_level, drop_p):
         super(KWS_LSTM_bmm, self).__init__()
         self.device = device
         self.noise_level = noise_level
@@ -409,9 +412,10 @@ class KWS_LSTM_bmm(nn.Module):
         self.hidden_dim = hidden_dim
         self.input_dim = input_dim
         self.output_dim = output_dim
+        self.drop_p = drop_p
 
         # LSTM layer
-        self.lstmBlocks = LSTMLayer(LSTMCellQ_bmm, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, 8, self.device)
+        self.lstmBlocks = LSTMLayer(LSTMCellQ_bmm, self.drop_p, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, 8)
 
         # final FC layer
         self.finFC = LinLayer_bmm(self.hidden_dim, 2, noise_level, abMVM, ib, wb, 8)
@@ -436,6 +440,9 @@ class KWS_LSTM_bmm(nn.Module):
         self.lstmBlocks.cell.noise_level = nl
         self.finFC.noise_level = nl
 
+    def set_drop_p(self, drop_p):
+        self.drop_p = drop_p
+        self.lstmBlocks.drop_p = drop_p
 
     def get_a(self):
         return torch.cat([self.lstmBlocks.cell.a1, self.lstmBlocks.cell.a3, self.lstmBlocks.cell.a2,  self.lstmBlocks.cell.a4, self.lstmBlocks.cell.a5, self.lstmBlocks.cell.a6, self.lstmBlocks.cell.a7, self.lstmBlocks.cell.a8, self.lstmBlocks.cell.a9, self.lstmBlocks.cell.a10,  self.lstmBlocks.cell.a11, self.finFC.a1, self.finFC.a2])/104

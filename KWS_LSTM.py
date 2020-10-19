@@ -32,7 +32,7 @@ parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech
 parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
 parser.add_argument("--batch-size", type=int, default=100, help='Batch Size')
 parser.add_argument("--training-steps", type=str, default='10000,10000', help='Training Steps') #,10000,10000 ; ,10000
-parser.add_argument("--learning-rate", type=str, default='0.002,0.0004', help='Learning Rate') #,0.0001,0.00002 ; ,0.00008
+parser.add_argument("--learning-rate", type=str, default='0.002,0.0005', help='Learning Rate') #,0.0001,0.00002 ; ,0.00008
 parser.add_argument("--finetuning-epochs", type=int, default=10000, help='Number of epochs for finetuning')
 parser.add_argument("--dataloader-num-workers", type=int, default=8, help='Number Workers Dataloader')
 parser.add_argument("--validation-percentage", type=int, default=10, help='Validation Set Percentage')
@@ -51,7 +51,7 @@ parser.add_argument("--hop-length", type=int, default=320, help='Length of hop b
 parser.add_argument("--hidden", type=int, default=118, help='Number of hidden LSTM units') 
 parser.add_argument("--n-mfcc", type=int, default=40, help='Number of mfc coefficients to retain') # 40 before
 
-parser.add_argument("--noise-injectionT", type=float, default=0.17, help='Percentage of noise injected to weights')
+parser.add_argument("--noise-injectionT", type=float, default=0.1, help='Percentage of noise injected to weights')
 parser.add_argument("--noise-injectionI", type=float, default=0.1, help='Percentage of noise injected to weights')
 parser.add_argument("--quant-actMVM", type=int, default=6, help='Bits available for MVM activations/state')
 parser.add_argument("--quant-actNM", type=int, default=8, help='Bits available for non-MVM activations/state')
@@ -62,6 +62,7 @@ parser.add_argument("--l2", type=float, default=.01, help='Strength of L2 norm')
 parser.add_argument("--n-msb", type=int, default=8, help='Number of bit splits')
 
 parser.add_argument("--max-w", type=float, default=.1, help='Maximumg weight')
+parser.add_argument("--drop-p", type=float, default=0.125, help='Dropconnect probability')
 
 args = parser.parse_args()
 
@@ -107,9 +108,10 @@ model_uuid = str(uuid.uuid4())
 
 print(args)
 print(model_uuid)
-print("Start training:")
+print("Start training with DropConnect:")
 print("Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)")
-model.set_noise(args.noise_injectionT)
+model.set_noise(0)
+model.set_drop_p(args.drop_p)
 start_time = time.time()
 for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
     if e in epoch_list:
@@ -163,59 +165,60 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
         plot_curves(train_acc, val_acc, model_uuid)
 
 
-# print("Start finetuning with noise:")
-# print("Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)")
-# best_acc = 0
-# seg_count = 1
-# train_acc = []
-# val_acc = []
-# model.set_noise(args.noise_injectionT)
-# start_time = time.time()
-# for e, (x_data, y_label) in enumerate(islice(train_dataloader, args.finetuning_epochs)):
-#     # train
-#     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
+print("Start finetuning with noise:")
+print("Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)")
+best_acc = 0
+seg_count = 1
+train_acc = []
+val_acc = []
+model.set_noise(args.noise_injectionT)
+model.set_drop_p(0)
+start_time = time.time()
+for e, (x_data, y_label) in enumerate(islice(train_dataloader, args.finetuning_epochs)):
+    # train
+    x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
 
-#     output = model(x_data)
+    output = model(x_data)
 
-#     loss_val = loss_fn(output, y_label)
-#     loss_val += args.l2 * torch.norm(model.get_a())
-#     train_acc.append((output.argmax(dim=1) == y_label).float().mean().item())
+    loss_val = loss_fn(output, y_label)
+    loss_val += args.l2 * torch.norm(model.get_a())
+    train_acc.append((output.argmax(dim=1) == y_label).float().mean().item())
 
-#     loss_val.backward()
-#     optimizer.step()
-#     optimizer.zero_grad()
+    loss_val.backward()
+    optimizer.step()
+    optimizer.zero_grad()
 
-#     if (e%100 == 0) or (e == epoch_list[-1]-1):
-#         # validation
-#         temp_list = []
-#         for val_e, (x_vali, y_vali) in enumerate(validation_dataloader):
-#             x_data, y_label = pre_processing(x_vali, y_vali, device, mfcc_cuda)
+    if (e%100 == 0) or (e == epoch_list[-1]-1):
+        # validation
+        temp_list = []
+        for val_e, (x_vali, y_vali) in enumerate(validation_dataloader):
+            x_data, y_label = pre_processing(x_vali, y_vali, device, mfcc_cuda)
 
 
-#             output = model(x_data)
-#             temp_list.append((output.argmax(dim=1) == y_label).float().mean().item())
-#         val_acc.append(np.mean(temp_list))
+            output = model(x_data)
+            temp_list.append((output.argmax(dim=1) == y_label).float().mean().item())
+        val_acc.append(np.mean(temp_list))
 
-#         if best_acc < val_acc[-1]:
-#             best_acc = val_acc[-1]
-#             checkpoint_dict = {
-#                 'model_dict' : model.state_dict(), 
-#                 'optimizer'  : optimizer.state_dict(),
-#                 'epoch'      : e, 
-#                 'best_vali'  : best_acc, 
-#                 'arguments'  : args,
-#                 'train_loss' : loss_val,
-#                 'train_curve': train_acc,
-#                 'val_curve'  : val_acc
-#             }
-#             torch.save(checkpoint_dict, './checkpoints/'+model_uuid+'.pkl')
-#             del checkpoint_dict
+        if best_acc < val_acc[-1]:
+            best_acc = val_acc[-1]
+            checkpoint_dict = {
+                'model_dict' : model.state_dict(), 
+                'optimizer'  : optimizer.state_dict(),
+                'epoch'      : e, 
+                'best_vali'  : best_acc, 
+                'arguments'  : args,
+                'train_loss' : loss_val,
+                'train_curve': train_acc,
+                'val_curve'  : val_acc
+            }
+            torch.save(checkpoint_dict, './checkpoints/'+model_uuid+'.pkl')
+            del checkpoint_dict
 
-#         train_time = time.time() - start_time
-#         start_time = time.time()
+        train_time = time.time() - start_time
+        start_time = time.time()
     
-#         print("{0:05d}     {1:.4f}      {2:.4f}     {3:.4f}     {4:.4f}".format(e, loss_val, train_acc[-1], best_acc, train_time))
-#         plot_curves(train_acc, val_acc, model_uuid)
+        print("{0:05d}     {1:.4f}      {2:.4f}     {3:.4f}     {4:.4f}".format(e, loss_val, train_acc[-1], best_acc, train_time))
+        plot_curves(train_acc, val_acc, model_uuid)
 
 
 # Testing
@@ -223,6 +226,7 @@ print("Start testing:")
 checkpoint_dict = torch.load('./checkpoints/'+model_uuid+'.pkl')
 model.load_state_dict(checkpoint_dict['model_dict'])
 model.set_noise(args.noise_injectionI)
+model.set_drop_p(0)
 acc_aux = []
 
 for i_batch, sample_batch in enumerate(test_dataloader):
