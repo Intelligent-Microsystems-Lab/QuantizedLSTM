@@ -31,8 +31,8 @@ parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speec
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
 parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
 parser.add_argument("--batch-size", type=int, default=100, help='Batch Size')
-parser.add_argument("--training-steps", type=str, default='10000,10000,10000', help='Training Steps') #,10000,10000
-parser.add_argument("--learning-rate", type=str, default='0.0005,0.0001,0.00002', help='Learning Rate') #,0.0001,0.00002
+parser.add_argument("--training-steps", type=str, default='10000,10000', help='Training Steps') #,10000,10000 ; ,10000
+parser.add_argument("--learning-rate", type=str, default='0.002,0.0004', help='Learning Rate') #,0.0001,0.00002 ; ,0.00008
 parser.add_argument("--finetuning-epochs", type=int, default=10000, help='Number of epochs for finetuning')
 parser.add_argument("--dataloader-num-workers", type=int, default=8, help='Number Workers Dataloader')
 parser.add_argument("--validation-percentage", type=int, default=10, help='Validation Set Percentage')
@@ -109,6 +109,7 @@ print(args)
 print(model_uuid)
 print("Start training:")
 print("Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)")
+model.set_noise(args.noise_injectionT)
 start_time = time.time()
 for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
     if e in epoch_list:
