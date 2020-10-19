@@ -410,7 +410,7 @@ class LinLayer_bmm(nn.Module):
 
 
 class KWS_LSTM_bmm(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, device, wb, abMVM, abNM, ib, noise_level, drop_p):
+    def __init__(self, input_dim, hidden_dim, output_dim, device, wb, abMVM, abNM, ib, noise_level, drop_p, n_msb):
         super(KWS_LSTM_bmm, self).__init__()
         self.device = device
         self.noise_level = noise_level
@@ -422,17 +422,18 @@ class KWS_LSTM_bmm(nn.Module):
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.drop_p = drop_p
+        self.n_msb = n_msb
 
         # LSTM layer
-        self.lstmBlocks = LSTMLayer(LSTMCellQ_bmm, self.drop_p, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, 4)
+        self.lstmBlocks = LSTMLayer(LSTMCellQ_bmm, self.drop_p, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.n_msb)
 
         # final FC layer
-        self.finFC = LinLayer_bmm(self.hidden_dim, 3, noise_level, abMVM, ib, wb, 4)
+        self.finFC = LinLayer_bmm(self.hidden_dim, 3, noise_level, abMVM, ib, wb, self.n_msb)
 
 
     def forward(self, inputs):
         # init states with zero
-        self.hidden_state = (torch.zeros(4, inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(8, inputs.shape[1], self.hidden_dim, device = self.device))
+        self.hidden_state = (torch.zeros(self.n_msb, inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(self.n_msb, inputs.shape[1], self.hidden_dim, device = self.device))
         
         # LSTM blocks
         lstm_out, _ = self.lstmBlocks(inputs, self.hidden_state)
@@ -456,5 +457,5 @@ class KWS_LSTM_bmm(nn.Module):
         self.lstmBlocks.drop_p = drop_p
 
     def get_a(self):
-        return torch.cat([self.lstmBlocks.cell.a1, self.lstmBlocks.cell.a3, self.lstmBlocks.cell.a2,  self.lstmBlocks.cell.a4, self.lstmBlocks.cell.a5, self.lstmBlocks.cell.a6, self.lstmBlocks.cell.a7, self.lstmBlocks.cell.a8, self.lstmBlocks.cell.a9, self.lstmBlocks.cell.a10,  self.lstmBlocks.cell.a11, self.lstmBlocks.cell.a12, self.lstmBlocks.cell.a13, self.lstmBlocks.cell.a14, self.finFC.a1, self.finFC.a2])/64
+        return torch.cat([self.lstmBlocks.cell.a1, self.lstmBlocks.cell.a3, self.lstmBlocks.cell.a2,  self.lstmBlocks.cell.a4, self.lstmBlocks.cell.a5, self.lstmBlocks.cell.a6, self.lstmBlocks.cell.a7, self.lstmBlocks.cell.a8, self.lstmBlocks.cell.a9, self.lstmBlocks.cell.a10,  self.lstmBlocks.cell.a11, self.lstmBlocks.cell.a12, self.lstmBlocks.cell.a13, self.lstmBlocks.cell.a14, self.finFC.a1, self.finFC.a2])/(16*self.n_msb)
 
