@@ -36,7 +36,7 @@ part4 = ".txt\nmodule load python\nsetenv OMP_NUM_THREADS $NSLOTS\npython KWS_LS
 
 #sweep_parameters = {'noise-injectionT': list(np.round(np.arange(0.10, .20, .01), 2 ))   }
 
-sweep_parameters = {'learning-rate': ['\"0.001,0.0002,0.00004\"', '\"0.002,0.0004,0.00008\"', '\"0.01,0.005,0.001\"', '\"0.0001,0.00005,0.00001\"', '\"0.0005,0.0001,0.00002\"']   }
+sweep_parameters = {'learning-rate': ['\"0.001,0.0002,0.00004\"', '\"0.002,0.0004,0.00008\"', '\"d0.01,0.005,0.001\"', '\"0.0001,0.00005,0.00001\"', '\"0.0005,0.0001,0.00002\"']   }
 
 trials = 3
 
@@ -51,7 +51,7 @@ for i in range(trials):
         for value in sweep_parameters[variable]:
             name = ident_word + "_" +variable + "_" + str(value) + "_" + str(i)
             with open('jobscripts/'+name+'.script', 'w') as f:
-                f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " " + value+ " --random-seed " + str(random_seeds[i])) 
+                f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " " + str(value)+ " --random-seed " + str(random_seeds[i])) 
             os.system("qsub "+ 'jobscripts/'+name+'.script')
             q_counter += 1
             if q_counter >= len(avail_q):
