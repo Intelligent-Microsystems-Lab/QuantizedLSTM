@@ -31,8 +31,8 @@ parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speec
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
 parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
 parser.add_argument("--batch-size", type=int, default=100, help='Batch Size')
-parser.add_argument("--training-steps", type=str, default='10000', help='Training Steps') #,10000,10000
-parser.add_argument("--learning-rate", type=str, default='0.0005', help='Learning Rate') #,0.0001,0.00002
+parser.add_argument("--training-steps", type=str, default='10000,10000,10000', help='Training Steps') #,10000,10000
+parser.add_argument("--learning-rate", type=str, default='0.0005,0.0001,0.00002', help='Learning Rate') #,0.0001,0.00002
 parser.add_argument("--finetuning-epochs", type=int, default=10000, help='Number of epochs for finetuning')
 parser.add_argument("--dataloader-num-workers", type=int, default=8, help='Number Workers Dataloader')
 parser.add_argument("--validation-percentage", type=int, default=10, help='Validation Set Percentage')
@@ -51,7 +51,7 @@ parser.add_argument("--hop-length", type=int, default=320, help='Length of hop b
 parser.add_argument("--hidden", type=int, default=118, help='Number of hidden LSTM units') 
 parser.add_argument("--n-mfcc", type=int, default=40, help='Number of mfc coefficients to retain') # 40 before
 
-parser.add_argument("--noise-injectionT", type=float, default=0.1, help='Percentage of noise injected to weights')
+parser.add_argument("--noise-injectionT", type=float, default=0.17, help='Percentage of noise injected to weights')
 parser.add_argument("--noise-injectionI", type=float, default=0.1, help='Percentage of noise injected to weights')
 parser.add_argument("--quant-actMVM", type=int, default=6, help='Bits available for MVM activations/state')
 parser.add_argument("--quant-actNM", type=int, default=8, help='Bits available for non-MVM activations/state')
