@@ -355,6 +355,8 @@ class LSTMCellQ_bmm(nn.Module):
         # MVM
         gates = (CustomMM_bmm.apply(quant_pass(pact_a_bmm(input.repeat(self.n_blocks, 1, 1), self.a1), self.ib, self.a1), self.weight_ih, self.bias_ih, self.noise_level, self.wb) + CustomMM_bmm.apply(quant_pass(pact_a_bmm(hx, self.a11), self.ib, self.a11), self.weight_hh * w_mask, self.bias_hh, self.noise_level, self.wb))
 
+
+        import pdb; pdb.set_trace()
         #i, j, f, o
         i, j, f, o = gates.chunk(4, 2)
         
