@@ -62,7 +62,7 @@ parser.add_argument("--l2", type=float, default=.01, help='Strength of L2 norm')
 parser.add_argument("--n-msb", type=int, default=8, help='Number of bit splits')
 
 parser.add_argument("--max-w", type=float, default=.1, help='Maximumg weight')
-parser.add_argument("--drop-p", type=float, default=0.125, help='Dropconnect probability')
+parser.add_argument("--drop-p", type=float, default=0., help='Dropconnect probability')
 
 args = parser.parse_args()
 
@@ -110,7 +110,7 @@ print(args)
 print(model_uuid)
 print("Start training with DropConnect:")
 print("Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)")
-model.set_noise(0)
+model.set_noise(args.noise_injectionT)
 model.set_drop_p(args.drop_p)
 start_time = time.time()
 for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
