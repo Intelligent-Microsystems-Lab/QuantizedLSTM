@@ -211,7 +211,7 @@ class LSTMCellQ_bs(nn.Module):
         self.a14 = nn.Parameter(torch.tensor([4.] ))
 
 
-    def forward(self, input, state):
+    def forward(self, input, state, w_mask):
         hx, cx = state
 
         inp_msb, beta_coef = bitsplitter_sym_pass(pact_a(input, self.a1)/self.a1, self.ib, self.n_msb)
@@ -221,7 +221,7 @@ class LSTMCellQ_bs(nn.Module):
 
 
         inp_msb, beta_coef = bitsplitter_sym_pass(pact_a(hx, self.a11)/self.a11, self.ib, self.n_msb)
-        out = CustomMM_bmm.apply(inp_msb, self.weight_hh.expand(self.n_msb, self.weight_hh.shape[1], self.weight_hh.shape[2]), self.bias_hh.expand(self.n_msb, 1, self.bias_hh.shape[2]), self.noise_level, self.wb)
+        out = CustomMM_bmm.apply(inp_msb, (self.weight_hh * w_mask).expand(self.n_msb, self.weight_hh.shape[1], self.weight_hh.shape[2]), self.bias_hh.expand(self.n_msb, 1, self.bias_hh.shape[2]), self.noise_level, self.wb)
         out_q = quant_pass(out, self.abMVM, torch.tensor([1]).to(input.device))
         part2 = (beta_coef.unsqueeze(1).unsqueeze(1).expand(out_q.shape) * out_q).sum(0) * self.a11
 
