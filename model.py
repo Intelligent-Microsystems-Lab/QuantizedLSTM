@@ -270,9 +270,9 @@ class LSTMCellQ_bs(nn.Module):
     def forward(self, input, state, w_mask):
         hx, cx = state
 
-        part1 = MM_bs.apply(pact_a(input, self.a1)/self.a1, self.weight_ih, self.bias_ih, self.noise_level, self.ib, self.abMVM, self.wb, self.n_msb) * self.a1
+        part1 = pact_a(MM_bs.apply(pact_a(input, self.a1)/self.a1, self.weight_ih, self.bias_ih, self.noise_level, self.ib, self.abMVM, self.wb, self.n_msb) * self.a1, self.a12)
 
-        part2 = MM_bs.apply(pact_a(hx, self.a11)/self.a11, self.weight_hh, self.bias_hh, self.noise_level, self.ib, self.abMVM, self.wb, self.n_msb) * self.a11
+        part2 = pact_a(MM_bs.apply(pact_a(hx, self.a11)/self.a11, self.weight_hh, self.bias_hh, self.noise_level, self.ib, self.abMVM, self.wb, self.n_msb) * self.a11, self.a13)
 
 
         gates = quant_pass(pact_a(part1 + part2,  self.a14), self.abNM, self.a14)
@@ -323,12 +323,15 @@ class LinLayer_bs(nn.Module):
 
     def forward(self, input):
 
+        return pact_a((MM_bs.apply(pact_a(input, self.a1)/self.a1, self.weights, self.bias, self.noise_level, self.ib, self.abMVM, self.wb, self.n_msb) * self.a1), self.a2)
+
+
         #return CustomMM_bmm.apply(input.unsqueeze(0), self.weights, self.bias, self.noise_level, self.wb)[0,:,:]
 
-        inp_msb, beta_coef = bitsplitter_sym_pass(pact_a(input, self.a1)/self.a1, self.ib, self.n_msb)
-        out = CustomMM_bmm.apply(inp_msb, self.weights.expand(self.n_msb, self.weights.shape[1], self.weights.shape[2]), self.bias.expand(self.n_msb, 1, self.bias.shape[2]), self.noise_level, self.wb)
-        out_q = quant_pass(out, self.abMVM, torch.tensor([1]).to(input.device))
-        return (beta_coef.unsqueeze(1).unsqueeze(1).expand(out_q.shape) * out_q).sum(0) * self.a1
+        # inp_msb, beta_coef = bitsplitter_sym_pass(pact_a(input, self.a1)/self.a1, self.ib, self.n_msb)
+        # out = CustomMM_bmm.apply(inp_msb, self.weights.expand(self.n_msb, self.weights.shape[1], self.weights.shape[2]), self.bias.expand(self.n_msb, 1, self.bias.shape[2]), self.noise_level, self.wb)
+        # out_q = quant_pass(out, self.abMVM, torch.tensor([1]).to(input.device))
+        # return (beta_coef.unsqueeze(1).unsqueeze(1).expand(out_q.shape) * out_q).sum(0) * self.a1
 
 
 class KWS_LSTM_bs(nn.Module):
