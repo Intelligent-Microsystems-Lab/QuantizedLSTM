@@ -206,9 +206,9 @@ class LSTMCellQ_bs(nn.Module):
         self.a10 = nn.Parameter(torch.tensor([1.] ))
         self.a11 = nn.Parameter(torch.tensor([4.] ))
 
-        self.a12 = nn.Parameter(torch.tensor([4.] * n_blocks))
-        self.a13 = nn.Parameter(torch.tensor([4.] * n_blocks))
-        self.a14 = nn.Parameter(torch.tensor([4.] * n_blocks))
+        self.a12 = nn.Parameter(torch.tensor([4.] ))
+        self.a13 = nn.Parameter(torch.tensor([4.] ))
+        self.a14 = nn.Parameter(torch.tensor([4.] ))
 
 
     def forward(self, input, state):
