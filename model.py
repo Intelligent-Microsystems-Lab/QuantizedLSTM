@@ -135,8 +135,12 @@ def pact_a(x, a):
 def pact_a_bmm(x, a):
     if not pact_a:
         return x
-    import pdb; pdb.set_trace()
-    a = a.unsqueeze(1).unsqueeze(1).expand(x.shape)
+    if len(x.shape) == 2:
+        a = a.unsqueeze(1).expand(x.shape)
+    elif len(x.shape) == 3:
+        a = a.unsqueeze(1).unsqueeze(1).expand(x.shape)
+    else:
+        raise Exception("Unsupported dimensionality")
     return torch.sign(x) * .5 * (torch.abs(x) - torch.abs(torch.abs(x) - a) + a)
 
 def w_init(fp, wb):
