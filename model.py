@@ -280,12 +280,13 @@ class LinLayer_bs(nn.Module):
 
     def forward(self, input):
 
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
+        return CustomMM_bmm.apply(input.unsqueeze(0), self.weights, self.bias, self.noise_level, self.wb)
 
-        inp_msb, beta_coef = bitsplitter_sym_pass(pact_a(input, self.a1)/self.a1, self.ib, self.n_msb)
-        out = CustomMM_bmm.apply(inp_msb, self.weights.expand(self.n_msb, self.weights.shape[1], self.weights.shape[2]), self.bias.expand(self.n_msb, 1, self.bias.shape[2]), self.noise_level, self.wb)
-        out_q = quant_pass(out, self.abMVM, torch.tensor([1]).to(input.device))
-        return (beta_coef.unsqueeze(1).unsqueeze(1).expand(out_q.shape) * out_q).sum(0) * self.a1
+        # inp_msb, beta_coef = bitsplitter_sym_pass(pact_a(input, self.a1)/self.a1, self.ib, self.n_msb)
+        # out = CustomMM_bmm.apply(inp_msb, self.weights.expand(self.n_msb, self.weights.shape[1], self.weights.shape[2]), self.bias.expand(self.n_msb, 1, self.bias.shape[2]), self.noise_level, self.wb)
+        # out_q = quant_pass(out, self.abMVM, torch.tensor([1]).to(input.device))
+        # return (beta_coef.unsqueeze(1).unsqueeze(1).expand(out_q.shape) * out_q).sum(0) * self.a1
 
 
 class KWS_LSTM_bs(nn.Module):
