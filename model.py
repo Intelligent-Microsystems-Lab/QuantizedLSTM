@@ -104,27 +104,83 @@ class QuantFunc(torch.autograd.Function):
 
 quant_pass = QuantFunc.apply
 
-class bitsplitting_sym(torch.autograd.Function):
+
+
+# class bitsplitting_sym(torch.autograd.Function):
+#     @staticmethod
+#     def forward(ctx, x, bits, n_msb):
+#         if bits == None or n_msb == None:
+#             return x
+
+#         beta = torch.tensor([1.], requires_grad = False).to(x.device)
+#         y = []
+
+#         for i in range(n_msb):
+#             y.append(quant_pass(x/beta[-1], bits, torch.tensor([1]).to(x.device)))
+#             x = x - y[-1]*beta[-1]
+#             beta = torch.cat((beta, (beta[-1]/2.).unsqueeze(0)),0)
+
+#         return torch.stack(y).to(x.device), beta[:-1].to(x.device)
+
+#     @staticmethod
+#     def backward(ctx, grad_output, grad_beta):
+#         return grad_output.sum(0), None, None
+
+# bitsplitter_sym_pass = bitsplitting_sym.apply
+
+
+def bitsplit_sym(x, bits, n_msb):
+    if bits == None or n_msb == None:
+        return x
+
+    beta = torch.tensor([1.], requires_grad = False).to(x.device)
+    y = []
+
+    for i in range(n_msb):
+        y.append(quant_pass(x/beta[-1], bits, torch.tensor([1]).to(x.device)))
+        x = x - y[-1]*beta[-1]
+        beta = torch.cat((beta, (beta[-1]/2.).unsqueeze(0)),0)
+
+    return torch.stack(y).to(x.device), beta[:-1].to(x.device)
+
+class MM_bs(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, x, bits, n_msb):
-        if bits == None or n_msb == None:
-            return x
+    def forward(ctx, input, weight, bias, nl, ib, mvmb, wb, n_msb):
+        noise_w = torch.randn(weight.shape, device = input.device) * max_w * nl
+        bias_w  = torch.randn(bias.shape, device = bias.device) * max_w * nl
+        weight = torch.clamp(weight, -max_w, max_w)
 
-        beta = torch.tensor([1.], requires_grad = False).to(x.device)
-        y = []
+        wq = quant_pass(weight, wb, 1.)
+        bq = quant_pass(bias, wb, 1.)
 
-        for i in range(n_msb):
-            y.append(quant_pass(x/beta[-1], bits, torch.tensor([1]).to(x.device)))
-            x = x - y[-1]*beta[-1]
-            beta = torch.cat((beta, (beta[-1]/2.).unsqueeze(0)),0)
+        ctx.save_for_backward(input, weight, bias)
 
-        return torch.stack(y).to(x.device), beta[:-1].to(x.device)
+        import pdb; pdb.set_trace()
+        inp_msb, beta_coef = bitsplitter_sym_pass(input, self.ib, self.n_msb)
+
+
+        out = CustomMM_bmm.apply(inp_msb, self.weight_ih.expand(self.n_msb, self.weight_ih.shape[1], self.weight_ih.shape[2]), self.bias_ih.expand(self.n_msb, 1, self.bias_ih.shape[2]), self.noise_level, self.wb)
+        out_q = quant_pass(out, self.abMVM, torch.tensor([1]).to(input.device))
+        part1 = (beta_coef.unsqueeze(1).unsqueeze(1).expand(out_q.shape) * out_q).sum(0) * self.a1
+
+
+        output = input.bmm(wq + noise_w) + bq + bias_w
+        return output
 
     @staticmethod
-    def backward(ctx, grad_output, grad_beta):
-        return grad_output.sum(0), None, None
+    def backward(ctx, grad_output):
+        import pdb; pdb.set_trace()
+        input, weight, bias = ctx.saved_tensors
+        grad_input = grad_weight = grad_bias = None
 
-bitsplitter_sym_pass = bitsplitting_sym.apply
+        if ctx.needs_input_grad[0]:
+            grad_input = grad_output.mm(weight)
+        if ctx.needs_input_grad[1]:
+            grad_weight = grad_output.mm(input)
+        if ctx.needs_input_grad[2]:
+            grad_bias = grad_output.sum(1)
+
+        return grad_input, grad_weight, grad_bias, None, None, None
 
 
 def pact_a(x, a):
@@ -219,19 +275,27 @@ class LSTMCellQ_bs(nn.Module):
     def forward(self, input, state, w_mask):
         hx, cx = state
 
-        inp_msb, beta_coef = bitsplitter_sym_pass(pact_a(input, self.a1)/self.a1, self.ib, self.n_msb)
-        out = CustomMM_bmm.apply(inp_msb, self.weight_ih.expand(self.n_msb, self.weight_ih.shape[1], self.weight_ih.shape[2]), self.bias_ih.expand(self.n_msb, 1, self.bias_ih.shape[2]), self.noise_level, self.wb)
-        out_q = quant_pass(out, self.abMVM, torch.tensor([1]).to(input.device))
-        part1 = (beta_coef.unsqueeze(1).unsqueeze(1).expand(out_q.shape) * out_q).sum(0) * self.a1
+        part1 = MM_bs.apply(input, self.weight_ih, self.bias_ih, self.noise_level, self.ib, self.abMVM, self.wb, self.n_msb)
 
-        #out_comp = CustomMM_bmm.apply(input.unsqueeze(0), self.weight_ih, self.bias_ih.unsqueeze(0), self.noise_level, self.wb)
+        part2 = MM_bs.apply(hx, self.weight_hh, self.bias_hh, self.noise_level, self.ib, self.abMVM, self.wb, self.n_msb)
 
-        inp_msb, beta_coef = bitsplitter_sym_pass(pact_a(hx, self.a11)/self.a11, self.ib, self.n_msb)
-        out = CustomMM_bmm.apply(inp_msb, (self.weight_hh * w_mask).expand(self.n_msb, self.weight_hh.shape[1], self.weight_hh.shape[2]), self.bias_hh.expand(self.n_msb, 1, self.bias_hh.shape[2]), self.noise_level, self.wb)
-        out_q = quant_pass(out, self.abMVM, torch.tensor([1]).to(input.device))
-        part2 = (beta_coef.unsqueeze(1).unsqueeze(1).expand(out_q.shape) * out_q).sum(0) * self.a11
+        # inp_msb, beta_coef = bitsplitter_sym_pass(pact_a(input, self.a1)/self.a1, self.ib, self.n_msb)
+        # out = CustomMM_bmm.apply(inp_msb, self.weight_ih.expand(self.n_msb, self.weight_ih.shape[1], self.weight_ih.shape[2]), self.bias_ih.expand(self.n_msb, 1, self.bias_ih.shape[2]), self.noise_level, self.wb)
+        # out_q = quant_pass(out, self.abMVM, torch.tensor([1]).to(input.device))
+        # part1 = (beta_coef.unsqueeze(1).unsqueeze(1).expand(out_q.shape) * out_q).sum(0) * self.a1
 
-        gates = quant_pass(pact_a_bmm( quant_pass(pact_a_bmm(part1, self.a12), self.abMVM, self.a12) + quant_pass(pact_a_bmm(part2, self.a13), self.abMVM, self.a13), self.a14), self.abNM, self.a14)
+        # #out_comp = CustomMM_bmm.apply(input.unsqueeze(0), self.weight_ih, self.bias_ih.unsqueeze(0), self.noise_level, self.wb)
+
+        # inp_msb, beta_coef = bitsplitter_sym_pass(pact_a(hx, self.a11)/self.a11, self.ib, self.n_msb)
+        # out = CustomMM_bmm.apply(inp_msb, (self.weight_hh * w_mask).expand(self.n_msb, self.weight_hh.shape[1], self.weight_hh.shape[2]), self.bias_hh.expand(self.n_msb, 1, self.bias_hh.shape[2]), self.noise_level, self.wb)
+        # out_q = quant_pass(out, self.abMVM, torch.tensor([1]).to(input.device))
+        # part2 = (beta_coef.unsqueeze(1).unsqueeze(1).expand(out_q.shape) * out_q).sum(0) * self.a11
+
+        # gates = quant_pass(pact_a_bmm( quant_pass(pact_a_bmm(part1, self.a12), self.abMVM, self.a12) + quant_pass(pact_a_bmm(part2, self.a13), self.abMVM, self.a13), self.a14), self.abNM, self.a14)
+
+        gates = quant_pass(pact_a(part1 + part2,  self.a14), self.abNM, self.a14)
+
+
         # MVM
         #gates = (CustomMM.apply(quant_pass(pact_a(input, self.a1), self.ib, self.a1), self.weight_ih, self.bias_ih, self.noise_level, self.wb) + CustomMM.apply(hx, self.weight_hh, self.bias_hh, self.noise_level, self.wb))
 
@@ -280,12 +344,12 @@ class LinLayer_bs(nn.Module):
 
     def forward(self, input):
 
-        return CustomMM_bmm.apply(input.unsqueeze(0), self.weights, self.bias, self.noise_level, self.wb)[0,:,:]
+        #return CustomMM_bmm.apply(input.unsqueeze(0), self.weights, self.bias, self.noise_level, self.wb)[0,:,:]
 
-        # inp_msb, beta_coef = bitsplitter_sym_pass(pact_a(input, self.a1)/self.a1, self.ib, self.n_msb)
-        # out = CustomMM_bmm.apply(inp_msb, self.weights.expand(self.n_msb, self.weights.shape[1], self.weights.shape[2]), self.bias.expand(self.n_msb, 1, self.bias.shape[2]), self.noise_level, self.wb)
-        # out_q = quant_pass(out, self.abMVM, torch.tensor([1]).to(input.device))
-        # return (beta_coef.unsqueeze(1).unsqueeze(1).expand(out_q.shape) * out_q).sum(0) * self.a1
+        inp_msb, beta_coef = bitsplitter_sym_pass(pact_a(input, self.a1)/self.a1, self.ib, self.n_msb)
+        out = CustomMM_bmm.apply(inp_msb, self.weights.expand(self.n_msb, self.weights.shape[1], self.weights.shape[2]), self.bias.expand(self.n_msb, 1, self.bias.shape[2]), self.noise_level, self.wb)
+        out_q = quant_pass(out, self.abMVM, torch.tensor([1]).to(input.device))
+        return (beta_coef.unsqueeze(1).unsqueeze(1).expand(out_q.shape) * out_q).sum(0) * self.a1
 
 
 class KWS_LSTM_bs(nn.Module):
