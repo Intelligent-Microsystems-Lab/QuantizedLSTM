@@ -135,6 +135,7 @@ def pact_a(x, a):
 def pact_a_bmm(x, a):
     if not pact_a:
         return x
+    import pdb; pdb.set_trace()
     a = a.unsqueeze(1).unsqueeze(1).expand(x.shape)
     return torch.sign(x) * .5 * (torch.abs(x) - torch.abs(torch.abs(x) - a) + a)
 
@@ -214,7 +215,6 @@ class LSTMCellQ_bs(nn.Module):
     def forward(self, input, state, w_mask):
         hx, cx = state
 
-        import pdb; pdb.set_trace()
         inp_msb, beta_coef = bitsplitter_sym_pass(pact_a(input, self.a1)/self.a1, self.ib, self.n_msb)
         out = CustomMM_bmm.apply(inp_msb, self.weight_ih.expand(self.n_msb, self.weight_ih.shape[1], self.weight_ih.shape[2]), self.bias_ih.expand(self.n_msb, 1, self.bias_ih.shape[2]), self.noise_level, self.wb)
         out_q = quant_pass(out, self.abMVM, torch.tensor([1]).to(input.device))
