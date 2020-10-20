@@ -179,9 +179,8 @@ class CustomMM_bmm(torch.autograd.Function):
 
 
 class LSTMCellQ_bs(nn.Module):
-    def __init__(self, input_size, hidden_size, wb, ib, abMVM, abNM, noise_level, n_msb, device):
+    def __init__(self, input_size, hidden_size, wb, ib, abMVM, abNM, noise_level, n_msb):
         super(LSTMCellQ_bs, self).__init__()
-        self.device = device
         self.wb = wb
         self.ib = ib
         self.abMVM = abMVM
@@ -207,6 +206,10 @@ class LSTMCellQ_bs(nn.Module):
         self.a10 = nn.Parameter(torch.tensor([1.] ))
         self.a11 = nn.Parameter(torch.tensor([4.] ))
 
+        self.a12 = nn.Parameter(torch.tensor([4.] * n_blocks))
+        self.a13 = nn.Parameter(torch.tensor([4.] * n_blocks))
+        self.a14 = nn.Parameter(torch.tensor([4.] * n_blocks))
+
 
     def forward(self, input, state):
         hx, cx = state
@@ -222,7 +225,7 @@ class LSTMCellQ_bs(nn.Module):
         out_q = quant_pass(out, self.abMVM, torch.tensor([1]).to(input.device))
         part2 = (beta_coef.unsqueeze(1).unsqueeze(1).expand(out_q.shape) * out_q).sum(0) * self.a11
 
-        gates = part1 + part2
+        gates = quant_pass(pact_a_bmm( quant_pass(pact_a_bmm(part1, self.a12), self.abMVM, self.a12) + quant_pass(pact_a_bmm(part2, self.a13), self.abMVM, self.a13), self.a14), self.abNM, self.a14)
         # MVM
         #gates = (CustomMM.apply(quant_pass(pact_a(input, self.a1), self.ib, self.a1), self.weight_ih, self.bias_ih, self.noise_level, self.wb) + CustomMM.apply(hx, self.weight_hh, self.bias_hh, self.noise_level, self.wb))
 
