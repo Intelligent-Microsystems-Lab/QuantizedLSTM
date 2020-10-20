@@ -91,7 +91,7 @@ validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_si
 if args.method == 0:
     model = KWS_LSTM_bmm(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = 0, drop_p = args.drop_p, n_msb = args.n_msb)
 elif args.method == 1:
-    model = KWS_LSTM_bs(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = 0, n_msb = args.n_msb)
+    model = KWS_LSTM_bs(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = 0, drop_p = args.drop_p, n_msb = args.n_msb)
 else:
     raise Exception("Unknown method: Please use 0 for quantized LSTM blocks or 1 for bit splitting.")
 

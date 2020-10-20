@@ -281,7 +281,7 @@ class LinLayer_bs(nn.Module):
 
 
 class KWS_LSTM_bs(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, device, wb, abMVM, abNM, ib, noise_level, n_msb):
+    def __init__(self, input_dim, hidden_dim, output_dim, device, wb, abMVM, abNM, ib, noise_level, drop_p, n_msb):
         super(KWS_LSTM_bs, self).__init__()
         self.device = device
         self.noise_level = noise_level
@@ -292,10 +292,11 @@ class KWS_LSTM_bs(nn.Module):
         self.hidden_dim = hidden_dim
         self.input_dim = input_dim
         self.output_dim = output_dim
+        self.drop_p = drop_p
         self.n_msb = n_msb
 
         # LSTM layer
-        self.lstmBlocks = LSTMLayer(LSTMCellQ_bs, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.n_msb, self.device)
+        self.lstmBlocks = LSTMLayer(LSTMCellQ_bs, self.drop_p, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.n_msb, self.device)
 
         # final FC layer
         self.finFC = LinLayer_bs(self.hidden_dim, output_dim, noise_level, abMVM, ib, wb, n_msb)
