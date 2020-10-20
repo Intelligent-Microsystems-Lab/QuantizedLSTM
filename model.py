@@ -280,7 +280,7 @@ class LinLayer_bs(nn.Module):
 
     def forward(self, input):
 
-        #import pdb; pdb.set_trace()
+        import pdb; pdb.set_trace()
         return CustomMM_bmm.apply(input.unsqueeze(0), self.weights, self.bias, self.noise_level, self.wb)
 
         # inp_msb, beta_coef = bitsplitter_sym_pass(pact_a(input, self.a1)/self.a1, self.ib, self.n_msb)
