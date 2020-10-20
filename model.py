@@ -296,7 +296,7 @@ class KWS_LSTM_bs(nn.Module):
         self.n_msb = n_msb
 
         # LSTM layer
-        self.lstmBlocks = LSTMLayer(LSTMCellQ_bs, self.drop_p, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.n_msb, self.device)
+        self.lstmBlocks = LSTMLayer(LSTMCellQ_bs, self.drop_p, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.n_msb)
 
         # final FC layer
         self.finFC = LinLayer_bs(self.hidden_dim, output_dim, noise_level, abMVM, ib, wb, n_msb)
