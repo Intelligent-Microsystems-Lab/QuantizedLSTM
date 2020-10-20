@@ -174,7 +174,7 @@ class MM_bs(torch.autograd.Function):
         if ctx.needs_input_grad[2]:
             grad_bias = grad_output.sum(0)
 
-        return grad_input, grad_weight.unsqueeze(0), grad_bias.unsqueeze(0).unsqueeze(0), None, None, None, None, None
+        return grad_input, grad_weight.unsqueeze(0).permute(0,2,1), grad_bias.unsqueeze(0).unsqueeze(0), None, None, None, None, None
 
 
 def pact_a(x, a):
