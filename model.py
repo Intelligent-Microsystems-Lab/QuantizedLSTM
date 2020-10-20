@@ -319,6 +319,10 @@ class KWS_LSTM_bs(nn.Module):
         self.lstmBlocks.cell.noise_level = nl
         self.finFC.noise_level = nl
 
+    def set_drop_p(self, drop_p):
+        self.drop_p = drop_p
+        self.lstmBlocks.drop_p = drop_p
+
     def get_a(self):
         return torch.cat([self.lstmBlocks.cell.a1, self.lstmBlocks.cell.a3, self.lstmBlocks.cell.a2,  self.lstmBlocks.cell.a4, self.lstmBlocks.cell.a5, self.lstmBlocks.cell.a6, self.lstmBlocks.cell.a7, self.lstmBlocks.cell.a8, self.lstmBlocks.cell.a9, self.lstmBlocks.cell.a10,  self.lstmBlocks.cell.a11, self.finFC.a1, self.finFC.a2])/13
 
