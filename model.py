@@ -164,18 +164,17 @@ class MM_bs(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, grad_output):
-        import pdb; pdb.set_trace()
         input, weight, bias = ctx.saved_tensors
         grad_input = grad_weight = grad_bias = None
 
         if ctx.needs_input_grad[0]:
-            grad_input = grad_output.mm(weight[0,:,:])
+            grad_input = grad_output.mm(weight[0,:,:].t())
         if ctx.needs_input_grad[1]:
-            grad_weight = grad_output.mm(input)
+            grad_weight = grad_output.t().mm(input)
         if ctx.needs_input_grad[2]:
-            grad_bias = grad_output.sum(1)
+            grad_bias = grad_output.sum(0)
 
-        return grad_input, grad_weight, grad_bias, None, None, None
+        return grad_input, grad_weight, grad_bias, None, None, None, None, None
 
 
 def pact_a(x, a):
