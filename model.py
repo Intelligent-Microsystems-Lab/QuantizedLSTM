@@ -277,7 +277,7 @@ class LSTMCellQ_bs(nn.Module):
 
         part1 = MM_bs.apply(pact_a(input, self.a1)/self.a1, self.weight_ih, self.bias_ih, self.noise_level, self.ib, self.abMVM, self.wb, self.n_msb)
 
-        part2 = MM_bs.apply(pact_a(hx self.a11)/self.a11, self.weight_hh, self.bias_hh, self.noise_level, self.ib, self.abMVM, self.wb, self.n_msb)
+        part2 = MM_bs.apply(pact_a(hx, self.a11)/self.a11, self.weight_hh, self.bias_hh, self.noise_level, self.ib, self.abMVM, self.wb, self.n_msb)
 
         # inp_msb, beta_coef = bitsplitter_sym_pass(pact_a(input, self.a1)/self.a1, self.ib, self.n_msb)
         # out = CustomMM_bmm.apply(inp_msb, self.weight_ih.expand(self.n_msb, self.weight_ih.shape[1], self.weight_ih.shape[2]), self.bias_ih.expand(self.n_msb, 1, self.bias_ih.shape[2]), self.noise_level, self.wb)
