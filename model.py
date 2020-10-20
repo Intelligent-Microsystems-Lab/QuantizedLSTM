@@ -219,12 +219,12 @@ class LSTMCellQ_bs(nn.Module):
     def forward(self, input, state, w_mask):
         hx, cx = state
 
-        import pdb; pdb.set_trace()
         inp_msb, beta_coef = bitsplitter_sym_pass(pact_a(input, self.a1)/self.a1, self.ib, self.n_msb)
         out = CustomMM_bmm.apply(inp_msb, self.weight_ih.expand(self.n_msb, self.weight_ih.shape[1], self.weight_ih.shape[2]), self.bias_ih.expand(self.n_msb, 1, self.bias_ih.shape[2]), self.noise_level, self.wb)
         out_q = quant_pass(out, self.abMVM, torch.tensor([1]).to(input.device))
         part1 = (beta_coef.unsqueeze(1).unsqueeze(1).expand(out_q.shape) * out_q).sum(0) * self.a1
 
+        #out_comp = CustomMM_bmm.apply(input.unsqueeze(0), self.weight_ih, self.bias_ih.unsqueeze(0), self.noise_level, self.wb)
 
         inp_msb, beta_coef = bitsplitter_sym_pass(pact_a(hx, self.a11)/self.a11, self.ib, self.n_msb)
         out = CustomMM_bmm.apply(inp_msb, (self.weight_hh * w_mask).expand(self.n_msb, self.weight_hh.shape[1], self.weight_hh.shape[2]), self.bias_hh.expand(self.n_msb, 1, self.bias_hh.shape[2]), self.noise_level, self.wb)
@@ -279,6 +279,8 @@ class LinLayer_bs(nn.Module):
         self.a2 = nn.Parameter(torch.tensor([16.]))
 
     def forward(self, input):
+
+        import pdb; pdb.set_trace()
 
         inp_msb, beta_coef = bitsplitter_sym_pass(pact_a(input, self.a1)/self.a1, self.ib, self.n_msb)
         out = CustomMM_bmm.apply(inp_msb, self.weights.expand(self.n_msb, self.weights.shape[1], self.weights.shape[2]), self.bias.expand(self.n_msb, 1, self.bias.shape[2]), self.noise_level, self.wb)
