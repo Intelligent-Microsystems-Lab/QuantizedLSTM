@@ -62,7 +62,7 @@ parser.add_argument("--l2", type=float, default=.01, help='Strength of L2 norm')
 parser.add_argument("--n-msb", type=int, default=4, help='Number of bit splits')
 
 parser.add_argument("--max-w", type=float, default=.1, help='Maximumg weight')
-parser.add_argument("--drop-p", type=float, default=0., help='Dropconnect probability')
+parser.add_argument("--drop-p", type=float, default=.125, help='Dropconnect probability')
 
 args = parser.parse_args()
 
@@ -114,7 +114,7 @@ model.set_noise(0)
 model.set_drop_p(args.drop_p)
 start_time = time.time()
 for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
-    model.set_noise(args.noise_injectionT)
+    model.set_noise(0)
     model.set_drop_p(args.drop_p)
     if e in epoch_list:
         for param_group in optimizer.param_groups:
@@ -135,7 +135,7 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
     optimizer.zero_grad()
 
     if (e%100 == 0) or (e == epoch_list[-1]-1):
-        model.set_noise(args.noise_injectionI)
+        model.set_noise(args.noise_injectionT)
         model.set_drop_p(0)
 
         # validation
@@ -193,9 +193,7 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, args.finetuning_e
     optimizer.step()
     optimizer.zero_grad()
 
-    if (e%100 == 0) or (e == epoch_list[-1]-1):
-        model.set_noise(args.noise_injectionI)
-        model.set_drop_p(0)
+    if (e%100 == 0) or (e == epoch_list[-1]-1) or (e > args.finetuning_epochs*.85):
         # validation
         temp_list = []
         for val_e, (x_vali, y_vali) in enumerate(validation_dataloader):
