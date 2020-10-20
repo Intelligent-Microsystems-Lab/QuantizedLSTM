@@ -155,16 +155,13 @@ class MM_bs(torch.autograd.Function):
 
         ctx.save_for_backward(input, weight, bias)
 
+        inp_msb, beta_coef = bitsplit_sym(input, ib, n_msb)
+        out = inp_msb.bmm(wq.expand(n_msb, weight.shape[1], weight.shape[2]) + noise_w) + bq.expand(n_msb, bias.shape[1], bias.shape[2]) + bias_w
+        out_q = quant_pass(out, mvmb, torch.tensor([1]).to(input.device))
+        output = (beta_coef.unsqueeze(1).unsqueeze(1).expand(out_q.shape) * out_q).sum(0)
+
         import pdb; pdb.set_trace()
-        inp_msb, beta_coef = bitsplitter_sym_pass(input, self.ib, self.n_msb)
 
-
-        out = CustomMM_bmm.apply(inp_msb, self.weight_ih.expand(self.n_msb, self.weight_ih.shape[1], self.weight_ih.shape[2]), self.bias_ih.expand(self.n_msb, 1, self.bias_ih.shape[2]), self.noise_level, self.wb)
-        out_q = quant_pass(out, self.abMVM, torch.tensor([1]).to(input.device))
-        part1 = (beta_coef.unsqueeze(1).unsqueeze(1).expand(out_q.shape) * out_q).sum(0) * self.a1
-
-
-        output = input.bmm(wq + noise_w) + bq + bias_w
         return output
 
     @staticmethod
