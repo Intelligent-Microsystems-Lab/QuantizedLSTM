@@ -135,8 +135,9 @@ def pact_a(x, a):
 def pact_a_bmm(x, a):
     if not pact_a:
         return x
-    import pdb; pdb.set_trace()
+
     a = a.unsqueeze(1).unsqueeze(1).expand(x.shape)
+    import pdb; pdb.set_trace()
     return torch.sign(x) * .5 * (torch.abs(x) - torch.abs(torch.abs(x) - a) + a)
 
 def w_init(fp, wb):
