@@ -193,7 +193,7 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, args.finetuning_e
     optimizer.step()
     optimizer.zero_grad()
 
-    if (e%100 == 0) or (e == epoch_list[-1]-1) or (e > args.finetuning_epochs*.85):
+    if (e%100 == 0) or (e == epoch_list[-1]-1):
         # validation
         temp_list = []
         for val_e, (x_vali, y_vali) in enumerate(validation_dataloader):
