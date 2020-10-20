@@ -160,8 +160,6 @@ class MM_bs(torch.autograd.Function):
         out_q = quant_pass(out, mvmb, torch.tensor([1]).to(input.device))
         output = (beta_coef.unsqueeze(1).unsqueeze(1).expand(out_q.shape) * out_q).sum(0)
 
-        import pdb; pdb.set_trace()
-
         return output
 
     @staticmethod
@@ -171,7 +169,7 @@ class MM_bs(torch.autograd.Function):
         grad_input = grad_weight = grad_bias = None
 
         if ctx.needs_input_grad[0]:
-            grad_input = grad_output.mm(weight)
+            grad_input = grad_output.mm(weight[0,:,:])
         if ctx.needs_input_grad[1]:
             grad_weight = grad_output.mm(input)
         if ctx.needs_input_grad[2]:
@@ -272,29 +270,13 @@ class LSTMCellQ_bs(nn.Module):
     def forward(self, input, state, w_mask):
         hx, cx = state
 
-        part1 = MM_bs.apply(pact_a(input, self.a1)/self.a1, self.weight_ih, self.bias_ih, self.noise_level, self.ib, self.abMVM, self.wb, self.n_msb)
+        part1 = MM_bs.apply(pact_a(input, self.a1)/self.a1, self.weight_ih, self.bias_ih, self.noise_level, self.ib, self.abMVM, self.wb, self.n_msb) * self.a1
 
-        part2 = MM_bs.apply(pact_a(hx, self.a11)/self.a11, self.weight_hh, self.bias_hh, self.noise_level, self.ib, self.abMVM, self.wb, self.n_msb)
+        part2 = MM_bs.apply(pact_a(hx, self.a11)/self.a11, self.weight_hh, self.bias_hh, self.noise_level, self.ib, self.abMVM, self.wb, self.n_msb) * self.a11
 
-        # inp_msb, beta_coef = bitsplitter_sym_pass(pact_a(input, self.a1)/self.a1, self.ib, self.n_msb)
-        # out = CustomMM_bmm.apply(inp_msb, self.weight_ih.expand(self.n_msb, self.weight_ih.shape[1], self.weight_ih.shape[2]), self.bias_ih.expand(self.n_msb, 1, self.bias_ih.shape[2]), self.noise_level, self.wb)
-        # out_q = quant_pass(out, self.abMVM, torch.tensor([1]).to(input.device))
-        # part1 = (beta_coef.unsqueeze(1).unsqueeze(1).expand(out_q.shape) * out_q).sum(0) * self.a1
-
-        # #out_comp = CustomMM_bmm.apply(input.unsqueeze(0), self.weight_ih, self.bias_ih.unsqueeze(0), self.noise_level, self.wb)
-
-        # inp_msb, beta_coef = bitsplitter_sym_pass(pact_a(hx, self.a11)/self.a11, self.ib, self.n_msb)
-        # out = CustomMM_bmm.apply(inp_msb, (self.weight_hh * w_mask).expand(self.n_msb, self.weight_hh.shape[1], self.weight_hh.shape[2]), self.bias_hh.expand(self.n_msb, 1, self.bias_hh.shape[2]), self.noise_level, self.wb)
-        # out_q = quant_pass(out, self.abMVM, torch.tensor([1]).to(input.device))
-        # part2 = (beta_coef.unsqueeze(1).unsqueeze(1).expand(out_q.shape) * out_q).sum(0) * self.a11
-
-        # gates = quant_pass(pact_a_bmm( quant_pass(pact_a_bmm(part1, self.a12), self.abMVM, self.a12) + quant_pass(pact_a_bmm(part2, self.a13), self.abMVM, self.a13), self.a14), self.abNM, self.a14)
 
         gates = quant_pass(pact_a(part1 + part2,  self.a14), self.abNM, self.a14)
 
-
-        # MVM
-        #gates = (CustomMM.apply(quant_pass(pact_a(input, self.a1), self.ib, self.a1), self.weight_ih, self.bias_ih, self.noise_level, self.wb) + CustomMM.apply(hx, self.weight_hh, self.bias_hh, self.noise_level, self.wb))
 
         #i, j, f, o
         i, j, f, o = gates.chunk(4, 1)
