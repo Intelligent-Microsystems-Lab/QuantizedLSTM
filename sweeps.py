@@ -1,7 +1,7 @@
 import os
 import numpy as np
 
-ident_word = "noiseT"
+ident_word = ""
 
 part1 = "#!/bin/csh \n#$ -M cschaef6@nd.edu \n#$ -m abe\n#$ -q " 
 part11 = "\n#$ -l gpu_card=1\n#$ -N "
@@ -34,13 +34,15 @@ part4 = ".txt\nmodule load python\nsetenv OMP_NUM_THREADS $NSLOTS\npython KWS_LS
 #sweep_parameters = {'max-w': list(np.round(np.arange(0.01, .25, .01), 2 )) }
 
 
-sweep_parameters = {'noise-injectionT': list(np.round(np.arange(0.10, .26, .01), 2 ))   }
+#sweep_parameters = {'noise-injectionT': list(np.round(np.arange(0.10, .26, .01), 2 ))   }
 
+
+sweep_parameters = {'canonical-testing':[True, False]}
 #sweep_parameters = {'drop-p': [.0, .05, .1, .15, .2, .25, .3, .4, .5, .6]}
 
 #sweep_parameters = {'learning-rate': ['0.001,0.0002,0.00004', '0.002,0.0004,0.00008', '0.01,0.005,0.001', '0.0001,0.00005,0.00001', '0.0005,0.0001,0.00002']   }
 
-trials = 3
+trials = 5
 
 random_seeds = [193012823 ,235899598, 8627169, 103372330, 14339038, 221706254, 46192121, 188833202, 37306063, 171928928]
 
