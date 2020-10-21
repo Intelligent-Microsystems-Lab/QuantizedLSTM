@@ -33,9 +33,9 @@ parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'u
 parser.add_argument("--batch-size", type=int, default=100, help='Batch Size')
 # parser.add_argument("--training-steps", type=str, default='10000,10000,10000', help='Training Steps')
 # parser.add_argument("--learning-rate", type=str, default='0.0005,0.0001,0.00002', help='Learning Rate')
-parser.add_argument("--training-steps", type=str, default='10000,10000,1000', help='Training Steps') #,10000,10000 ; ,10000
+parser.add_argument("--training-steps", type=str, default='10000,10000,10000', help='Training Steps') #,10000,10000 ; ,10000
 parser.add_argument("--learning-rate", type=str, default='0.002,0.0005,0.00008', help='Learning Rate') #,0.0001,0.00002 ; ,0.00008
-parser.add_argument("--finetuning-epochs", type=int, default=10000, help='Number of epochs for finetuning')
+parser.add_argument("--finetuning-epochs", type=int, default=15000, help='Number of epochs for finetuning')
 parser.add_argument("--dataloader-num-workers", type=int, default=8, help='Number Workers Dataloader')
 parser.add_argument("--validation-percentage", type=int, default=10, help='Validation Set Percentage')
 parser.add_argument("--testing-percentage", type=int, default=10, help='Testing Set Percentage')
@@ -67,6 +67,7 @@ parser.add_argument("--max-w", type=float, default=.1, help='Maximumg weight')
 parser.add_argument("--drop-p", type=float, default=.125, help='Dropconnect probability')
 
 args = parser.parse_args()
+print(args)
 
 model_lib.max_w = args.max_w
 
@@ -84,7 +85,9 @@ speech_dataset_train = SpeechCommandsGoogle(args.dataset_path_train, 'training',
 
 speech_dataset_val = SpeechCommandsGoogle(args.dataset_path_train, 'validation', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, epoch_list[-1], device, 0., 0., args.silence_percentage, args.unknown_percentage, 0.)
 
-speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_train, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, epoch_list[-1], device, 0., 0., args.silence_percentage, args.unknown_percentage, 0., non_canonical_test = not args.canonical_testing)
+# speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_train, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, epoch_list[-1], device, 0., 0., args.silence_percentage, args.unknown_percentage, 0., non_canonical_test = not args.canonical_testing)
+
+speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_test, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, epoch_list[-1], device, 0., 0., args.silence_percentage, args.unknown_percentage, 0., non_canonical_test = not args.canonical_testing)
 
 train_dataloader = torch.utils.data.DataLoader(speech_dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
 test_dataloader = torch.utils.data.DataLoader(speech_dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
@@ -108,7 +111,6 @@ val_acc = []
 model_uuid = str(uuid.uuid4())
 
 
-print(args)
 print(model_uuid)
 print("Start training with DropConnect:")
 print("Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)")

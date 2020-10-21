@@ -176,6 +176,15 @@ class MM_bs(torch.autograd.Function):
 
         return grad_input, grad_weight.unsqueeze(0).permute(0,2,1), grad_bias.unsqueeze(0).unsqueeze(0), None, None, None, None, None
 
+# wt = torch.randn(1,10,10)
+# inpt = torch.randn(10,10)
+
+# inpt8 = quant_pass(inpt, 8, torch.tensor([1]))
+# out8 = wt[0,:,:].mm(inpt8)
+
+# outbs = MM_bs.apply(inpt, wt, torch.tensor([0,0]*10).reshape(2,10).unsqueeze(0), 0, 8, 8, None, 4)
+
+
 
 def pact_a(x, a):
     if not pact_a:
