@@ -67,7 +67,7 @@ parser.add_argument("--max-w", type=float, default=.1, help='Maximumg weight')
 parser.add_argument("--drop-p", type=float, default=.125, help='Dropconnect probability')
 
 args = parser.parse_args()
-args.canoncial = str(bool(args.canoncial))
+args.canonical_testing = str(bool(args.canonical_testing))
 print(args)
 
 model_lib.max_w = args.max_w
@@ -86,7 +86,7 @@ speech_dataset_train = SpeechCommandsGoogle(args.dataset_path_train, 'training',
 
 speech_dataset_val = SpeechCommandsGoogle(args.dataset_path_train, 'validation', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, epoch_list[-1], device, 0., 0., args.silence_percentage, args.unknown_percentage, 0.)
 
-if not args.canoncial:
+if not args.canonical_testing:
     speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_train, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, epoch_list[-1], device, 0., 0., args.silence_percentage, args.unknown_percentage, 0., non_canonical_test = not args.canonical_testing)
 else:
     speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_test, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, epoch_list[-1], device, 0., 0., args.silence_percentage, args.unknown_percentage, 0., non_canonical_test = not args.canonical_testing)
