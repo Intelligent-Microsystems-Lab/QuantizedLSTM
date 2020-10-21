@@ -40,7 +40,7 @@ parser.add_argument("--dataloader-num-workers", type=int, default=8, help='Numbe
 parser.add_argument("--validation-percentage", type=int, default=10, help='Validation Set Percentage')
 parser.add_argument("--testing-percentage", type=int, default=10, help='Testing Set Percentage')
 parser.add_argument("--sample-rate", type=int, default=16000, help='Audio Sample Rate')
-parser.add_argument("--canonical-testing", type=bool, default=False, help='Whether to use the canoncial test data.')
+parser.add_argument("--canonical-testing", type=int, default=0, help='Whether to use the canoncial test data (0 non canoncial, 1 canoncial.')
 
 parser.add_argument("--background-volume", type=float, default=.1, help='How loud the background noise should be, between 0 and 1.') 
 parser.add_argument("--background-frequency", type=float, default=.8, help='How many of the training samples have background noise mixed in.') 
@@ -67,6 +67,7 @@ parser.add_argument("--max-w", type=float, default=.1, help='Maximumg weight')
 parser.add_argument("--drop-p", type=float, default=.125, help='Dropconnect probability')
 
 args = parser.parse_args()
+args.canoncial = str(bool(args.canoncial))
 print(args)
 
 model_lib.max_w = args.max_w
@@ -85,9 +86,10 @@ speech_dataset_train = SpeechCommandsGoogle(args.dataset_path_train, 'training',
 
 speech_dataset_val = SpeechCommandsGoogle(args.dataset_path_train, 'validation', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, epoch_list[-1], device, 0., 0., args.silence_percentage, args.unknown_percentage, 0.)
 
-# speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_train, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, epoch_list[-1], device, 0., 0., args.silence_percentage, args.unknown_percentage, 0., non_canonical_test = not args.canonical_testing)
-
-speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_test, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, epoch_list[-1], device, 0., 0., args.silence_percentage, args.unknown_percentage, 0., non_canonical_test = not args.canonical_testing)
+if not args.canoncial:
+    speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_train, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, epoch_list[-1], device, 0., 0., args.silence_percentage, args.unknown_percentage, 0., non_canonical_test = not args.canonical_testing)
+else:
+    speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_test, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, epoch_list[-1], device, 0., 0., args.silence_percentage, args.unknown_percentage, 0., non_canonical_test = not args.canonical_testing)
 
 train_dataloader = torch.utils.data.DataLoader(speech_dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
 test_dataloader = torch.utils.data.DataLoader(speech_dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
