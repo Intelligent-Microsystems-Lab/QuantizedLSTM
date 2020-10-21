@@ -1,0 +1,8 @@
+Loading python/3.7.3
+  Loading requirement: tcl/8.6.8 gcc/8.3.0
+Traceback (most recent call last):
+  File "KWS_LSTM.py", line 87, in <module>
+    speech_dataset_test = SpeechCommandsGoogle(args.dataset_path_train, 'testing', args.validation_percentage, args.testing_percentage, args.word_list, args.sample_rate, args.batch_size, epoch_list[-1], device, 0., 0., args.silence_percentage, args.unknown_percentage, 0., non_canonical_test = not args.canonical_testing)
+  File "/afs/crc.nd.edu/user/c/cschaef6/QuantizedLSTM/dataloader.py", line 112, in __init__
+    self.list_of_y.append(words.index(cur_dir))
+ValueError: 'backward' is not in list
