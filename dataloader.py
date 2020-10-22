@@ -63,16 +63,6 @@ class SpeechCommandsGoogle(Dataset):
     """Google Speech Command Dataset configured from Hello Edge"""
 
     def __init__(self, root_dir, train_test_val, val_perc, test_perc, words, sample_rate, batch_size, epochs, device, background_volume, background_frequency, silence_percentage, unknown_percentage, time_shift_ms, non_canonical_test = False, transform=None):
-        """
-        Args:
-            root_dir (string): Directory with all the recording.
-            set (string): training/testing/validation
-            val_perc: 
-            test_perc:
-            words:
-            transform (callable, optional): Optional transform to be applied
-                on a sample.
-        """
         self.sample_rate = sample_rate
         self.root_dir = root_dir
         self.transform = transform
@@ -194,15 +184,6 @@ class SpeechCommandsGoogle(Dataset):
         else:
             uniform_waveform = waveform
 
-        # if len(uniform_waveform[0].t()) != 16000:
-        #     import pdb; pdb.set_trace()
-        
-        # try:
-        #     yu = self.list_of_y[idx].shape
-        #     if self.list_of_y[idx].shape[0] != 1:
-        #         import pdb; pdb.set_trace()
-        # except:
-        #     import pdb; pdb.set_trace()
 
         return uniform_waveform[0].t(), int(self.list_of_y[idx])
 

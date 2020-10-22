@@ -323,3 +323,281 @@ class KWS_LSTM(nn.Module):
     def get_a(self):
         return torch.cat([self.lstmBlocks1.cell.a1, self.lstmBlocks1.cell.a3, self.lstmBlocks1.cell.a2,  self.lstmBlocks1.cell.a4, self.lstmBlocks1.cell.a5, self.lstmBlocks1.cell.a6, self.lstmBlocks1.cell.a7, self.lstmBlocks1.cell.a8, self.lstmBlocks1.cell.a9, self.lstmBlocks1.cell.a10,  self.lstmBlocks1.cell.a11, self.finFC1.a1, self.finFC1.a2, self.lstmBlocks2.cell.a1, self.lstmBlocks2.cell.a3, self.lstmBlocks2.cell.a2,  self.lstmBlocks2.cell.a4, self.lstmBlocks2.cell.a5, self.lstmBlocks2.cell.a6, self.lstmBlocks2.cell.a7, self.lstmBlocks2.cell.a8, self.lstmBlocks2.cell.a9, self.lstmBlocks2.cell.a10,  self.lstmBlocks2.cell.a11, self.finFC2.a1, self.finFC2.a2, self.lstmBlocks3.cell.a1, self.lstmBlocks3.cell.a3, self.lstmBlocks3.cell.a2,  self.lstmBlocks3.cell.a4, self.lstmBlocks3.cell.a5, self.lstmBlocks3.cell.a6, self.lstmBlocks3.cell.a7, self.lstmBlocks3.cell.a8, self.lstmBlocks3.cell.a9, self.lstmBlocks3.cell.a10,  self.lstmBlocks3.cell.a11, self.finFC3.a1, self.finFC3.a2, self.lstmBlocks4.cell.a1, self.lstmBlocks4.cell.a3, self.lstmBlocks4.cell.a2,  self.lstmBlocks4.cell.a4, self.lstmBlocks4.cell.a5, self.lstmBlocks4.cell.a6, self.lstmBlocks4.cell.a7, self.lstmBlocks4.cell.a8, self.lstmBlocks4.cell.a9, self.lstmBlocks4.cell.a10,  self.lstmBlocks4.cell.a11, self.finFC4.a1, self.finFC4.a2, self.lstmBlocks5.cell.a1, self.lstmBlocks5.cell.a3, self.lstmBlocks5.cell.a2,  self.lstmBlocks5.cell.a4, self.lstmBlocks5.cell.a5, self.lstmBlocks5.cell.a6, self.lstmBlocks5.cell.a7, self.lstmBlocks5.cell.a8, self.lstmBlocks5.cell.a9, self.lstmBlocks5.cell.a10,  self.lstmBlocks5.cell.a11, self.finFC5.a1, self.finFC5.a2, self.lstmBlocks6.cell.a1, self.lstmBlocks6.cell.a3, self.lstmBlocks6.cell.a2,  self.lstmBlocks6.cell.a4, self.lstmBlocks6.cell.a5, self.lstmBlocks6.cell.a6, self.lstmBlocks6.cell.a7, self.lstmBlocks6.cell.a8, self.lstmBlocks6.cell.a9, self.lstmBlocks6.cell.a10,  self.lstmBlocks6.cell.a11, self.finFC6.a1, self.finFC6.a2, self.lstmBlocks7.cell.a1, self.lstmBlocks7.cell.a3, self.lstmBlocks7.cell.a2,  self.lstmBlocks7.cell.a4, self.lstmBlocks7.cell.a5, self.lstmBlocks7.cell.a6, self.lstmBlocks7.cell.a7, self.lstmBlocks7.cell.a8, self.lstmBlocks7.cell.a9, self.lstmBlocks7.cell.a10,  self.lstmBlocks7.cell.a11, self.finFC7.a1, self.finFC7.a2, self.lstmBlocks8.cell.a1, self.lstmBlocks8.cell.a3, self.lstmBlocks8.cell.a2,  self.lstmBlocks8.cell.a4, self.lstmBlocks8.cell.a5, self.lstmBlocks8.cell.a6, self.lstmBlocks8.cell.a7, self.lstmBlocks8.cell.a8, self.lstmBlocks8.cell.a9, self.lstmBlocks8.cell.a10,  self.lstmBlocks8.cell.a11, self.finFC8.a1, self.finFC8.a2])/104
 
+
+
+
+class LSTMCellQ_bs(nn.Module):
+    def __init__(self, input_size, hidden_size, wb, ib, abMVM, abNM, noise_level, n_msb):
+        super(LSTMCellQ_bs, self).__init__()
+        self.wb = wb
+        self.ib = ib
+        self.abMVM = abMVM
+        self.abNM  = abNM
+        self.noise_level = noise_level
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.n_msb = n_msb
+        self.weight_ih = nn.Parameter(torch.randn(1, input_size, 4 * hidden_size))
+        self.weight_hh = nn.Parameter(torch.randn(1, hidden_size, 4 * hidden_size))
+        self.bias_ih = nn.Parameter(torch.randn(1, 1, 4 * hidden_size))
+        self.bias_hh = nn.Parameter(torch.randn(1, 1, 4 * hidden_size))
+
+        self.a1 = nn.Parameter(torch.tensor([128.] ))
+        self.a2 = nn.Parameter(torch.tensor([16.] ))
+        self.a3 = nn.Parameter(torch.tensor([1.] ))
+        self.a4 = nn.Parameter(torch.tensor([1.] ))
+        self.a5 = nn.Parameter(torch.tensor([1.] ))
+        self.a6 = nn.Parameter(torch.tensor([1.] ))
+        self.a7 = nn.Parameter(torch.tensor([4.] ))
+        self.a8 = nn.Parameter(torch.tensor([1.] ))
+        self.a9 = nn.Parameter(torch.tensor([4.] ))
+        self.a10 = nn.Parameter(torch.tensor([1.] ))
+        self.a11 = nn.Parameter(torch.tensor([4.] ))
+
+        self.a12 = nn.Parameter(torch.tensor([4.] ))
+        self.a13 = nn.Parameter(torch.tensor([4.] ))
+        self.a14 = nn.Parameter(torch.tensor([4.] ))
+
+
+    def forward(self, input, state, w_mask):
+        hx, cx = state
+
+        part1 = pact_a(MM_bs.apply(pact_a(input, self.a1)/self.a1, self.weight_ih, self.bias_ih, self.noise_level, self.ib, self.abMVM, self.wb, self.n_msb) * self.a1, self.a12)
+
+        part2 = pact_a(MM_bs.apply(pact_a(hx, self.a11)/self.a11, self.weight_hh, self.bias_hh, self.noise_level, self.ib, self.abMVM, self.wb, self.n_msb) * self.a11, self.a13)
+
+
+        gates = quant_pass(pact_a(part1 + part2,  self.a14), self.abNM, self.a14)
+
+
+        #i, j, f, o
+        i, j, f, o = gates.chunk(4, 1)
+        
+        # 
+        forget_gate_out = quant_pass(pact_a(torch.sigmoid(f), self.a3), self.abNM, self.a3)
+        input_gate_out = quant_pass(pact_a(torch.sigmoid(i), self.a4), self.abNM, self.a4)
+        activation_out = quant_pass(pact_a(torch.tanh(j), self.a5), self.abNM, self.a5)
+        output_gate_out = quant_pass(pact_a(torch.sigmoid(o), self.a6), self.abNM, self.a6)
+
+        #
+        gated_cell = quant_pass(pact_a(cx * forget_gate_out, self.a7), self.abNM, self.a7)
+        activated_input = quant_pass(pact_a(input_gate_out * activation_out, self.a8), self.abNM, self.a8)
+        new_c = quant_pass(pact_a(gated_cell + activated_input, self.a9), self.abNM, self.a9)
+        activated_cell = quant_pass(pact_a(torch.tanh(new_c), self.a10), self.abNM, self.a10)
+        new_h = quant_pass(pact_a(activated_cell * output_gate_out, self.a11), self.abNM, self.a11)
+
+        return new_h, (new_h, new_c)
+
+
+class LinLayer_bs(nn.Module):
+    def __init__(self, inp_dim, out_dim, noise_level, abMVM, ib, wb, n_msb):
+        super(LinLayer_bs, self).__init__()
+        self.abMVM = abMVM
+        self.ib = ib
+        self.wb = wb
+        self.n_msb = n_msb
+        self.noise_level = noise_level
+        self.out_dim = out_dim
+
+        self.weights = nn.Parameter(torch.randn(1, inp_dim, out_dim))
+        self.bias = nn.Parameter(torch.randn(1, 1, out_dim))
+
+
+        limit = np.sqrt(6/inp_dim)
+        limit = w_init(limit, wb)
+
+        torch.nn.init.uniform_(self.weights, a = -limit, b = limit)
+        torch.nn.init.uniform_(self.bias, a = -0, b = 0)
+
+
+        self.a1 = nn.Parameter(torch.tensor([4.]))
+        self.a2 = nn.Parameter(torch.tensor([16.]))
+
+    def forward(self, input):
+
+        return pact_a((MM_bs.apply(pact_a(input, self.a1)/self.a1, self.weights, self.bias, self.noise_level, self.ib, self.abMVM, self.wb, self.n_msb) * self.a1), self.a2)
+
+
+        #return CustomMM_bmm.apply(input.unsqueeze(0), self.weights, self.bias, self.noise_level, self.wb)[0,:,:]
+
+        # inp_msb, beta_coef = bitsplitter_sym_pass(pact_a(input, self.a1)/self.a1, self.ib, self.n_msb)
+        # out = CustomMM_bmm.apply(inp_msb, self.weights.expand(self.n_msb, self.weights.shape[1], self.weights.shape[2]), self.bias.expand(self.n_msb, 1, self.bias.shape[2]), self.noise_level, self.wb)
+        # out_q = quant_pass(out, self.abMVM, torch.tensor([1]).to(input.device))
+        # return (beta_coef.unsqueeze(1).unsqueeze(1).expand(out_q.shape) * out_q).sum(0) * self.a1
+
+
+class KWS_LSTM_bs(nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim, device, wb, abMVM, abNM, ib, noise_level, drop_p, n_msb):
+        super(KWS_LSTM_bs, self).__init__()
+        self.device = device
+        self.noise_level = noise_level
+        self.wb = wb
+        self.abMVM = abMVM
+        self.abNM = abNM
+        self.ib = ib
+        self.hidden_dim = hidden_dim
+        self.input_dim = input_dim
+        self.output_dim = output_dim
+        self.drop_p = drop_p
+        self.n_msb = n_msb
+
+        # LSTM layer
+        self.lstmBlocks = LSTMLayer(LSTMCellQ_bs, self.drop_p, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.n_msb)
+
+        # final FC layer
+        self.finFC = LinLayer_bs(self.hidden_dim, output_dim, noise_level, abMVM, ib, wb, n_msb)
+
+
+    def forward(self, inputs):
+        # init states with zero
+        self.hidden_state = (torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(inputs.shape[1], self.hidden_dim, device = self.device))
+
+        # LSTM blocks
+        lstm_out, _ = self.lstmBlocks(inputs, self.hidden_state)
+
+        # final FC blocks
+        output = self.finFC(lstm_out[-1,:,:])
+
+        return output
+
+    def set_noise(self, nl):
+        self.noise_level = nl
+        self.lstmBlocks.cell.noise_level = nl
+        self.finFC.noise_level = nl
+
+    def set_drop_p(self, drop_p):
+        self.drop_p = drop_p
+        self.lstmBlocks.drop_p = drop_p
+
+    def get_a(self):
+        return torch.cat([self.lstmBlocks.cell.a1, self.lstmBlocks.cell.a3, self.lstmBlocks.cell.a2,  self.lstmBlocks.cell.a4, self.lstmBlocks.cell.a5, self.lstmBlocks.cell.a6, self.lstmBlocks.cell.a7, self.lstmBlocks.cell.a8, self.lstmBlocks.cell.a9, self.lstmBlocks.cell.a10,  self.lstmBlocks.cell.a11, self.finFC.a1, self.finFC.a2])/13
+
+
+# class bitsplitting_sym(torch.autograd.Function):
+#     @staticmethod
+#     def forward(ctx, x, bits, n_msb):
+#         if bits == None or n_msb == None:
+#             return x
+
+#         beta = torch.tensor([1.], requires_grad = False).to(x.device)
+#         y = []
+
+#         for i in range(n_msb):
+#             y.append(quant_pass(x/beta[-1], bits, torch.tensor([1]).to(x.device)))
+#             x = x - y[-1]*beta[-1]
+#             beta = torch.cat((beta, (beta[-1]/2.).unsqueeze(0)),0)
+
+#         return torch.stack(y).to(x.device), beta[:-1].to(x.device)
+
+#     @staticmethod
+#     def backward(ctx, grad_output, grad_beta):
+#         return grad_output.sum(0), None, None
+
+# bitsplitter_sym_pass = bitsplitting_sym.apply
+
+
+exp_b = 4
+exp_a = 2
+blocks = 3
+
+values = np.unique(quant_pass(torch.tensor(np.arange(-1,1,.001)), exp_b, torch.tensor([1])))
+
+wt = torch.randn(1,2,2)*.1
+inpt = torch.randn(2,2)
+bias = torch.zeros(1,1,2)
+
+wt = torch.tensor([[.1, .2, .3], [-.1, -.2, -.3], [.8, .66, .43], [-.7, .05, .5]]).t()
+inpt = torch.tensor([[0.625,.5],[.125,-.125], [-.5, .875], [.0, .75]]).t()
+
+
+def bitsplit_sym(x, bits, n_msb):
+    if bits == None or n_msb == None:
+        return x
+
+    beta = torch.tensor([1.], requires_grad = False).to(x.device)
+    y = []
+
+    for i in range(n_msb):
+        y.append(quant_pass(x/beta[-1], bits, torch.tensor([1]).to(x.device)))
+        x = x - y[-1]*beta[-1]
+        beta = torch.cat((beta, (beta[-1]/2.).unsqueeze(0)),0)
+
+    return torch.stack(y).to(x.device), beta[:-1].to(x.device)
+
+class MM_bs(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, input, weight, bias, nl, ib, mvmb, wb, n_msb):
+        import pdb; pdb.set_trace()
+
+        #noise_w = torch.randn(weight.shape, device = input.device)
+        #bias_w  = torch.randn(bias.shape, device = bias.device)
+
+        inp_msb, beta_coef = bitsplit_sym(input.t(), ib, n_msb)
+        beta_mm = 1/beta_coef.unsqueeze(1).unsqueeze(1).expand([n_msb]+list(weight.shape))
+        beta_out = beta_coef.unsqueeze(1).unsqueeze(1).expand([n_msb, weight.shape[0], input.shape[0]])
+
+        wt = weight.unsqueeze(0).expand([n_msb]+list(weight.shape))
+        wt = wt * beta_mm
+
+        out = torch.einsum('anm,amp->anp', wt, inp_msb)
+        outq = quant_pass(out, mvmb, torch.tensor([1.]))
+
+        output = (outq * beta_out).sum(0).t()
+        # clipped = torch.max(torch.min(x, max), min)
+
+
+        # for i in range(len(beta_coef)):
+        #     weight[i,:,:] = torch.clamp(weight[i,:,:], -max_w*(1/beta_coef[i]), max_w*(1/beta_coef[i]))
+        #     bias[i,:,:] = torch.clamp(bias[i,:,:], -max_w*(1/beta_coef[i]), max_w*(1/beta_coef[i]))
+        # ctx.save_for_backward(input, weight, bias)
+
+        # wq = quant_pass(weight, wb, 1.)
+        # bq = quant_pass(bias, wb, 1.)
+
+        # noise_w = noise_w * max_w * 1/beta_coef.unsqueeze(1).unsqueeze(1).expand(n_msb, wq.shape[1], wq.shape[2]) * nl
+        # wq = wq.expand(n_msb, weight.shape[1], weight.shape[2]) * 1/beta_coef.unsqueeze(1).unsqueeze(1).expand(n_msb, wq.shape[1], wq.shape[2]) + noise_w
+        # bias_w = bias_w * max_w * 1/beta_coef.unsqueeze(1).unsqueeze(1).expand(n_msb, input.shape[0], bq.shape[2]) * nl
+        # bq = bq.expand(n_msb, input.shape[0], bias.shape[2]) * 1/beta_coef.unsqueeze(1).unsqueeze(1).expand(n_msb, wq.shape[1], wq.shape[2]) + bias_w
+
+        # out = inp_msb.bmm(wq) + bq
+        # out_q = quant_pass(out, mvmb, torch.tensor([1]).to(input.device))
+        # import pdb; pdb.set_trace()
+        # output = (beta_coef.unsqueeze(1).unsqueeze(1).expand(out_q.shape) * out_q).sum(0)
+
+        return output
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        input, weight, bias = ctx.saved_tensors
+        grad_input = grad_weight = grad_bias = None
+
+        if ctx.needs_input_grad[0]:
+            grad_input = grad_output.mm(weight[0,:,:].t())
+        if ctx.needs_input_grad[1]:
+            grad_weight = grad_output.t().mm(input)
+        if ctx.needs_input_grad[2]:
+            grad_bias = grad_output.sum(0)
+
+        return grad_input, grad_weight.unsqueeze(0).permute(0,2,1), grad_bias.unsqueeze(0).unsqueeze(0), None, None, None, None, None
+
+
+
+
+outbs = MM_bs.apply(inpt, wt, bias, 0, exp_a, exp_a, None, blocks)
+
+
+
+
+outt = wt.mm(inpt.t()).t()
+out8 = quant_pass(outt, exp_b, torch.tensor([1]))
+
+
+#inpt8 = quant_pass(inpt, exp_b, torch.tensor([1]))
+
+out = wt[0,:,:].mm(inpt)
+out8 = quant_pass(out, exp_b, torch.tensor([1]))
+
+
+x_bs, beta = bitsplit_sym(inpt, 2, 3)
+x_bs_q = (beta.unsqueeze(1).unsqueeze(1).expand(x_bs.shape) * x_bs).sum(0)
+
