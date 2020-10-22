@@ -296,6 +296,9 @@ class KWS_LSTM_bmm(nn.Module):
         self.lstmBlocks.cell.noise_level = nl
         self.finFC.noise_level = nl
 
+    def cosine_sim(self):
+        return 0
+
     def set_drop_p(self, drop_p):
         self.drop_p = drop_p
         self.lstmBlocks.drop_p = drop_p
@@ -336,15 +339,13 @@ class KWS_LSTM_bs(nn.Module):
         lstm_out, _ = self.lstmBlocks(inputs, self.hidden_state)
 
         # final FC blocks
-        output = self.finFC(lstm_out[-1,:,:,:])
-
-        #output = torch.stack([output[0,:,0] + output[0,:,1], output[1,:,0] + output[1,:,1], output[2,:,0] + output[2,:,1], output[3,:,0] + output[3,:,1], output[4,:,0], output[4,:,1], output[5,:,0], output[5,:,1], output[6,:,0], output[6,:,1], output[7,:,0], output[7,:,1]],0).t()
-
-        import pdb; pdb.set_trace()
-
-        output = torch.stack([output[0,:,0], output[0,:,1], output[0,:,2], output[1,:,0], output[1,:,1], output[1,:,2], output[2,:,0], output[2,:,1], output[2,:,2], output[3,:,0], output[3,:,1], output[3,:,2]],0).t()
-
+        output = self.finFC(lstm_out[-1,:,:,:]).sum(0)
+        
         return output
+
+    def cosine_sim(self):
+        import pdb; pdb.set_trace()
+        return 0
 
     def set_noise(self, nl):
         self.noise_level = nl

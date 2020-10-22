@@ -62,6 +62,7 @@ parser.add_argument("--quant-w", type=int, default=None, help='Bits available fo
 
 parser.add_argument("--l2", type=float, default=.01, help='Strength of L2 norm')
 parser.add_argument("--n-msb", type=int, default=4, help='Number of bit splits')
+parser.add_argument("--cs", type=float, default=.1, help='Strength cosine similarity penalization')
 
 parser.add_argument("--max-w", type=float, default=.1, help='Maximumg weight')
 parser.add_argument("--drop-p", type=float, default=.125, help='Dropconnect probability')
@@ -133,7 +134,7 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
     output = model(x_data)
 
     loss_val = loss_fn(output, y_label)
-    loss_val += args.l2 * torch.norm(model.get_a())
+    loss_val += args.l2 * torch.norm(model.get_a()) + args.cs * model.cosine_sim()
     train_acc.append((output.argmax(dim=1) == y_label).float().mean().item())
 
     loss_val.backward()
@@ -192,7 +193,7 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, args.finetuning_e
     output = model(x_data)
 
     loss_val = loss_fn(output, y_label)
-    loss_val += args.l2 * torch.norm(model.get_a())
+    loss_val += args.l2 * torch.norm(model.get_a()) + args.cs * model.cosine_sim()
     train_acc.append((output.argmax(dim=1) == y_label).float().mean().item())
 
     loss_val.backward()
