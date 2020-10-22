@@ -308,7 +308,7 @@ class KWS_LSTM_bmm(nn.Module):
 # orthogonality training
 class KWS_LSTM_bs(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, device, wb, abMVM, abNM, ib, noise_level, drop_p, n_msb):
-        super(KWS_LSTM_bmm, self).__init__()
+        super(KWS_LSTM_bs, self).__init__()
         self.device = device
         self.noise_level = noise_level
         self.wb = wb
