@@ -324,6 +324,8 @@ class KWS_LSTM_bs(nn.Module):
         self.drop_p = drop_p
         self.n_msb = n_msb
 
+        self.c_sim = nn.CosineSimilarity(dim=0, eps=1e-6)
+
         # LSTM layer
         self.lstmBlocks = LSTMLayer(LSTMCellQ_bmm, self.drop_p, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.n_msb)
 
@@ -344,8 +346,15 @@ class KWS_LSTM_bs(nn.Module):
         return output
 
     def cosine_sim(self):
-        import pdb; pdb.set_trace()
-        return 0
+        sims = torch.zeros([self.n_msb, self.n_msb])
+
+        weights = torch.cat([self.lstmBlocks.cell.weight_ih.reshape(self.n_msb,-1), self.lstmBlocks.cell.weight_hh.reshape(self.n_msb,-1), self.lstmBlocks.cell.bias_ih.reshape(self.n_msb,-1), self.lstmBlocks.cell.bias_hh.reshape(self.n_msb,-1), self.finFC.weights.reshape(self.n_msb,-1), self.finFC.bias.reshape(self.n_msb,-1)], dim=1)
+
+        for i in range(self.n_msb):
+            for j in range(self.n_msb):
+                sims[i,j] = self.c_sim(weights[i,:], weights[j,:])
+
+        return sims.sum().sum()
 
     def set_noise(self, nl):
         self.noise_level = nl
