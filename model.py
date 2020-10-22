@@ -354,7 +354,7 @@ class KWS_LSTM_bs(nn.Module):
             for j in range(self.n_msb):
                 sims[i,j] = self.c_sim(weights[i,:], weights[j,:])
 
-        return sims.sum().sum()
+        return sims.sum().sum()/(self.n_msb**2)
 
     def set_noise(self, nl):
         self.noise_level = nl
