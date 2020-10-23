@@ -108,6 +108,19 @@ class QuantFunc(torch.autograd.Function):
 quant_pass = QuantFunc.apply
 
 
+def bitsplit_sym(x, bits, n_msb):
+    if bits == None or n_msb == None:
+        return x
+
+    beta = torch.tensor([1.], requires_grad = False).to(x.device)
+    y = []
+
+    for i in range(n_msb):
+        y.append(quant_pass(x/beta[-1], bits, torch.tensor([1]).to(x.device)))
+        x = x - y[-1]*beta[-1]
+        beta = torch.cat((beta, (beta[-1]/2.).unsqueeze(0)),0)
+
+    return torch.stack(y).to(x.device), beta[:-1].to(x.device)
 
 def pact_af(x, a):
     if not pact_a:
@@ -272,6 +285,9 @@ class KWS_LSTM_bmm(nn.Module):
         self.drop_p = drop_p
         self.n_msb = n_msb
 
+
+        import pdb; pdb.set_trace()
+
         # LSTM layer
         self.lstmBlocks = LSTMLayer(LSTMCellQ_bmm, self.drop_p, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.n_msb, pact_a)
 
@@ -373,19 +389,7 @@ class KWS_LSTM_cs(nn.Module):
         return torch.cat([self.lstmBlocks.cell.a1, self.lstmBlocks.cell.a3, self.lstmBlocks.cell.a2,  self.lstmBlocks.cell.a4, self.lstmBlocks.cell.a5, self.lstmBlocks.cell.a6, self.lstmBlocks.cell.a7, self.lstmBlocks.cell.a8, self.lstmBlocks.cell.a9, self.lstmBlocks.cell.a10,  self.lstmBlocks.cell.a11, self.lstmBlocks.cell.a12, self.lstmBlocks.cell.a13, self.lstmBlocks.cell.a14, self.finFC.a1, self.finFC.a2])/(16*self.n_msb)
 
 
-def bitsplit_sym(x, bits, n_msb):
-    if bits == None or n_msb == None:
-        return x
 
-    beta = torch.tensor([1.], requires_grad = False).to(x.device)
-    y = []
-
-    for i in range(n_msb):
-        y.append(quant_pass(x/beta[-1], bits, torch.tensor([1]).to(x.device)))
-        x = x - y[-1]*beta[-1]
-        beta = torch.cat((beta, (beta[-1]/2.).unsqueeze(0)),0)
-
-    return torch.stack(y).to(x.device), beta[:-1].to(x.device)
 
 
 # bitsplitting training
