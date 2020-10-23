@@ -1,0 +1,11 @@
+#!/bin/csh 
+#$ -M cschaef6@nd.edu 
+#$ -m abe
+#$ -q gpu@@joshi
+#$ -l gpu_card=1
+#$ -N _method_1_1_pa0
+#$ -o ./logs/output___method_1_1_pa0.txt
+#$ -e ./logs/error___method_1_1_pa0.txt
+module load python
+setenv OMP_NUM_THREADS $NSLOTS
+python KWS_LSTM.py --method 1 --random-seed 235899598--pact-a 1

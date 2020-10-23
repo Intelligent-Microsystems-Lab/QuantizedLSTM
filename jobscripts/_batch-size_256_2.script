@@ -1,0 +1,11 @@
+#!/bin/csh 
+#$ -M cschaef6@nd.edu 
+#$ -m abe
+#$ -q gpu@@joshi
+#$ -l gpu_card=1
+#$ -N _batch-size_256_2
+#$ -o ./logs/output___batch-size_256_2.txt
+#$ -e ./logs/error___batch-size_256_2.txt
+module load python
+setenv OMP_NUM_THREADS $NSLOTS
+python KWS_LSTM.py --batch-size 256 --random-seed 8627169
