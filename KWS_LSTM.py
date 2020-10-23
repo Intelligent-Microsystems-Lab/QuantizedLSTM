@@ -26,16 +26,16 @@ parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.A
 
 # general config
 parser.add_argument("--random-seed", type=int, default=80085, help='Random Seed')
-parser.add_argument("--method", type=int, default=2, help='Method: 0 - blocks, 1 - orthogonality')
+parser.add_argument("--method", type=int, default=0, help='Method: 0 - blocks, 1 - orthogonality')
 parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speech_commands_v0.02', help='Path to Dataset')
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
 parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
 parser.add_argument("--batch-size", type=int, default=100, help='Batch Size')
 # parser.add_argument("--training-steps", type=str, default='10000,10000,10000', help='Training Steps')
 # parser.add_argument("--learning-rate", type=str, default='0.0005,0.0001,0.00002', help='Learning Rate')
-parser.add_argument("--training-steps", type=str, default='10000,10000,10000', help='Training Steps') #,10000,10000 ; ,10000
+parser.add_argument("--training-steps", type=str, default='10000,10000,200', help='Training Steps') #,10000,10000 ; ,10000
 parser.add_argument("--learning-rate", type=str, default='0.002,0.0005,0.00008', help='Learning Rate') #,0.0001,0.00002 ; ,0.00008
-parser.add_argument("--finetuning-epochs", type=int, default=15000, help='Number of epochs for finetuning')
+parser.add_argument("--finetuning-epochs", type=int, default=10000, help='Number of epochs for finetuning')
 parser.add_argument("--dataloader-num-workers", type=int, default=8, help='Number Workers Dataloader')
 parser.add_argument("--validation-percentage", type=int, default=10, help='Validation Set Percentage')
 parser.add_argument("--testing-percentage", type=int, default=10, help='Testing Set Percentage')
