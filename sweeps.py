@@ -1,7 +1,7 @@
 import os
 import numpy as np
 
-ident_word = ""
+ident_word = "methodtest"
 
 part1 = "#!/bin/csh \n#$ -M cschaef6@nd.edu \n#$ -m abe\n#$ -q " 
 part11 = "\n#$ -l gpu_card=1\n#$ -N "
@@ -58,9 +58,9 @@ for i in range(trials):
             name = ident_word + "_" +variable + "_" + str(value).replace(",","")   + "_" + str(i) + "_pa0"
             with open('jobscripts/'+name+'.script', 'w') as f:
                 if isinstance(value, str):
-                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + value+ "\" --random-seed " + str(random_seeds[i]) + "--pact-a 0") 
+                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + value+ "\" --random-seed " + str(random_seeds[i]) + " --pact-a 0") 
                 else:
-                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " " + str(value)+ " --random-seed " + str(random_seeds[i]) + "--pact-a 0") 
+                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " " + str(value)+ " --random-seed " + str(random_seeds[i]) + " --pact-a 0") 
             os.system("qsub "+ 'jobscripts/'+name+'.script')
             q_counter += 1
             if q_counter >= len(avail_q):
@@ -70,16 +70,16 @@ for i in range(trials):
             name = ident_word + "_" +variable + "_" + str(value).replace(",","")   + "_" + str(i) + "_pa0"
             with open('jobscripts/'+name+'.script', 'w') as f:
                 if isinstance(value, str):
-                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + value+ "\" --random-seed " + str(random_seeds[i]) + "--pact-a 1") 
+                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + value+ "\" --random-seed " + str(random_seeds[i]) + " --pact-a 1") 
                 else:
-                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " " + str(value)+ " --random-seed " + str(random_seeds[i]) + "--pact-a 1") 
+                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " " + str(value)+ " --random-seed " + str(random_seeds[i]) + " --pact-a 1") 
             os.system("qsub "+ 'jobscripts/'+name+'.script')
             q_counter += 1
             if q_counter >= len(avail_q):
                 q_counter = 0
 
 
-sweep_parameters = {'batch-size':[128,256,512]}
+sweep_parameters = {'batch-size':[64]}
 #sweep_parameters = {'drop-p': [.0, .05, .1, .15, .2, .25, .3, .4, .5, .6]}
 
 #sweep_parameters = {'learning-rate': ['0.001,0.0002,0.00004', '0.002,0.0004,0.00008', '0.01,0.005,0.001', '0.0001,0.00005,0.00001', '0.0005,0.0001,0.00002']   }
