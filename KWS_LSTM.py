@@ -12,7 +12,7 @@ import numpy as np
 
 from dataloader import SpeechCommandsGoogle
 import model as model_lib
-from model import KWS_LSTM_bs, KWS_LSTM_bmm, pre_processing
+from model import KWS_LSTM_bs, KWS_LSTM_bmm, KWS_LSTM_cs, pre_processing
 from figure_scripts import plot_curves
 
 torch.manual_seed(42)
@@ -26,7 +26,7 @@ parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.A
 
 # general config
 parser.add_argument("--random-seed", type=int, default=80085, help='Random Seed')
-parser.add_argument("--method", type=int, default=1, help='Method: 0 - blocks, 1 - orthogonality')
+parser.add_argument("--method", type=int, default=2, help='Method: 0 - blocks, 1 - orthogonality')
 parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speech_commands_v0.02', help='Path to Dataset')
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
 parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
@@ -66,9 +66,11 @@ parser.add_argument("--cs", type=float, default=.5, help='Strength cosine simila
 
 parser.add_argument("--max-w", type=float, default=.1, help='Maximumg weight')
 parser.add_argument("--drop-p", type=float, default=.125, help='Dropconnect probability')
+parser.add_argument("--pact-a", type=float, default=1, help='Whether scaling parameter is trainable')
 
 args = parser.parse_args()
 args.canonical_testing = str(bool(args.canonical_testing))
+args.pact_a = str(bool(args.pact_a))
 print(args)
 
 model_lib.max_w = args.max_w
@@ -99,6 +101,8 @@ validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_si
 if args.method == 0:
     model = KWS_LSTM_bmm(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = 0, drop_p = args.drop_p, n_msb = args.n_msb)
 elif args.method == 1:
+    model = KWS_LSTM_cs(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = 0, drop_p = args.drop_p, n_msb = args.n_msb)
+elif args.method == 2:
     model = KWS_LSTM_bs(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = 0, drop_p = args.drop_p, n_msb = args.n_msb)
 else:
     raise Exception("Unknown method: Please use 0 for quantized LSTM blocks or 1 for bit splitting.")
