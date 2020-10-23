@@ -413,6 +413,7 @@ class KWS_LSTM_bs(nn.Module):
         # init states with zero
         self.hidden_state = (torch.zeros(self.n_msb, inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(self.n_msb, inputs.shape[1], self.hidden_dim, device = self.device))
         
+
         # LSTM blocks
         lstm_out, _ = self.lstmBlocks(inputs, self.hidden_state)
 

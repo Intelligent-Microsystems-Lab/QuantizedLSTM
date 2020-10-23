@@ -66,7 +66,7 @@ parser.add_argument("--cs", type=float, default=.5, help='Strength cosine simila
 
 parser.add_argument("--max-w", type=float, default=.1, help='Maximumg weight')
 parser.add_argument("--drop-p", type=float, default=.125, help='Dropconnect probability')
-parser.add_argument("--pact-a", type=float, default=1, help='Whether scaling parameter is trainable')
+parser.add_argument("--pact-a", type=int, default=1, help='Whether scaling parameter is trainable')
 
 args = parser.parse_args()
 args.canonical_testing = str(bool(args.canonical_testing))
