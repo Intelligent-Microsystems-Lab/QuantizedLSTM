@@ -414,7 +414,6 @@ class KWS_LSTM_bs(nn.Module):
 
 
     def forward(self, inputs):
-        import pdb; pdb.set_trace()
 
         # init states with zero
         self.hidden_state = (torch.zeros(self.n_msb, inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(self.n_msb, inputs.shape[1], self.hidden_dim, device = self.device))
@@ -424,6 +423,7 @@ class KWS_LSTM_bs(nn.Module):
 
         # LSTM blocks
         lstm_out, _ = self.lstmBlocks(inp_bs[0], self.hidden_state)
+        import pdb; pdb.set_trace()
 
         # final FC blocks
         output = self.finFC(lstm_out[-1,:,:,:]).sum(0)
