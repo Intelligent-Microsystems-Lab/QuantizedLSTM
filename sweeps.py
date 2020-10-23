@@ -58,9 +58,9 @@ for i in range(trials):
             name = ident_word + "_" +variable + "_" + str(value).replace(",","")   + "_" + str(i) + "_pa0"
             with open('jobscripts/'+name+'.script', 'w') as f:
                 if isinstance(value, str):
-                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + value+ "\" --random-seed " + str(random_seeds[i])) + "--pact-a 0"
+                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + value+ "\" --random-seed " + str(random_seeds[i]) + "--pact-a 0") 
                 else:
-                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " " + str(value)+ " --random-seed " + str(random_seeds[i])) + "--pact-a 0"
+                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " " + str(value)+ " --random-seed " + str(random_seeds[i]) + "--pact-a 0") 
             os.system("qsub "+ 'jobscripts/'+name+'.script')
             q_counter += 1
             if q_counter >= len(avail_q):
@@ -70,9 +70,9 @@ for i in range(trials):
             name = ident_word + "_" +variable + "_" + str(value).replace(",","")   + "_" + str(i) + "_pa0"
             with open('jobscripts/'+name+'.script', 'w') as f:
                 if isinstance(value, str):
-                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + value+ "\" --random-seed " + str(random_seeds[i])) + "--pact-a 1"
+                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + value+ "\" --random-seed " + str(random_seeds[i]) + "--pact-a 1") 
                 else:
-                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " " + str(value)+ " --random-seed " + str(random_seeds[i])) + "--pact-a 1"
+                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " " + str(value)+ " --random-seed " + str(random_seeds[i]) + "--pact-a 1") 
             os.system("qsub "+ 'jobscripts/'+name+'.script')
             q_counter += 1
             if q_counter >= len(avail_q):
