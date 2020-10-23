@@ -69,8 +69,8 @@ parser.add_argument("--drop-p", type=float, default=.125, help='Dropconnect prob
 parser.add_argument("--pact-a", type=int, default=1, help='Whether scaling parameter is trainable')
 
 args = parser.parse_args()
-args.canonical_testing = str(bool(args.canonical_testing))
-args.pact_a = str(bool(args.pact_a))
+args.canonical_testing = bool(args.canonical_testing)
+args.pact_a = bool(args.pact_a)
 print(args)
 
 model_lib.max_w = args.max_w
