@@ -109,7 +109,7 @@ quant_pass = QuantFunc.apply
 
 
 
-def pact_a(x, a):
+def pact_af(x, a):
     if not pact_a:
         return x
     return torch.sign(x) * .5*(torch.abs(x) - torch.abs(torch.abs(x) - a) + a)
@@ -404,10 +404,11 @@ class KWS_LSTM_bs(nn.Module):
         self.drop_p = drop_p
         self.n_msb = n_msb
 
-        self.a1 = nn.Parameter(torch.tensor([128.] * n_msb), requires_grad = pact_a)
+        self.a1 = nn.Parameter(torch.tensor([128.]), requires_grad = pact_a)
 
         # LSTM layer
         self.lstmBlocks = LSTMLayer(LSTMCellQ_bmm, self.drop_p, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.n_msb, pact_a)
+        self.lstmBlocks.cell.a1 = nn.Parameter(torch.tensor([1.] * n_msb), requires_grad = False)
 
         # final FC layer
         self.finFC = LinLayer_bmm(self.hidden_dim, 12, noise_level, abMVM, ib, wb, self.n_msb, pact_a)
@@ -419,7 +420,8 @@ class KWS_LSTM_bs(nn.Module):
         self.hidden_state = (torch.zeros(self.n_msb, inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(self.n_msb, inputs.shape[1], self.hidden_dim, device = self.device))
         
         import pdb; pdb.set_trace()
-        inp_bs = bitsplit_sym(inputs, self.ib, self.n_msb)        
+        inp01 = pact_af(inputs, self.a1)
+        inp_bs = bitsplit_sym(inp01, self.ib, self.n_msb)        
 
         # LSTM blocks
         lstm_out, _ = self.lstmBlocks(inp_bs[0], self.hidden_state)
