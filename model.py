@@ -419,12 +419,11 @@ class KWS_LSTM_bs(nn.Module):
         # init states with zero
         self.hidden_state = (torch.zeros(self.n_msb, inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(self.n_msb, inputs.shape[1], self.hidden_dim, device = self.device))
         
-        import pdb; pdb.set_trace()
-        inp01 = pact_af(inputs, self.a1)
-        inp_bs = bitsplit_sym(inp01, self.ib, self.n_msb)        
+        inp01 = pact_af(inputs, self.a1)/self.a1
+        inp_bs = bitsplit_sym(inp01, self.ib, self.n_msb)   
 
         # LSTM blocks
-        lstm_out, _ = self.lstmBlocks(inp_bs[0], self.hidden_state)
+        lstm_out, _ = self.lstmBlocks(inp_bs[0]*self.a1, self.hidden_state)
 
         # final FC blocks
         output = (self.finFC(lstm_out[-1,:,:,:]) * inp_bs[1].unsqueeze(1).unsqueeze(1).expand(self.n_msb, inputs.shape[1], self.output_dim)).sum(0)
