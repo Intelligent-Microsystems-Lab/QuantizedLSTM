@@ -200,7 +200,10 @@ class LSTMCellQ_bmm(nn.Module):
         hx, cx = state
 
         # MVM
-        part1 = CustomMM_bmm.apply(quant_pass(pact_a_bmm(input.repeat(self.n_blocks, 1, 1), self.a1), self.ib, self.a1), self.weight_ih, self.bias_ih, self.noise_level, self.wb)
+        if input.shape[0] == self.n_blocks:
+            part1 = CustomMM_bmm.apply(quant_pass(pact_a_bmm(input, self.a1), self.ib, self.a1), self.weight_ih, self.bias_ih, self.noise_level, self.wb)
+        else:
+            part1 = CustomMM_bmm.apply(quant_pass(pact_a_bmm(input.repeat(self.n_blocks, 1, 1), self.a1), self.ib, self.a1), self.weight_ih, self.bias_ih, self.noise_level, self.wb)
         part2 = CustomMM_bmm.apply(quant_pass(pact_a_bmm(hx, self.a11), self.ib, self.a11), self.weight_hh * w_mask, self.bias_hh, self.noise_level, self.wb)
 
         gates = quant_pass(pact_a_bmm( quant_pass(pact_a_bmm(part1, self.a12), self.abMVM, self.a12) + quant_pass(pact_a_bmm(part2, self.a13), self.abMVM, self.a13), self.a14), self.abNM, self.a14)
@@ -414,8 +417,10 @@ class KWS_LSTM_bs(nn.Module):
         self.hidden_state = (torch.zeros(self.n_msb, inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(self.n_msb, inputs.shape[1], self.hidden_dim, device = self.device))
         
 
+        inp_bs = bitsplit_sym(inputs, self.ib, self.n_msb)        
+
         # LSTM blocks
-        lstm_out, _ = self.lstmBlocks(inputs, self.hidden_state)
+        lstm_out, _ = self.lstmBlocks(inp_bs[0], self.hidden_state)
 
         # final FC blocks
         output = self.finFC(lstm_out[-1,:,:,:]).sum(0)
