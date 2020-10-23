@@ -30,7 +30,7 @@ parser.add_argument("--method", type=int, default=2, help='Method: 0 - blocks, 1
 parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speech_commands_v0.02', help='Path to Dataset')
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
 parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
-parser.add_argument("--batch-size", type=int, default=100, help='Batch Size')
+parser.add_argument("--batch-size", type=int, default=512, help='Batch Size')
 # parser.add_argument("--training-steps", type=str, default='10000,10000,10000', help='Training Steps')
 # parser.add_argument("--learning-rate", type=str, default='0.0005,0.0001,0.00002', help='Learning Rate')
 parser.add_argument("--training-steps", type=str, default='10000,10000,200', help='Training Steps') #,10000,10000 ; ,10000

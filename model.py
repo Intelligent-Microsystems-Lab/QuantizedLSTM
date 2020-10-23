@@ -404,7 +404,7 @@ class KWS_LSTM_bs(nn.Module):
         self.drop_p = drop_p
         self.n_msb = n_msb
 
-        self.a1 = nn.Parameter(torch.tensor([128.] * n_blocks), requires_grad = pact_a)
+        self.a1 = nn.Parameter(torch.tensor([128.] * n_msb), requires_grad = pact_a)
 
         # LSTM layer
         self.lstmBlocks = LSTMLayer(LSTMCellQ_bmm, self.drop_p, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.n_msb, pact_a)
