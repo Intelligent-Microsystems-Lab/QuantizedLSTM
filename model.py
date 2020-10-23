@@ -404,7 +404,7 @@ class KWS_LSTM_bs(nn.Module):
         self.drop_p = drop_p
         self.n_msb = n_msb
 
-        self.c_sim = nn.CosineSimilarity(dim=0, eps=1e-6)
+        self.a1 = nn.Parameter(torch.tensor([128.] * n_blocks), requires_grad = pact_a)
 
         # LSTM layer
         self.lstmBlocks = LSTMLayer(LSTMCellQ_bmm, self.drop_p, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.n_msb, pact_a)
@@ -418,7 +418,7 @@ class KWS_LSTM_bs(nn.Module):
         # init states with zero
         self.hidden_state = (torch.zeros(self.n_msb, inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(self.n_msb, inputs.shape[1], self.hidden_dim, device = self.device))
         
-
+        import pdb; pdb.set_trace()
         inp_bs = bitsplit_sym(inputs, self.ib, self.n_msb)        
 
         # LSTM blocks
