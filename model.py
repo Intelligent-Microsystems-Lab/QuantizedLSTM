@@ -59,7 +59,10 @@ class LSTMLayer(nn.Module):
         w_mask = torch.bernoulli(torch.ones_like(self.cell.weight_hh)*(1-self.drop_p))
 
         for i in range(len(inputs)):
-            out, state = self.cell(inputs[i], state, w_mask)
+            if inputs.shape[0] == self.cell.n_blocks:
+                out, state = self.cell(inputs[:,i,:,:], state, w_mask)
+            else:
+                out, state = self.cell(inputs[i], state, w_mask)
             outputs += [out]
 
         return torch.stack(outputs), state
