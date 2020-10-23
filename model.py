@@ -53,17 +53,16 @@ class LSTMLayer(nn.Module):
         torch.nn.init.uniform_(self.cell.bias_hh, a = 1, b = 1)
 
     def forward(self, input, state):
-        inputs = input.unbind(0)
+        if input.shape[0] == self.cell.n_blocks:
+            inputs = input.unbind(1)
+        else:
+            inputs = input.unbind(0)
         outputs = []
 
         w_mask = torch.bernoulli(torch.ones_like(self.cell.weight_hh)*(1-self.drop_p))
 
         for i in range(len(inputs)):
-            import pdb; pdb.set_trace()
-            if inputs.shape[0] == self.cell.n_blocks:
-                out, state = self.cell(inputs[:,i,:,:], state, w_mask)
-            else:
-                out, state = self.cell(inputs[i], state, w_mask)
+            out, state = self.cell(inputs[i], state, w_mask)
             outputs += [out]
 
         return torch.stack(outputs), state
