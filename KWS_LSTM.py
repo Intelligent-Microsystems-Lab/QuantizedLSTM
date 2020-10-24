@@ -12,7 +12,7 @@ import numpy as np
 
 from dataloader import SpeechCommandsGoogle
 import model as model_lib
-from model import KWS_LSTM_bs, KWS_LSTM_bmm, KWS_LSTM_cs, pre_processing
+from model import KWS_LSTM_mix, KWS_LSTM_bmm, KWS_LSTM_cs, pre_processing
 from figure_scripts import plot_curves
 
 torch.manual_seed(42)
@@ -26,7 +26,7 @@ parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.A
 
 # general config
 parser.add_argument("--random-seed", type=int, default=80085, help='Random Seed')
-parser.add_argument("--method", type=int, default=0, help='Method: 0 - blocks, 1 - orthogonality')
+parser.add_argument("--method", type=int, default=0, help='Method: 0 - blocks, 1 - orthogonality, 2 - mix')
 parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speech_commands_v0.02', help='Path to Dataset')
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
 parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
@@ -103,7 +103,7 @@ if args.method == 0:
 elif args.method == 1:
     model = KWS_LSTM_cs(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = 0, drop_p = args.drop_p, n_msb = args.n_msb, pact_a = args.pact_a)
 elif args.method == 2:
-    model = KWS_LSTM_bs(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = 0, drop_p = args.drop_p, n_msb = args.n_msb, pact_a = args.pact_a)
+    model = KWS_LSTM_mix(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = 0, drop_p = args.drop_p, n_msb = args.n_msb, pact_a = args.pact_a)
 else:
     raise Exception("Unknown method: Please use 0 for quantized LSTM blocks or 1 for bit splitting.")
 
@@ -255,5 +255,8 @@ for i_batch, sample_batch in enumerate(test_dataloader):
 test_acc = torch.cat(acc_aux).float().mean().item()
 print("Test Accuracy: {0:.4f}".format(test_acc))
 
-#checkpoint_dict = torch.load('./checkpoints/9c8bf1f3-58e5-4527-8742-2964941cbae1.pkl')
+# #checkpoint_dict = torch.load('./checkpoints/9c8bf1f3-58e5-4527-8742-2964941cbae1.pkl')
+# print("Start testing:")
+# checkpoint_dict = torch.load('./checkpoints/f10a3aa5-6222-469c-965a-f393cc3b7580.pkl')
+# model.load_state_dict(checkpoint_dict['model_dict'])
 
