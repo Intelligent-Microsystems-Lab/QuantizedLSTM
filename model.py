@@ -241,9 +241,8 @@ class LinLayer_bmm(nn.Module):
         self.noise_level = noise_level
         self.bias_r = bias_r
 
-        import pdb; pdb.set_trace()
-        self.weights = nn.Parameter(torch.randn(n_blocks, inp_dim, out_dim))
-        self.bias = nn.Parameter(torch.randn(n_blocks, 1, out_dim))
+        self.weights = nn.Parameter(torch.randn(int(n_blocks), int(inp_dim), int(out_dim)))
+        self.bias = nn.Parameter(torch.randn(int(n_blocks), 1, int(out_dim)))
 
 
         limit = np.sqrt(6/inp_dim)
