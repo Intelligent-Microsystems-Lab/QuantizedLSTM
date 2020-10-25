@@ -68,7 +68,7 @@ parser.add_argument("--max-w", type=float, default=.1, help='Maximumg weight')
 parser.add_argument("--drop-p", type=float, default=.125, help='Dropconnect probability')
 parser.add_argument("--pact-a", type=int, default=1, help='Whether scaling parameter is trainable')
 
-parser.add_argument("--rows-bias", type=int, default=0, help='How many rows for the bias')
+parser.add_argument("--rows-bias", type=int, default=2, help='How many rows for the bias')
 
 args = parser.parse_args()
 args.canonical_testing = bool(args.canonical_testing)
