@@ -1,7 +1,7 @@
 #!/bin/csh 
 #$ -M cschaef6@nd.edu 
 #$ -m abe
-#$ -q gpu@@joshi
+#$ -q gpu@qa-rtx6k-040.crc.nd.edu
 #$ -l gpu_card=1
 #$ -N rbias_rows-bias_6_1
 #$ -o ./logs/output_rbias_rbias_rows-bias_6_1.txt

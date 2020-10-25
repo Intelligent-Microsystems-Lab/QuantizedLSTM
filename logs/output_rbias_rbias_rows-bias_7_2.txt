@@ -22,3 +22,27 @@ Traceback (most recent call last):
   File "/afs/crc.nd.edu/user/c/cschaef6/QuantizedLSTM/model.py", line 89, in forward
     x01q =  torch.round(x01 * step_d ) / step_d
 RuntimeError: CUDA out of memory. Tried to allocate 2.00 MiB (GPU 0; 10.76 GiB total capacity; 8.38 GiB already allocated; 3.12 MiB free; 9.80 GiB reserved in total by PyTorch)
+Loading python/3.7.3
+  Loading requirement: tcl/8.6.8 gcc/8.3.0
+Namespace(background_frequency=0.8, background_volume=0.1, batch_size=512, canonical_testing=False, cs=0.5, dataloader_num_workers=8, dataset_path_test='data.nosync/speech_commands_test_set_v0.02', dataset_path_train='data.nosync/speech_commands_v0.02', drop_p=0.125, finetuning_epochs=10000, hidden=107, hop_length=320, l2=0.01, learning_rate='0.002,0.0005,0.00008', max_w=0.1, method=0, n_mfcc=40, n_msb=4, noise_injectionI=0.1, noise_injectionT=0.16, pact_a=True, quant_actMVM=6, quant_actNM=8, quant_inp=4, quant_w=None, random_seed=8627169, rows_bias=7, sample_rate=16000, silence_percentage=0.1, testing_percentage=10, time_shift_ms=100.0, training_steps='10000,10000,200', unknown_percentage=0.1, validation_percentage=10, win_length=640, word_list=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'])
+aa1084c6-2858-459e-ac13-3925fff982e1
+Start training with DropConnect:
+Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)
+Traceback (most recent call last):
+  File "KWS_LSTM.py", line 161, in <module>
+    output = model(x_data)
+  File "/afs/crc.nd.edu/user/c/cschaef6/.local/lib/python3.7/site-packages/torch/nn/modules/module.py", line 722, in _call_impl
+    result = self.forward(*input, **kwargs)
+  File "/afs/crc.nd.edu/user/c/cschaef6/QuantizedLSTM/model.py", line 289, in forward
+    lstm_out, _ = self.lstmBlocks(inputs, self.hidden_state)
+  File "/afs/crc.nd.edu/user/c/cschaef6/.local/lib/python3.7/site-packages/torch/nn/modules/module.py", line 722, in _call_impl
+    result = self.forward(*input, **kwargs)
+  File "/afs/crc.nd.edu/user/c/cschaef6/QuantizedLSTM/model.py", line 65, in forward
+    out, state = self.cell(inputs[i], state, w_mask)
+  File "/afs/crc.nd.edu/user/c/cschaef6/.local/lib/python3.7/site-packages/torch/nn/modules/module.py", line 722, in _call_impl
+    result = self.forward(*input, **kwargs)
+  File "/afs/crc.nd.edu/user/c/cschaef6/QuantizedLSTM/model.py", line 221, in forward
+    forget_gate_out = quant_pass(pact_a_bmm(torch.sigmoid(f), self.a3), self.abNM, self.a3)
+  File "/afs/crc.nd.edu/user/c/cschaef6/QuantizedLSTM/model.py", line 89, in forward
+    x01q =  torch.round(x01 * step_d ) / step_d
+RuntimeError: CUDA out of memory. Tried to allocate 2.00 MiB (GPU 0; 10.76 GiB total capacity; 8.38 GiB already allocated; 3.12 MiB free; 9.80 GiB reserved in total by PyTorch)
