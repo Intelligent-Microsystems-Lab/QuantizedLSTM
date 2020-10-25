@@ -50,7 +50,7 @@ parser.add_argument('--time-shift-ms', type=float, default=100.0, help='Range to
 parser.add_argument("--win-length", type=int, default=640, help='Window size in ms') # 400
 parser.add_argument("--hop-length", type=int, default=320, help='Length of hop between STFT windows') #320
 
-parser.add_argument("--hidden", type=int, default=118, help='Number of hidden LSTM units') 
+parser.add_argument("--hidden", type=int, default=114, help='Number of hidden LSTM units') 
 parser.add_argument("--n-mfcc", type=int, default=40, help='Number of mfc coefficients to retain') # 40 before
 
 parser.add_argument("--noise-injectionT", type=float, default=0.16, help='Percentage of noise injected to weights')
@@ -68,9 +68,12 @@ parser.add_argument("--max-w", type=float, default=.1, help='Maximumg weight')
 parser.add_argument("--drop-p", type=float, default=.125, help='Dropconnect probability')
 parser.add_argument("--pact-a", type=int, default=1, help='Whether scaling parameter is trainable')
 
+parser.add_argument("--rows-bias", type=int, default=0, help='How many rows for the bias')
+
 args = parser.parse_args()
 args.canonical_testing = bool(args.canonical_testing)
 args.pact_a = bool(args.pact_a)
+args.hidden_dim = args.hidden_dim - args.rows_bias
 print(args)
 
 model_lib.max_w = args.max_w
@@ -99,7 +102,7 @@ test_dataloader = torch.utils.data.DataLoader(speech_dataset_test, batch_size=ar
 validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
 
 if args.method == 0:
-    model = KWS_LSTM_bmm(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = 0, drop_p = args.drop_p, n_msb = args.n_msb, pact_a = args.pact_a)
+    model = KWS_LSTM_bmm(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = 0, drop_p = args.drop_p, n_msb = args.n_msb, pact_a = args.pact_a, bias_r = args.rows_bias)
 elif args.method == 1:
     model = KWS_LSTM_cs(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = 0, drop_p = args.drop_p, n_msb = args.n_msb, pact_a = args.pact_a)
 elif args.method == 2:
@@ -254,9 +257,4 @@ for i_batch, sample_batch in enumerate(test_dataloader):
 
 test_acc = torch.cat(acc_aux).float().mean().item()
 print("Test Accuracy: {0:.4f}".format(test_acc))
-
-# #checkpoint_dict = torch.load('./checkpoints/9c8bf1f3-58e5-4527-8742-2964941cbae1.pkl')
-# print("Start testing:")
-# checkpoint_dict = torch.load('./checkpoints/f10a3aa5-6222-469c-965a-f393cc3b7580.pkl')
-# model.load_state_dict(checkpoint_dict['model_dict'])
 

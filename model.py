@@ -133,13 +133,14 @@ def w_init(fp, wb):
 
 class CustomMM_bmm(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, input, weight, bias, nl, wb):
+    def forward(ctx, input, weight, bias, nl, wb, bias_r):
         #noise_w = torch.randn(weight.shape, device = input.device) * weight.max() * nl
         #bias_w  = torch.randn(bias.shape, device = bias.device) * bias.max() * nl
 
         noise_w = torch.randn(weight.shape, device = input.device) * max_w * nl
         bias_w  = torch.randn(bias.shape, device = bias.device) * max_w * nl
         weight = torch.clamp(weight, -max_w, max_w)
+        bias = torch.clamp(bias, -bias_r, bias_r)
 
         wq = quant_pass(weight, wb, 1.)
         bq = quant_pass(bias, wb, 1.)
@@ -164,7 +165,7 @@ class CustomMM_bmm(torch.autograd.Function):
 
 
 class LSTMCellQ_bmm(nn.Module):
-    def __init__(self, input_size, hidden_size, wb, ib, abMVM, abNM, noise_level, n_blocks, pact_a):
+    def __init__(self, input_size, hidden_size, wb, ib, abMVM, abNM, noise_level, n_blocks, pact_a, bias_r):
         super(LSTMCellQ_bmm, self).__init__()
         self.wb = wb
         self.ib = ib
@@ -174,6 +175,7 @@ class LSTMCellQ_bmm(nn.Module):
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.n_blocks = n_blocks
+        self.bias_r = bias_r
         self.weight_ih = nn.Parameter(torch.randn(n_blocks, input_size, 4 * hidden_size))
         self.weight_hh = nn.Parameter(torch.randn(n_blocks, hidden_size, 4 * hidden_size))
         self.bias_ih = nn.Parameter(torch.randn(n_blocks, 1, 4 * hidden_size))
@@ -202,10 +204,10 @@ class LSTMCellQ_bmm(nn.Module):
 
         # MVM
         if input.shape[0] == self.n_blocks:
-            part1 = CustomMM_bmm.apply(quant_pass(pact_a_bmm(input, self.a1), self.ib, self.a1), self.weight_ih, self.bias_ih, self.noise_level, self.wb)
+            part1 = CustomMM_bmm.apply(quant_pass(pact_a_bmm(input, self.a1), self.ib, self.a1), self.weight_ih, self.bias_ih, self.noise_level, self.wb, self.bias_r)
         else:
             part1 = CustomMM_bmm.apply(quant_pass(pact_a_bmm(input.repeat(self.n_blocks, 1, 1), self.a1), self.ib, self.a1), self.weight_ih, self.bias_ih, self.noise_level, self.wb)
-        part2 = CustomMM_bmm.apply(quant_pass(pact_a_bmm(hx, self.a11), self.ib, self.a11), self.weight_hh * w_mask, self.bias_hh, self.noise_level, self.wb)
+        part2 = CustomMM_bmm.apply(quant_pass(pact_a_bmm(hx, self.a11), self.ib, self.a11), self.weight_hh * w_mask, self.bias_hh, self.noise_level, self.wb, self.bias_r)
 
         gates = quant_pass(pact_a_bmm( quant_pass(pact_a_bmm(part1, self.a12), self.abMVM, self.a12) + quant_pass(pact_a_bmm(part2, self.a13), self.abMVM, self.a13), self.a14), self.abNM, self.a14)
 
@@ -231,12 +233,13 @@ class LSTMCellQ_bmm(nn.Module):
         return new_h, (new_h, new_c)
 
 class LinLayer_bmm(nn.Module):
-    def __init__(self, inp_dim, out_dim, noise_level, abMVM, ib, wb, n_blocks, pact_a):
+    def __init__(self, inp_dim, out_dim, noise_level, abMVM, ib, wb, n_blocks, pact_a, bias_r):
         super(LinLayer_bmm, self).__init__()
         self.abMVM = abMVM
         self.ib = ib
         self.wb = wb
         self.noise_level = noise_level
+        self.bias_r = bias_r
 
         self.weights = nn.Parameter(torch.randn(n_blocks, inp_dim, out_dim))
         self.bias = nn.Parameter(torch.randn(n_blocks, 1, out_dim))
@@ -252,11 +255,11 @@ class LinLayer_bmm(nn.Module):
         self.a2 = nn.Parameter(torch.tensor([16.]*n_blocks), requires_grad = pact_a)
 
     def forward(self, input):
-        return quant_pass(pact_a_bmm(CustomMM_bmm.apply(quant_pass(pact_a_bmm(input, self.a1), self.ib, self.a1), self.weights, self.bias, self.noise_level, self.wb), self.a2), self.abMVM, self.a2)
+        return quant_pass(pact_a_bmm(CustomMM_bmm.apply(quant_pass(pact_a_bmm(input, self.a1), self.ib, self.a1), self.weights, self.bias, self.noise_level, self.wb, self.bias_r), self.a2), self.abMVM, self.a2)
 
 
 class KWS_LSTM_bmm(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, device, wb, abMVM, abNM, ib, noise_level, drop_p, n_msb, pact_a):
+    def __init__(self, input_dim, hidden_dim, output_dim, device, wb, abMVM, abNM, ib, noise_level, drop_p, n_msb, pact_a, bias_r):
         super(KWS_LSTM_bmm, self).__init__()
         self.device = device
         self.noise_level = noise_level
@@ -269,12 +272,13 @@ class KWS_LSTM_bmm(nn.Module):
         self.output_dim = output_dim
         self.drop_p = drop_p
         self.n_msb = n_msb
+        self.bias_r = bias_r
 
         # LSTM layer
-        self.lstmBlocks = LSTMLayer(LSTMCellQ_bmm, self.drop_p, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.n_msb, pact_a)
+        self.lstmBlocks = LSTMLayer(LSTMCellQ_bmm, self.drop_p, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.n_msb, pact_a, bias_r)
 
         # final FC layer
-        self.finFC = LinLayer_bmm(self.hidden_dim, np.ceil(output_dim/n_msb), noise_level, abMVM, ib, wb, self.n_msb, pact_a)
+        self.finFC = LinLayer_bmm(self.hidden_dim, np.ceil(output_dim/n_msb), noise_level, abMVM, ib, wb, self.n_msb, pact_a, bias_r)
 
 
     def forward(self, inputs):
