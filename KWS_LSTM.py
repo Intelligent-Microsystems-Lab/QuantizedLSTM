@@ -30,7 +30,7 @@ parser.add_argument("--method", type=int, default=1, help='Method: 0 - blocks, 1
 parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speech_commands_v0.02', help='Path to Dataset')
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
 parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
-parser.add_argument("--batch-size", type=int, default=512, help='Batch Size')
+parser.add_argument("--batch-size", type=int, default=474, help='Batch Size')
 # parser.add_argument("--training-steps", type=str, default='10000,10000,10000', help='Training Steps')
 # parser.add_argument("--learning-rate", type=str, default='0.0005,0.0001,0.00002', help='Learning Rate')
 parser.add_argument("--training-steps", type=str, default='10000,10000,200', help='Training Steps') #,10000,10000 ; ,10000
@@ -66,9 +66,9 @@ parser.add_argument("--cs", type=float, default=.5, help='Strength cosine simila
 
 parser.add_argument("--max-w", type=float, default=.1, help='Maximumg weight')
 parser.add_argument("--drop-p", type=float, default=.125, help='Dropconnect probability')
-parser.add_argument("--pact-a", type=int, default=1, help='Whether scaling parameter is trainable')
+parser.add_argument("--pact-a", type=int, default=1, help='Whether scaling parameter is trainable (1:on,0:off)')
 
-parser.add_argument("--rows-bias", type=int, default=2, help='How many rows for the bias')
+parser.add_argument("--rows-bias", type=int, default=3, help='How many rows for the bias')
 
 args = parser.parse_args()
 args.canonical_testing = bool(args.canonical_testing)
