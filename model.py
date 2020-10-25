@@ -352,7 +352,7 @@ class KWS_LSTM_bmm(nn.Module):
 
 # orthogonality training
 class KWS_LSTM_cs(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, device, wb, abMVM, abNM, ib, noise_level, drop_p, n_msb, pact_a):
+    def __init__(self, input_dim, hidden_dim, output_dim, device, wb, abMVM, abNM, ib, noise_level, drop_p, n_msb, pact_a, bias_r):
         super(KWS_LSTM_cs, self).__init__()
         self.device = device
         self.noise_level = noise_level
@@ -369,10 +369,10 @@ class KWS_LSTM_cs(nn.Module):
         self.c_sim = nn.CosineSimilarity(dim=0, eps=1e-6)
 
         # LSTM layer
-        self.lstmBlocks = LSTMLayer(LSTMCellQ_bmm, self.drop_p, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.n_msb, pact_a)
+        self.lstmBlocks = LSTMLayer(LSTMCellQ_bmm, self.drop_p, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.n_msb, pact_a, bias_r)
 
         # final FC layer
-        self.finFC = LinLayer_bmm(self.hidden_dim, 12, noise_level, abMVM, ib, wb, self.n_msb, pact_a)
+        self.finFC = LinLayer_bmm(self.hidden_dim, 12, noise_level, abMVM, ib, wb, self.n_msb, pact_a, bias_r)
 
 
     def forward(self, inputs):
