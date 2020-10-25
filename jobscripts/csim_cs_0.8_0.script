@@ -1,0 +1,11 @@
+#!/bin/csh 
+#$ -M cschaef6@nd.edu 
+#$ -m abe
+#$ -q gpu@@joshi
+#$ -l gpu_card=1
+#$ -N csim_cs_0.8_0
+#$ -o ./logs/output_csim_csim_cs_0.8_0.txt
+#$ -e ./logs/error_csim_csim_cs_0.8_0.txt
+module load python
+setenv OMP_NUM_THREADS $NSLOTS
+python KWS_LSTM.py --cs 0.8 --random-seed 193012823
