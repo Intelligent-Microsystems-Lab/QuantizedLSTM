@@ -73,7 +73,7 @@ parser.add_argument("--rows-bias", type=int, default=0, help='How many rows for 
 args = parser.parse_args()
 args.canonical_testing = bool(args.canonical_testing)
 args.pact_a = bool(args.pact_a)
-args.hidden_dim = args.hidden_dim - args.rows_bias
+args.hidden = args.hidden - args.rows_bias
 print(args)
 
 model_lib.max_w = args.max_w
