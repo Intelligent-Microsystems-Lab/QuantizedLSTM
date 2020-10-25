@@ -88,8 +88,8 @@ trials = 3
 
 random_seeds = [193012823 ,235899598, 8627169, 103372330, 14339038, 221706254, 46192121, 188833202, 37306063, 171928928]
 
-#avail_q = ['gpu@qa-rtx6k-040.crc.nd.edu', 'gpu@qa-rtx6k-041.crc.nd.edu']
-avail_q = ['gpu@@joshi']
+avail_q = ['gpu@qa-rtx6k-040.crc.nd.edu', 'gpu@qa-rtx6k-041.crc.nd.edu', 'gpu@ta-titanv-001.crc.nd.edu']
+#avail_q = ['gpu@@joshi']
 q_counter = 0
 
 for i in range(trials):
