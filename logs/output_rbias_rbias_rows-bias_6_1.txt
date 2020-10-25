@@ -335,3 +335,22 @@ Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)
 09900     0.4391      0.8613     0.8981     54.4144
 Start testing:
 Test Accuracy: 0.8875
+Loading python/3.7.3
+  Loading requirement: tcl/8.6.8 gcc/8.3.0
+Namespace(background_frequency=0.8, background_volume=0.1, batch_size=512, canonical_testing=False, cs=0.5, dataloader_num_workers=8, dataset_path_test='data.nosync/speech_commands_test_set_v0.02', dataset_path_train='data.nosync/speech_commands_v0.02', drop_p=0.125, finetuning_epochs=10000, hidden=108, hop_length=320, l2=0.01, learning_rate='0.002,0.0005,0.00008', max_w=0.1, method=0, n_mfcc=40, n_msb=4, noise_injectionI=0.1, noise_injectionT=0.16, pact_a=True, quant_actMVM=6, quant_actNM=8, quant_inp=4, quant_w=None, random_seed=235899598, rows_bias=6, sample_rate=16000, silence_percentage=0.1, testing_percentage=10, time_shift_ms=100.0, training_steps='10000,10000,200', unknown_percentage=0.1, validation_percentage=10, win_length=640, word_list=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'])
+8281fa4f-e55c-420a-8126-5a9541de9d1e
+Start training with DropConnect:
+Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)
+00000     2.6779      0.0801     0.0684     10.8004
+00100     1.5572      0.5176     0.5200     55.0034
+00200     1.2398      0.6172     0.6602     54.9286
+00300     1.0790      0.6426     0.6944     54.2452
+00400     0.9245      0.7324     0.7310     54.2364
+00500     0.9599      0.6699     0.7666     52.3640
+00600     0.8916      0.7246     0.7835     54.6932
+00700     0.8293      0.7383     0.7835     55.1010
+00800     0.7662      0.7695     0.8073     54.2242
+00900     0.7638      0.7598     0.8073     53.6531
+01000     0.8541      0.7383     0.8073     53.7911
+01100     0.7300      0.7754     0.8073     53.6968
+01200     0.7438      0.7676     0.8173     53.2901

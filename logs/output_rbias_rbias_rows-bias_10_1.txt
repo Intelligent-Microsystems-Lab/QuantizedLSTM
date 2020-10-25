@@ -311,3 +311,27 @@ Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)
 09900     0.4131      0.8770     0.8920     69.6792
 Start testing:
 Test Accuracy: 0.8761
+Loading python/3.7.3
+  Loading requirement: tcl/8.6.8 gcc/8.3.0
+Namespace(background_frequency=0.8, background_volume=0.1, batch_size=512, canonical_testing=False, cs=0.5, dataloader_num_workers=8, dataset_path_test='data.nosync/speech_commands_test_set_v0.02', dataset_path_train='data.nosync/speech_commands_v0.02', drop_p=0.125, finetuning_epochs=10000, hidden=104, hop_length=320, l2=0.01, learning_rate='0.002,0.0005,0.00008', max_w=0.1, method=0, n_mfcc=40, n_msb=4, noise_injectionI=0.1, noise_injectionT=0.16, pact_a=True, quant_actMVM=6, quant_actNM=8, quant_inp=4, quant_w=None, random_seed=235899598, rows_bias=10, sample_rate=16000, silence_percentage=0.1, testing_percentage=10, time_shift_ms=100.0, training_steps='10000,10000,200', unknown_percentage=0.1, validation_percentage=10, win_length=640, word_list=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'])
+b789381d-c9c1-4485-a014-215dde8465fc
+Start training with DropConnect:
+Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)
+00000     2.6429      0.1074     0.0857     10.7386
+00100     1.5452      0.5039     0.5423     53.4909
+00200     1.2039      0.6133     0.6687     53.2031
+00300     1.1465      0.6523     0.7106     54.1969
+00400     0.9739      0.6836     0.7397     53.5538
+00500     0.8736      0.7402     0.7693     53.2931
+00600     0.8798      0.7461     0.7779     54.8883
+00700     0.7900      0.7871     0.7842     52.1079
+00800     0.8388      0.7520     0.7909     53.7491
+00900     0.8084      0.7520     0.7909     53.3824
+01000     0.7585      0.7480     0.8052     54.0911
+01100     0.7152      0.7734     0.8052     54.7576
+01200     0.7504      0.7676     0.8192     53.9868
+01300     0.6773      0.7988     0.8192     55.0569
+01400     0.7158      0.7598     0.8202     54.0574
+01500     0.8097      0.7500     0.8202     54.8503
+01600     0.6327      0.8047     0.8202     54.7769
+01700     0.6469      0.7949     0.8216     54.6770

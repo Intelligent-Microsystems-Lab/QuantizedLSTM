@@ -335,3 +335,44 @@ Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)
 09900     0.4720      0.8633     0.9021     57.4497
 Start testing:
 Test Accuracy: 0.8841
+Loading python/3.7.3
+  Loading requirement: tcl/8.6.8 gcc/8.3.0
+Namespace(background_frequency=0.8, background_volume=0.1, batch_size=512, canonical_testing=False, cs=0.5, dataloader_num_workers=8, dataset_path_test='data.nosync/speech_commands_test_set_v0.02', dataset_path_train='data.nosync/speech_commands_v0.02', drop_p=0.125, finetuning_epochs=10000, hidden=111, hop_length=320, l2=0.01, learning_rate='0.002,0.0005,0.00008', max_w=0.1, method=0, n_mfcc=40, n_msb=4, noise_injectionI=0.1, noise_injectionT=0.16, pact_a=True, quant_actMVM=6, quant_actNM=8, quant_inp=4, quant_w=None, random_seed=235899598, rows_bias=3, sample_rate=16000, silence_percentage=0.1, testing_percentage=10, time_shift_ms=100.0, training_steps='10000,10000,200', unknown_percentage=0.1, validation_percentage=10, win_length=640, word_list=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'])
+efa0875e-a8da-4f80-a634-c54f3eeb71fc
+Start training with DropConnect:
+Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)
+00000     2.7026      0.0781     0.0792     10.4064
+00100     1.5624      0.4746     0.5080     53.3835
+00200     1.2400      0.6074     0.6375     53.3801
+00300     1.0604      0.6836     0.7275     54.0408
+00400     0.9097      0.7227     0.7525     53.5011
+00500     0.7669      0.7559     0.7591     53.5397
+00600     0.8391      0.7402     0.7933     53.9425
+00700     0.8478      0.7168     0.8097     54.1880
+00800     0.8255      0.7246     0.8097     55.2796
+00900     0.7646      0.7754     0.8097     57.0429
+01000     0.7794      0.7441     0.8097     55.2478
+01100     0.7513      0.7578     0.8207     54.7853
+01200     0.7800      0.7539     0.8207     55.7423
+01300     0.7441      0.7715     0.8207     56.0913
+01400     0.6685      0.7871     0.8255     57.2409
+01500     0.7115      0.7754     0.8255     55.8937
+01600     0.6913      0.7812     0.8255     54.9354
+01700     0.6427      0.8125     0.8255     53.5898
+01800     0.6630      0.8066     0.8255     54.1060
+01900     0.7044      0.7949     0.8339     55.3051
+02000     0.6981      0.7793     0.8339     54.3871
+02100     0.6924      0.7949     0.8347     55.1267
+02200     0.7356      0.7559     0.8347     58.3439
+02300     0.7259      0.7910     0.8347     53.2043
+02400     0.6549      0.7910     0.8347     53.8132
+02500     0.5887      0.8359     0.8347     53.4106
+02600     0.6468      0.8086     0.8347     53.6445
+02700     0.6569      0.7910     0.8366     53.0363
+02800     0.6604      0.8125     0.8366     52.6398
+02900     0.6508      0.8047     0.8366     53.1917
+03000     0.5914      0.8242     0.8542     52.6423
+03100     0.6143      0.8086     0.8542     53.8196
+03200     0.6578      0.8125     0.8577     54.3873
+03300     0.7030      0.7695     0.8577     54.0431
+03400     0.6387      0.8262     0.8577     55.0115
