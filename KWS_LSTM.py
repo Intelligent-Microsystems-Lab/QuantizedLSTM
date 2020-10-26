@@ -26,7 +26,7 @@ parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.A
 
 # general config
 parser.add_argument("--random-seed", type=int, default=80085, help='Random Seed')
-parser.add_argument("--method", type=int, default=1, help='Method: 0 - blocks, 1 - orthogonality, 2 - mix')
+parser.add_argument("--method", type=int, default=0, help='Method: 0 - blocks, 1 - orthogonality, 2 - mix')
 parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speech_commands_v0.02', help='Path to Dataset')
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
 parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
@@ -61,7 +61,7 @@ parser.add_argument("--quant-inp", type=int, default=4, help='Bits available for
 parser.add_argument("--quant-w", type=int, default=None, help='Bits available for weights')
 
 parser.add_argument("--l2", type=float, default=.01, help='Strength of L2 norm')
-parser.add_argument("--n-msb", type=int, default=4, help='Number of blocks available')
+parser.add_argument("--n-msb", type=int, default=2, help='Number of blocks available')
 parser.add_argument("--cs", type=float, default=.1, help='Strength cosine similarity penalization')
 
 parser.add_argument("--max-w", type=float, default=.1, help='Maximumg weight')
