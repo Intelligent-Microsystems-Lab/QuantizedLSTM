@@ -294,22 +294,16 @@ class KWS_LSTM_bmm(nn.Module):
         #output = torch.stack([output[0,:,0] + output[0,:,1], output[1,:,0] + output[1,:,1], output[2,:,0] + output[2,:,1], output[3,:,0] + output[3,:,1], output[4,:,0], output[4,:,1], output[5,:,0], output[5,:,1], output[6,:,0], output[6,:,1], output[7,:,0], output[7,:,1]],0).t()
 
         if self.n_msb == 12:
-            import pdb; pdb.set_trace()
             output = torch.stack([output[0,:,0], output[11,:,0], output[1,:,0], output[10,:,0], output[2,:,0], output[9,:,0], output[3,:,0], output[8,:,0], output[4,:,0], output[7,:,0], output[5,:,0], output[6,:,0]],0).t()
         elif self.n_msb == 11:
-            import pdb; pdb.set_trace()
             output = torch.stack([output[0,:,0], output[0,:,1], output[1,:,0], output[10,:,0], output[2,:,0], output[9,:,0], output[3,:,0], output[8,:,0], output[4,:,0], output[7,:,0], output[5,:,0], output[6,:,0]],0).t()
         elif self.n_msb == 10:
-            import pdb; pdb.set_trace()
             output = torch.stack([output[0,:,0], output[0,:,1], output[1,:,0], output[1,:,1], output[2,:,0], output[9,:,0], output[3,:,0], output[8,:,0], output[4,:,0], output[7,:,0], output[5,:,0], output[6,:,0]],0).t()
         elif self.n_msb == 9:
-            import pdb; pdb.set_trace()
             output = torch.stack([output[0,:,0], output[0,:,1], output[1,:,0], output[1,:,1], output[2,:,0], output[2,:,1], output[3,:,0], output[8,:,0], output[4,:,0], output[7,:,0], output[5,:,0], output[6,:,0]],0).t()
         elif self.n_msb == 8:
-            import pdb; pdb.set_trace()
             output = torch.stack([output[0,:,0], output[0,:,1], output[1,:,0], output[1,:,1], output[2,:,0], output[2,:,1], output[3,:,0], output[3,:,1], output[4,:,0], output[7,:,0], output[5,:,0], output[6,:,0]],0).t()
         elif self.n_msb == 7:
-            import pdb; pdb.set_trace()
             output = torch.stack([output[0,:,0], output[0,:,1], output[1,:,0], output[1,:,1], output[2,:,0], output[2,:,1], output[3,:,0], output[3,:,1], output[4,:,0], output[4,:,1], output[5,:,0], output[6,:,0]],0).t()
         elif self.n_msb == 6:
             output = torch.stack([output[0,:,0], output[0,:,1], output[1,:,0], output[1,:,1], output[2,:,0], output[2,:,1], output[3,:,0], output[3,:,1], output[4,:,0], output[4,:,1], output[5,:,0], output[5,:,1]],0).t()
