@@ -26,7 +26,7 @@ parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.A
 
 # general config
 parser.add_argument("--random-seed", type=int, default=80085, help='Random Seed')
-parser.add_argument("--method", type=int, default=1, help='Method: 0 - blocks, 1 - orthogonality, 2 - mix')
+parser.add_argument("--method", type=int, default=2, help='Method: 0 - blocks, 1 - orthogonality, 2 - mix')
 parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speech_commands_v0.02', help='Path to Dataset')
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
 parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
@@ -61,14 +61,15 @@ parser.add_argument("--quant-inp", type=int, default=4, help='Bits available for
 parser.add_argument("--quant-w", type=int, default=None, help='Bits available for weights')
 
 parser.add_argument("--l2", type=float, default=.01, help='Strength of L2 norm')
-parser.add_argument("--n-msb", type=int, default=4, help='Number of blocks available')
-parser.add_argument("--cs", type=float, default=.5, help='Strength cosine similarity penalization')
+parser.add_argument("--n-msb", type=int, default=2, help='Number of blocks available')
+parser.add_argument("--cs", type=float, default=.1, help='Strength cosine similarity penalization')
 
 parser.add_argument("--max-w", type=float, default=.1, help='Maximumg weight')
 parser.add_argument("--drop-p", type=float, default=.125, help='Dropconnect probability')
 parser.add_argument("--pact-a", type=int, default=1, help='Whether scaling parameter is trainable (1:on,0:off)')
 
-parser.add_argument("--rows-bias", type=int, default=3, help='How many rows for the bias')
+parser.add_argument("--rows-bias", type=int, default=6, help='How many rows for the bias')
+parser.add_argument("--gain-blocks", type=int, default=2, help='Fox mixed method, how many parallel blocks')
 
 args = parser.parse_args()
 args.canonical_testing = bool(args.canonical_testing)
@@ -106,7 +107,8 @@ if args.method == 0:
 elif args.method == 1:
     model = KWS_LSTM_cs(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = 0, drop_p = args.drop_p, n_msb = args.n_msb, pact_a = args.pact_a, bias_r = args.rows_bias)
 elif args.method == 2:
-    model = KWS_LSTM_mix(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = 0, drop_p = args.drop_p, n_msb = args.n_msb, pact_a = args.pact_a, bias_r = args.rows_bias)
+    args.n_msb = int(args.n_msb/args.gain_blocks)
+    model = KWS_LSTM_mix(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = 0, drop_p = args.drop_p, n_msb = args.n_msb, pact_a = args.pact_a, bias_r = args.rows_bias, gain_blocks = args.gain_blocks)
 else:
     raise Exception("Unknown method: Please use 0 for quantized LSTM blocks or 1 for bit splitting.")
 

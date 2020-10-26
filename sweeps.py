@@ -1,7 +1,7 @@
 import os
 import numpy as np
 
-ident_word = "csim"
+ident_word = "mcomp"
 
 part1 = "#!/bin/csh \n#$ -M cschaef6@nd.edu \n#$ -m abe\n#$ -q " 
 part11 = "\n#$ -l gpu_card=1\n#$ -N "
@@ -80,7 +80,8 @@ part4 = ".txt\nmodule load python\nsetenv OMP_NUM_THREADS $NSLOTS\npython KWS_LS
 
 
 #sweep_parameters = {'rows-bias':[1,2,3,4,5,6,7,8,9,10]}
-sweep_parameters = {'cs':[0.01, 0.1, 0.25, 0.5, 0.75, 0.8, 0.9, 1]}
+#sweep_parameters = {'cs':[0.01, 0.1, 0.25, 0.5, 0.75, 0.8, 0.9, 1]}
+sweep_parameters = {'method':[0, 1, 2]}
 #sweep_parameters = {'drop-p': [.0, .05, .1, .15, .2, .25, .3, .4, .5, .6]}
 
 #sweep_parameters = {'learning-rate': ['0.001,0.0002,0.00004', '0.002,0.0004,0.00008', '0.01,0.005,0.001', '0.0001,0.00005,0.00001', '0.0005,0.0001,0.00002']   }

@@ -374,6 +374,7 @@ class KWS_LSTM_cs(nn.Module):
         # final FC layer
         self.finFC = LinLayer_bmm(self.hidden_dim, 12, noise_level, abMVM, ib, wb, self.n_msb, pact_a, bias_r)
 
+        self.a2 = nn.Parameter(torch.tensor([16.*n_msb]), requires_grad = pact_a)
 
     def forward(self, inputs):
         # init states with zero
@@ -384,7 +385,7 @@ class KWS_LSTM_cs(nn.Module):
 
         # final FC blocks
         # quantize this
-        output = self.finFC(lstm_out[-1,:,:,:]).sum(0)
+        output = quant_pass(pact_a_bmm(self.finFC(lstm_out[-1,:,:,:]).sum(0), self.a2), self.abNM, self.a2)
         
         return output
 
@@ -415,7 +416,7 @@ class KWS_LSTM_cs(nn.Module):
 
 # mixed but using double the blocks as given
 class KWS_LSTM_mix(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, device, wb, abMVM, abNM, ib, noise_level, drop_p, n_msb, pact_a, gain_blocks):
+    def __init__(self, input_dim, hidden_dim, output_dim, device, wb, abMVM, abNM, ib, noise_level, drop_p, n_msb, pact_a, bias_r, gain_blocks):
         super(KWS_LSTM_cs, self).__init__()
         self.device = device
         self.noise_level = noise_level
@@ -428,14 +429,17 @@ class KWS_LSTM_mix(nn.Module):
         self.output_dim = output_dim
         self.drop_p = drop_p
         self.n_msb = n_msb
+        self.gain_blocks = gain_blocks
 
         self.c_sim = nn.CosineSimilarity(dim=0, eps=1e-6)
 
         # LSTM layer
-        self.lstmBlocks = LSTMLayer(LSTMCellQ_bmm, self.drop_p, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.n_msb * gain_blocks, pact_a)
+        self.lstmBlocks = LSTMLayer(LSTMCellQ_bmm, self.drop_p, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.n_msb * gain_blocks, pact_a, bias_r)
 
         # final FC layer
-        self.finFC = LinLayer_bmm(self.hidden_dim, np.ceil(output_dim/n_msb), noise_level, abMVM, ib, wb, self.n_msb * gain_blocks, pact_a)
+        self.finFC = LinLayer_bmm(self.hidden_dim, np.ceil(output_dim/n_msb), noise_level, abMVM, ib, wb, self.n_msb * gain_blocks, pact_a, bias_r)
+
+        self.a2 = nn.Parameter(torch.tensor([16.*n_msb]), requires_grad = pact_a)
 
 
     def forward(self, inputs):
@@ -473,36 +477,36 @@ class KWS_LSTM_mix(nn.Module):
             import pdb; pdb.set_trace()
             output = torch.stack([output[0,:,0], output[0,:,1], output[0,:,2], output[1,:,0], output[1,:,1], output[1,:,2], output[2,:,0], output[2,:,1], output[3,:,0], output[3,:,1], output[4,:,0], output[4,:,1] ],0).t()
         elif self.n_msb == 4:
-            import pdb; pdb.set_trace()
             output = torch.stack([output[0,:,0], output[0,:,1], output[0,:,2], output[1,:,0], output[1,:,1], output[1,:,2], output[2,:,0], output[2,:,1], output[2,:,2], output[3,:,0], output[3,:,1], output[3,:,2]],0).t()
         elif self.n_msb == 3:
             import pdb; pdb.set_trace()
             output = torch.stack([output[0,:,0], output[0,:,1], output[0,:,2], output[0,:,3], output[1,:,0], output[1,:,1], output[1,:,2], output[1,:,3], output[2,:,0], output[2,:,1], output[2,:,2], output[2,:,3]],0).t()
-        elif self.n_msb == 2:
+        elif self.n_msb == 2 and self.gain_blocks == 2:
             import pdb; pdb.set_trace()
-            ind_double = []
-            output = torch.stack([output[0,:,0], output[0,:,1], output[0,:,2], output[0,:,3], output[0,:,4], output[0,:,5], output[1,:,0], output[1,:,1], output[1,:,2], output[1,:,3], output[1,:,4], output[1,:,5]],0).t()
+            output = torch.stack([output[0,:,0] + output[2,:,0], output[0,:,1] +output[2,:,1], output[0,:,2] + output[2,:,2], output[0,:,3] + output[2,:,3], output[0,:,4] + output[2,:,4], output[0,:,5] + output[2,:,5], output[1,:,0] + output[3,:,0], output[1,:,1] + output[3,:,1], output[1,:,2] + output[3,:,2], output[1,:,3] + output[3,:,3], output[1,:,4] + output[3,:,4], output[1,:,5] + output[3,:,5]],0).t()
         elif self.n_msb == 1:
             import pdb; pdb.set_trace()
-            output = torch.stack([output[0,:,:]],0).t().sum(0)
+            output = torch.stack([output[0,:,:]],0).t()
         else:
-            raise Exception("Too many blocks")
+            raise Exception("Configuration does not have specified mapping")
         
         return output
 
     def cosine_sim(self):
         sims = torch.zeros([self.n_msb, self.n_msb])
 
+        import pdb; pdb.set_trace()
+
         weights = torch.cat([self.lstmBlocks.cell.weight_ih.reshape(self.n_msb,-1), self.lstmBlocks.cell.weight_hh.reshape(self.n_msb,-1), self.lstmBlocks.cell.bias_ih.reshape(self.n_msb,-1), self.lstmBlocks.cell.bias_hh.reshape(self.n_msb,-1), self.finFC.weights.reshape(self.n_msb,-1), self.finFC.bias.reshape(self.n_msb,-1)], dim=1)
 
-        for i in range(self.n_msb):
-            for j in range(self.n_msb):
-                sims[i,j] = self.c_sim(weights[i,:], weights[j,:])
+        if self.n_msb == 2 and self.gain_blocks == 2:
+            out = self.c_sim(weights[0,:], weights[2,:])
+            out += self.c_sim(weights[1,:], weights[3,:])
+            out /= self.gain_blocks
+        else:
+            raise Exception("Configuration does not have specified mapping")
 
-
-
-
-        return (sims.sum().sum()-self.n_msb)/(self.n_msb**2)
+        return out
 
     def set_noise(self, nl):
         self.noise_level = nl
