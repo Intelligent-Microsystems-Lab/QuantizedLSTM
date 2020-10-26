@@ -482,8 +482,7 @@ class KWS_LSTM_mix(nn.Module):
             import pdb; pdb.set_trace()
             output = torch.stack([output[0,:,0], output[0,:,1], output[0,:,2], output[0,:,3], output[1,:,0], output[1,:,1], output[1,:,2], output[1,:,3], output[2,:,0], output[2,:,1], output[2,:,2], output[2,:,3]],0).t()
         elif self.n_msb == 2 and self.gain_blocks == 2:
-            import pdb; pdb.set_trace()
-            output = torch.stack([output[0,:,0] + output[2,:,0], output[0,:,1] +output[2,:,1], output[0,:,2] + output[2,:,2], output[0,:,3] + output[2,:,3], output[0,:,4] + output[2,:,4], output[0,:,5] + output[2,:,5], output[1,:,0] + output[3,:,0], output[1,:,1] + output[3,:,1], output[1,:,2] + output[3,:,2], output[1,:,3] + output[3,:,3], output[1,:,4] + output[3,:,4], output[1,:,5] + output[3,:,5]],0).t()
+            output = torch.stack([output[0,:,0] + output[2,:,0], output[0,:,1] + output[2,:,1], output[0,:,2] + output[2,:,2], output[0,:,3] + output[2,:,3], output[0,:,4] + output[2,:,4], output[0,:,5] + output[2,:,5], output[1,:,0] + output[3,:,0], output[1,:,1] + output[3,:,1], output[1,:,2] + output[3,:,2], output[1,:,3] + output[3,:,3], output[1,:,4] + output[3,:,4], output[1,:,5] + output[3,:,5]],0).t()
         elif self.n_msb == 1:
             import pdb; pdb.set_trace()
             output = torch.stack([output[0,:,:]],0).t()
@@ -495,11 +494,12 @@ class KWS_LSTM_mix(nn.Module):
     def cosine_sim(self):
         sims = torch.zeros([self.n_msb, self.n_msb])
 
-        import pdb; pdb.set_trace()
+        cols = self.n_msb * self.gain_blocks
 
-        weights = torch.cat([self.lstmBlocks.cell.weight_ih.reshape(self.n_msb,-1), self.lstmBlocks.cell.weight_hh.reshape(self.n_msb,-1), self.lstmBlocks.cell.bias_ih.reshape(self.n_msb,-1), self.lstmBlocks.cell.bias_hh.reshape(self.n_msb,-1), self.finFC.weights.reshape(self.n_msb,-1), self.finFC.bias.reshape(self.n_msb,-1)], dim=1)
+        weights = torch.cat([self.lstmBlocks.cell.weight_ih.reshape(cols, -1), self.lstmBlocks.cell.weight_hh.reshape(cols,-1), self.lstmBlocks.cell.bias_ih.reshape(cols,-1), self.lstmBlocks.cell.bias_hh.reshape(cols,-1), self.finFC.weights.reshape(cols,-1), self.finFC.bias.reshape(cols,-1)], dim=1)
 
         if self.n_msb == 2 and self.gain_blocks == 2:
+            import pdb; pdb.set_trace()
             out = self.c_sim(weights[0,:], weights[2,:])
             out += self.c_sim(weights[1,:], weights[3,:])
             out /= self.gain_blocks
