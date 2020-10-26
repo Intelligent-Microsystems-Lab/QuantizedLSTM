@@ -144,8 +144,6 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
     # train
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
 
-    print(x_data.shape)
-
     output = model(x_data)
 
     loss_val = loss_fn(output, y_label)

@@ -97,16 +97,16 @@ avail_q = ['gpu@@joshi']
 q_counter = 0
 
 
-for i in range(trials):
-    for variable in sweep_parameters:
-        for value in sweep_parameters[variable]:
-            # name = ident_word + "_" +variable + "_" + str(value).replace(",","")   + "_" + str(i)
-            # with open('jobscripts/'+name+'.script', 'w') as f:
-            #     if isinstance(value, str):
-            #         f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + value+ "\" --random-seed " + str(random_seeds[i])) 
-            #     else:
-            #         f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " " + str(value)+ " --random-seed " + str(random_seeds[i])) 
-            os.system("python KWS_LSTM.py --training-steps \"1\" --learning-rate \".002\" --finetuning-epochs 1 --" + str(variable) + " " + str(value) )
+# for i in range(trials):
+#     for variable in sweep_parameters:
+#         for value in sweep_parameters[variable]:
+#             # name = ident_word + "_" +variable + "_" + str(value).replace(",","")   + "_" + str(i)
+#             # with open('jobscripts/'+name+'.script', 'w') as f:
+#             #     if isinstance(value, str):
+#             #         f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + value+ "\" --random-seed " + str(random_seeds[i])) 
+#             #     else:
+#             #         f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " " + str(value)+ " --random-seed " + str(random_seeds[i])) 
+#             os.system("python KWS_LSTM.py --training-steps \"1\" --learning-rate \".002\" --finetuning-epochs 1 --" + str(variable) + " " + str(value) )
 
 
 
