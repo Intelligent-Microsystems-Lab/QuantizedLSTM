@@ -145,7 +145,6 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
 
     print(x_data.shape)
-    import pdb; pdb.set_trace()
 
     output = model(x_data)
 
