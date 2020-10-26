@@ -320,7 +320,6 @@ class KWS_LSTM_bmm(nn.Module):
         elif self.n_msb == 4:
             output = torch.stack([output[0,:,0], output[0,:,1], output[0,:,2], output[1,:,0], output[1,:,1], output[1,:,2], output[2,:,0], output[2,:,1], output[2,:,2], output[3,:,0], output[3,:,1], output[3,:,2]],0).t()
         elif self.n_msb == 3:
-            import pdb; pdb.set_trace()
             output = torch.stack([output[0,:,0], output[0,:,1], output[0,:,2], output[0,:,3], output[1,:,0], output[1,:,1], output[1,:,2], output[1,:,3], output[2,:,0], output[2,:,1], output[2,:,2], output[2,:,3]],0).t()
         elif self.n_msb == 2:
             output = torch.stack([output[0,:,0], output[0,:,1], output[0,:,2], output[0,:,3], output[0,:,4], output[0,:,5], output[1,:,0], output[1,:,1], output[1,:,2], output[1,:,3], output[1,:,4], output[1,:,5]],0).t()

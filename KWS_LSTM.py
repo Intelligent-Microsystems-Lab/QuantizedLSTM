@@ -47,7 +47,7 @@ parser.add_argument("--background-frequency", type=float, default=.8, help='How 
 parser.add_argument('--silence-percentage', type=float, default=.1, help='How much of the training data should be silence.')
 parser.add_argument('--unknown-percentage', type=float, default=.1, help='How much of the training data should be unknown words.')
 parser.add_argument('--time-shift-ms', type=float, default=100.0, help='Range to randomly shift the training audio by in time.')
-parser.add_argument("--win-length", type=int, default=24000, help='Window size in ms') # 640
+parser.add_argument("--win-length", type=int, default=640, help='Window size in ms') # 640
 parser.add_argument("--hop-length", type=int, default=320, help='Length of hop between STFT windows') #320
 
 parser.add_argument("--hidden", type=int, default=114, help='Number of hidden LSTM units') 
