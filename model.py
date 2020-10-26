@@ -417,7 +417,7 @@ class KWS_LSTM_cs(nn.Module):
 # mixed but using double the blocks as given
 class KWS_LSTM_mix(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, device, wb, abMVM, abNM, ib, noise_level, drop_p, n_msb, pact_a, bias_r, gain_blocks):
-        super(KWS_LSTM_cs, self).__init__()
+        super(KWS_LSTM_mix, self).__init__()
         self.device = device
         self.noise_level = noise_level
         self.wb = wb
