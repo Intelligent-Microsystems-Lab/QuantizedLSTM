@@ -26,7 +26,7 @@ parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.A
 
 # general config
 parser.add_argument("--random-seed", type=int, default=80085, help='Random Seed')
-parser.add_argument("--method", type=int, default=2, help='Method: 0 - blocks, 1 - orthogonality, 2 - mix')
+parser.add_argument("--method", type=int, default=1, help='Method: 0 - blocks, 1 - orthogonality, 2 - mix')
 parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speech_commands_v0.02', help='Path to Dataset')
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
 parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
@@ -69,6 +69,8 @@ parser.add_argument("--drop-p", type=float, default=.125, help='Dropconnect prob
 parser.add_argument("--pact-a", type=int, default=1, help='Whether scaling parameter is trainable (1:on,0:off)')
 
 parser.add_argument("--rows-bias", type=int, default=6, help='How many rows for the bias')
+
+
 parser.add_argument("--gain-blocks", type=int, default=2, help='Fox mixed method, how many parallel blocks')
 
 args = parser.parse_args()
