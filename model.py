@@ -444,7 +444,7 @@ class KWS_LSTM_mix(nn.Module):
 
     def forward(self, inputs):
         # init states with zero
-        self.hidden_state = (torch.zeros(self.n_msb, inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(self.n_msb, inputs.shape[1], self.hidden_dim, device = self.device))
+        self.hidden_state = (torch.zeros(self.n_msb * gain_blocks, inputs.shape[1], self.hidden_dim, device = self.device), torch.zeros(self.n_msb * gain_blocks, inputs.shape[1], self.hidden_dim, device = self.device))
         
         # LSTM blocks
         lstm_out, _ = self.lstmBlocks(inputs, self.hidden_state)
