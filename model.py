@@ -499,7 +499,6 @@ class KWS_LSTM_mix(nn.Module):
         weights = torch.cat([self.lstmBlocks.cell.weight_ih.reshape(cols, -1), self.lstmBlocks.cell.weight_hh.reshape(cols,-1), self.lstmBlocks.cell.bias_ih.reshape(cols,-1), self.lstmBlocks.cell.bias_hh.reshape(cols,-1), self.finFC.weights.reshape(cols,-1), self.finFC.bias.reshape(cols,-1)], dim=1)
 
         if self.n_msb == 2 and self.gain_blocks == 2:
-            import pdb; pdb.set_trace()
             out = self.c_sim(weights[0,:], weights[2,:])
             out += self.c_sim(weights[1,:], weights[3,:])
             out /= self.gain_blocks
