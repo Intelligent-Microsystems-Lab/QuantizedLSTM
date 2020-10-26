@@ -106,7 +106,7 @@ for i in range(trials):
             #         f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + value+ "\" --random-seed " + str(random_seeds[i])) 
             #     else:
             #         f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " " + str(value)+ " --random-seed " + str(random_seeds[i])) 
-            os.system("python KWS_LSTM --training-steps 1 --learning-rate .002 --finetuning-epochs 1 --" + variable + " \"" + value )
+            os.system("python KWS_LSTM.py --training-steps \"1\" --learning-rate \".002\" --finetuning-epochs 1 --" + str(variable) + " " + str(value) )
 
 
 
