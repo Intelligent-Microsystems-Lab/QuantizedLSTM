@@ -47,7 +47,7 @@ parser.add_argument("--background-frequency", type=float, default=.8, help='How 
 parser.add_argument('--silence-percentage', type=float, default=.1, help='How much of the training data should be silence.')
 parser.add_argument('--unknown-percentage', type=float, default=.1, help='How much of the training data should be unknown words.')
 parser.add_argument('--time-shift-ms', type=float, default=100.0, help='Range to randomly shift the training audio by in time.')
-parser.add_argument("--win-length", type=int, default=640, help='Window size in ms') # 400
+parser.add_argument("--win-length", type=int, default=24000, help='Window size in ms') # 640
 parser.add_argument("--hop-length", type=int, default=320, help='Length of hop between STFT windows') #320
 
 parser.add_argument("--hidden", type=int, default=114, help='Number of hidden LSTM units') 
@@ -61,7 +61,7 @@ parser.add_argument("--quant-inp", type=int, default=4, help='Bits available for
 parser.add_argument("--quant-w", type=int, default=None, help='Bits available for weights')
 
 parser.add_argument("--l2", type=float, default=.01, help='Strength of L2 norm')
-parser.add_argument("--n-msb", type=int, default=2, help='Number of blocks available')
+parser.add_argument("--n-msb", type=int, default=4, help='Number of blocks available')
 parser.add_argument("--cs", type=float, default=.1, help='Strength cosine similarity penalization')
 
 parser.add_argument("--max-w", type=float, default=.1, help='Maximumg weight')
@@ -77,6 +77,8 @@ args = parser.parse_args()
 args.canonical_testing = bool(args.canonical_testing)
 args.pact_a = bool(args.pact_a)
 args.hidden = args.hidden - args.rows_bias
+args.hop_length = args.win_length // 2
+
 print(args)
 
 model_lib.max_w = args.max_w
@@ -141,6 +143,9 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
 
     # train
     x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
+
+    print(x_data.shape)
+    import pdb; pdb.set_trace()
 
     output = model(x_data)
 
