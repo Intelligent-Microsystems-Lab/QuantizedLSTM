@@ -1,7 +1,7 @@
 import os
 import numpy as np
 
-ident_word = "steps"
+ident_word = "steps"#"ISCAS21"
 
 part1 = "#!/bin/csh \n#$ -M cschaef6@nd.edu \n#$ -m abe\n#$ -q " 
 part11 = "\n#$ -l gpu_card=1\n#$ -N "
@@ -82,19 +82,19 @@ part4 = ".txt\nmodule load python\nsetenv OMP_NUM_THREADS $NSLOTS\npython KWS_LS
 #sweep_parameters = {'rows-bias':[1,2,3,4,5,6,7,8,9,10]}
 #sweep_parameters = {'cs':[0.01, 0.1, 0.25, 0.5, 0.75, 0.8, 0.9, 1]}
 # sweep_parameters = {'method':[0, 1, 2]}
-sweep_parameters = {'win-length':[24000, 20000, 16000, 12000, 8000, 6000, 4000, 3000, 2000, 1800, 1500, 1200, 1000, 900, 800, 700, 640, 600, 500, 480, 320]}
+# sweep_parameters = {'win-length':[24000, 20000, 16000, 12000, 8000, 6000, 4000, 3000, 2000, 1800, 1500, 1200, 1000, 900, 800, 700, 640, 600, 500, 480, 320]}
 
-#sweep_parameters = {'drop-p': [.0, .05, .1, .15, .2, .25, .3, .4, .5, .6]}
+# #sweep_parameters = {'drop-p': [.0, .05, .1, .15, .2, .25, .3, .4, .5, .6]}
 
-#sweep_parameters = {'learning-rate': ['0.001,0.0002,0.00004', '0.002,0.0004,0.00008', '0.01,0.005,0.001', '0.0001,0.00005,0.00001', '0.0005,0.0001,0.00002']   }
+# #sweep_parameters = {'learning-rate': ['0.001,0.0002,0.00004', '0.002,0.0004,0.00008', '0.01,0.005,0.001', '0.0001,0.00005,0.00001', '0.0005,0.0001,0.00002']   }
 
-trials = 1
+# trials = 1
 
-random_seeds = [193012823 ,235899598, 8627169, 103372330, 14339038, 221706254, 46192121, 188833202, 37306063, 171928928]
+# random_seeds = [193012823 ,235899598, 8627169, 103372330, 14339038, 221706254, 46192121, 188833202, 37306063, 171928928]
 
-#avail_q = ['gpu@qa-rtx6k-040.crc.nd.edu', 'gpu@qa-rtx6k-041.crc.nd.edu', 'gpu@ta-titanv-001.crc.nd.edu']
-avail_q = ['gpu@@joshi']
-q_counter = 0
+# #avail_q = ['gpu@qa-rtx6k-040.crc.nd.edu', 'gpu@qa-rtx6k-041.crc.nd.edu', 'gpu@ta-titanv-001.crc.nd.edu']
+# avail_q = ['gpu@@joshi']
+# q_counter = 0
 
 
 # for i in range(trials):
@@ -110,6 +110,18 @@ q_counter = 0
 
 
 
+#sweep_parameters = {'quant-inp':[2,3,4,5,6,7,8], 'quant-actMVM':[2,3,4,5,6,7,8], 'quant-actNM':[2,3,4,5,6,7,8,9,10,11,12], 'n-msb':[1,2,3,4,5,6,7,8,9,10,11,12]}
+
+
+sweep_parameters = {'win-length':[640, 641, 654, 668, 682, 696, 712, 728, 746, 762, 782, 801, 822, 844, 866, 890, 916]}
+
+trials = 3
+
+random_seeds = [193012823 ,235899598, 8627169, 103372330, 14339038, 221706254, 46192121, 188833202, 37306063, 171928928]
+
+
+avail_q = ['gpu@@joshi']
+q_counter = 0
 
 
 for i in range(trials):
