@@ -1,7 +1,7 @@
 import os
 import numpy as np
 
-ident_word = "ISCAS21"
+ident_word = "M1_ISCAS21"
 
 part1 = "#!/bin/csh \n#$ -M cschaef6@nd.edu \n#$ -m abe\n#$ -q " 
 part11 = "\n#$ -l gpu_card=1\n#$ -N "
