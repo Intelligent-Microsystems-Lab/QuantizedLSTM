@@ -1,0 +1,11 @@
+#!/bin/csh 
+#$ -M cschaef6@nd.edu 
+#$ -m abe
+#$ -q gpu@@joshi
+#$ -l gpu_card=1
+#$ -N digital_M0quant-actNM_12_2
+#$ -o ./logs/output_digital_digital_M0quant-actNM_12_2.txt
+#$ -e ./logs/error_digital_digital_M0quant-actNM_12_2.txt
+module load python
+setenv OMP_NUM_THREADS $NSLOTS
+python KWS_LSTM.py --quant-actNM "12" --random-seed 8627169 --noise-injectionT 0 --noise-injectionI 0  --max-w 1 --rows-bias 100 --method 0 --quant-actMVM 12 --quant-inp 12 --quant-w 12
