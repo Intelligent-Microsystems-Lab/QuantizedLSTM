@@ -142,8 +142,8 @@ class CustomMM_bmm(torch.autograd.Function):
         weight = torch.clamp(weight, -max_w, max_w)
         bias = torch.clamp(bias, -bias_r, bias_r)
 
-        wq = quant_pass(weight, wb, torch.tensor([1.]).device(input.device))
-        bq = quant_pass(bias, wb, torch.tensor([1.]).device(input.device))
+        wq = quant_pass(weight, wb, torch.tensor([1.]).to(input.device))
+        bq = quant_pass(bias, wb, torch.tensor([1.]).to(input.device))
 
         ctx.save_for_backward(input, weight, bias)
         output = input.bmm(wq + noise_w) + bq + bias_w
