@@ -124,6 +124,7 @@ def pact_a_bmm(x, a):
     return torch.sign(x) * .5 * (torch.abs(x) - torch.abs(torch.abs(x) - a) + a)
 
 def w_init(fp, wb):
+    fp = float(fp)
     if (wb is None) or (wb == 0):
         return fp
 
