@@ -164,9 +164,9 @@ for i in range(trials):
             name = ident_word + "_M0" +variable + "_" + str(value).replace(",","")   + "_" + str(i)
             with open('jobscripts/'+name+'.script', 'w') as f:
                 if isinstance(value, str):
-                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + str(value)+ "\" --random-seed " + str(random_seeds[i]) + " --noise-injectionT 0 --noise-injectionI 0  --max-w 1 --rows-bias 100 --method 0 --quant-actMVM " + str(value) + " --quant-inp " + str(value) + " --quant-w " + str(value) ) 
+                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + str(value)+ "\" --random-seed " + str(random_seeds[i]) + " --noise-injectionT 0 --noise-injectionI 0  --max-w 1 --method 0 --quant-actMVM " + str(value) + " --quant-inp " + str(value) + " --quant-w " + str(value) ) 
                 else:
-                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + str(value)+ "\" --random-seed " + str(random_seeds[i]) + " --noise-injectionT 0 --noise-injectionI 0  --max-w 1 --rows-bias 100 --method 0 --quant-actMVM " + str(value) + " --quant-inp " + str(value) + " --quant-w " + str(value) ) 
+                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + str(value)+ "\" --random-seed " + str(random_seeds[i]) + " --noise-injectionT 0 --noise-injectionI 0  --max-w 1 --method 0 --quant-actMVM " + str(value) + " --quant-inp " + str(value) + " --quant-w " + str(value) ) 
             os.system("qsub "+ 'jobscripts/'+name+'.script')
             q_counter += 1
             if q_counter >= len(avail_q):
@@ -180,9 +180,9 @@ for i in range(trials):
             name = ident_word + "_M1" +variable + "_" + str(value).replace(",","")   + "_" + str(i)
             with open('jobscripts/'+name+'.script', 'w') as f:
                 if isinstance(value, str):
-                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + value+ "\" --random-seed " + str(random_seeds[i]) + " --noise-injectionT 0 --noise-injectionI 0  --max-w 1 --rows-bias 100 --method 1 --quant-actMVM " + str(value) + " --quant-inp " + str(value) + " --quant-w " + str(value) ) 
+                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + value+ "\" --random-seed " + str(random_seeds[i]) + " --noise-injectionT 0 --noise-injectionI 0  --max-w 1 --method 1 --quant-actMVM " + str(value) + " --quant-inp " + str(value) + " --quant-w " + str(value) ) 
                 else:
-                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + str(value)+ "\" --random-seed " + str(random_seeds[i]) + " --noise-injectionT 0 --noise-injectionI 0  --max-w 1 --rows-bias 100 --method 1 --quant-actMVM " + str(value) + " --quant-inp " + str(value) + " --quant-w " + str(value) ) 
+                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + str(value)+ "\" --random-seed " + str(random_seeds[i]) + " --noise-injectionT 0 --noise-injectionI 0  --max-w 1 --method 1 --quant-actMVM " + str(value) + " --quant-inp " + str(value) + " --quant-w " + str(value) ) 
             os.system("qsub "+ 'jobscripts/'+name+'.script')
             q_counter += 1
             if q_counter >= len(avail_q):
