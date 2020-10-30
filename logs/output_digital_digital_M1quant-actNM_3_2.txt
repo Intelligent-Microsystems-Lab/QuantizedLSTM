@@ -43,3 +43,5 @@ Traceback (most recent call last):
   File "/afs/crc.nd.edu/user/c/cschaef6/.local/lib/python3.7/site-packages/torch/nn/init.py", line 16, in _no_grad_uniform_
     return tensor.uniform_(a, b)
 TypeError: uniform_(): argument 'from' (position 1) must be float, not Tensor
+Loading python/3.7.3
+  Loading requirement: tcl/8.6.8 gcc/8.3.0

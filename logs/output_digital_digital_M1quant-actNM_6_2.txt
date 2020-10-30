@@ -361,3 +361,5 @@ Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)
 09900     0.6157      0.8165     0.8138     55.7508
 Start testing:
 Test Accuracy: 0.7708
+Loading python/3.7.3
+  Loading requirement: tcl/8.6.8 gcc/8.3.0
