@@ -60,3 +60,18 @@ Traceback (most recent call last):
   File "/afs/crc.nd.edu/user/c/cschaef6/.local/lib/python3.7/site-packages/torch/nn/init.py", line 16, in _no_grad_uniform_
     return tensor.uniform_(a, b)
 TypeError: uniform_(): argument 'from' (position 1) must be float, not Tensor
+Loading python/3.7.3
+  Loading requirement: tcl/8.6.8 gcc/8.3.0
+Namespace(background_frequency=0.8, background_volume=0.1, batch_size=474, canonical_testing=False, cs=0.1, dataloader_num_workers=8, dataset_path_test='data.nosync/speech_commands_test_set_v0.02', dataset_path_train='data.nosync/speech_commands_v0.02', drop_p=0.125, finetuning_epochs=10000, gain_blocks=2, hidden=108, hop_length=320, l2=0.01, learning_rate='0.002,0.0005,0.00008', max_w=1.0, method=1, n_mfcc=40, n_msb=4, noise_injectionI=0.0, noise_injectionT=0.0, pact_a=True, quant_actMVM=4, quant_actNM=4, quant_inp=4, quant_w=4, random_seed=8627169, rows_bias=6, sample_rate=16000, silence_percentage=0.1, testing_percentage=10, time_shift_ms=100.0, training_steps='10000,10000,200', unknown_percentage=0.1, validation_percentage=10, win_length=641, word_list=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'])
+Traceback (most recent call last):
+  File "KWS_LSTM.py", line 112, in <module>
+    model = KWS_LSTM_cs(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = 0, drop_p = args.drop_p, n_msb = args.n_msb, pact_a = args.pact_a, bias_r = args.rows_bias)
+  File "/afs/crc.nd.edu/user/c/cschaef6/QuantizedLSTM/model.py", line 362, in __init__
+    self.lstmBlocks = LSTMLayer(LSTMCellQ_bmm, self.drop_p, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.n_msb, pact_a, bias_r)
+  File "/afs/crc.nd.edu/user/c/cschaef6/QuantizedLSTM/model.py", line 48, in __init__
+    torch.nn.init.uniform_(self.cell.weight_hh, a = -limit1, b = limit1)
+  File "/afs/crc.nd.edu/user/c/cschaef6/.local/lib/python3.7/site-packages/torch/nn/init.py", line 125, in uniform_
+    return _no_grad_uniform_(tensor, a, b)
+  File "/afs/crc.nd.edu/user/c/cschaef6/.local/lib/python3.7/site-packages/torch/nn/init.py", line 16, in _no_grad_uniform_
+    return tensor.uniform_(a, b)
+TypeError: uniform_(): argument 'from' (position 1) must be float, not Tensor
