@@ -8,4 +8,4 @@
 #$ -e ./logs/error_digital_digital_M1quant-actNM_8_2.txt
 module load python
 setenv OMP_NUM_THREADS $NSLOTS
-python KWS_LSTM.py --quant-actNM "8" --random-seed 8627169 --noise-injectionT 0 --noise-injectionI 0  --max-w 1 --method 1 --quant-actMVM 8 --quant-inp 8 --quant-w 8
+python KWS_LSTM.py --quant-actNM "8" --random-seed 8627169 --noise-injectionT 0 --noise-injectionI 0 --training-steps "10000,10000,10000" --learning-rate "0.0005,0.0001,0.00002" --finetuning-epochs 0 --drop-p 0 --max-w 1 --method 1 --quant-actMVM 8 --quant-inp 8 --quant-w 8
