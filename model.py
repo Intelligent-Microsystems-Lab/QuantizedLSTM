@@ -45,7 +45,6 @@ class LSTMLayer(nn.Module):
         limit1 = w_init(limit1, cell_args[2])
         limit2 = w_init(limit2, cell_args[2])
 
-        import pdb; pdb.set_trace()
         torch.nn.init.uniform_(self.cell.weight_hh, a = -limit1, b = limit1)
         torch.nn.init.uniform_(self.cell.weight_ih, a = -limit2, b = limit2)
 
@@ -130,6 +129,7 @@ def w_init(fp, wb):
         return fp
 
     Wm = 1.5/step_d(torch.tensor([float(wb)]))
+    import pdb; pdb.set_trace()
     return Wm if Wm > fp else fp
 
 
