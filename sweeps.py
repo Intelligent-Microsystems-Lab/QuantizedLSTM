@@ -144,7 +144,7 @@ part4 = ".txt\nmodule load python\nsetenv OMP_NUM_THREADS $NSLOTS\npython KWS_LS
 ################
 
 
-sweep_parameters = {'quant-actNM':[2,3,4]} #, 'n-msb':[1,2,3,4,5,6,7,8,9,10,11,12] #,5,6,7,8,9,10,11,12
+sweep_parameters = {'n-msb':[1,2,3,4,5,6]} #, 'n-msb':[1,2,3,4,5,6,7,8,9,10,11,12] #'quant-actNM':[2,3,4],5,6,7,8,9,10,11,12
 
 
 #sweep_parameters = {'win-length':[640, 641, 654, 668, 682, 696, 712, 728, 746, 762, 782, 801, 822, 844, 866, 890, 916]}
