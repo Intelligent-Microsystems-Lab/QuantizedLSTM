@@ -128,8 +128,7 @@ def w_init(fp, wb):
     if (wb is None) or (wb == 0):
         return fp
 
-    Wm = 1.5/step_d(torch.tensor([float(wb)]))
-    import pdb; pdb.set_trace()
+    Wm = 1.5/step_d(torch.tensor([float(wb)])).item()
     return Wm if Wm > fp else fp
 
 
