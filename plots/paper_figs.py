@@ -65,7 +65,7 @@ plt.close()
 
 
 ############
-# Ablation Study
+# Ablation Study Energy + Accuracy
 ############
 
 inp_bits = pd.read_csv("QuantizedLSTMs - InpBits.csv")
@@ -73,14 +73,6 @@ out_bits = pd.read_csv("QuantizedLSTMs - OutBits.csv")
 nm_bits = pd.read_csv("QuantizedLSTMs - NMbits.csv")
 nmsb = pd.read_csv("QuantizedLSTMs - NMSB.csv")
 
-
-x = np.concatenate([inp_bits["uJ"], out_bits["uJ"], nm_bits["uJ"], nmsb["uJ"]])
-
-y = np.concatenate([inp_bits[['#1', '#2', '#3']].mean(1), out_bits[['#1', '#2', '#3']].mean(1), nm_bits[['#1', '#2', '#3']].mean(1), nmsb[['#1', '#2', '#3']].mean(1)])
-
-n = np.concatenate([[x+'ib' for x in inp_bits["Input Bits"]], [x+'ob' for x in out_bits["Output Bits"]], [x+'nc' for x in nm_bits["Non CIM bits"]], [str(x)+'msb' for x in nmsb["N MSB"]]])
-
-# big scatter (?)
 
 
 plt.rcParams["font.weight"] = "bold"

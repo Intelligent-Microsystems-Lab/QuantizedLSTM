@@ -144,7 +144,7 @@ part4 = ".txt\nmodule load python\nsetenv OMP_NUM_THREADS $NSLOTS\npython KWS_LS
 ################
 
 
-sweep_parameters = {'n-msb':[1,2,3,4,5,6]} #, 'n-msb':[1,2,3,4,5,6,7,8,9,10,11,12] #'quant-actNM':[2,3,4],5,6,7,8,9,10,11,12
+sweep_parameters = {'quant-actNM':[2,3,4,5,6,7,8,9,10,11,12]} #, 'n-msb':[1,2,3,4,5,6,7,8,9,10,11,12]
 
 
 #sweep_parameters = {'win-length':[640, 641, 654, 668, 682, 696, 712, 728, 746, 762, 782, 801, 822, 844, 866, 890, 916]}
@@ -164,9 +164,9 @@ for i in range(trials):
             name = ident_word + "_M0" +variable + "_" + str(value).replace(",","")   + "_" + str(i)
             with open('jobscripts/'+name+'.script', 'w') as f:
                 if isinstance(value, str):
-                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + str(value)+ "\" --random-seed " + str(random_seeds[i]) + " --noise-injectionT 0 --noise-injectionI 0  --max-w 1 --method 0 --quant-actMVM " + str(value) + " --quant-inp " + str(value) + " --quant-w " + str(value) ) 
+                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + str(value)+ "\" --random-seed " + str(random_seeds[i]) + " --noise-injectionT 0 --noise-injectionI 0 --training-steps \"10000,10000,10000\" --learning-rate \"0.0005,0.0001,0.00002\" --finetuning-epochs 0 --drop-p 0 --max-w 1 --method 0 --quant-actMVM " + str(value) + " --quant-inp " + str(value) + " --quant-w " + str(value) ) 
                 else:
-                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + str(value)+ "\" --random-seed " + str(random_seeds[i]) + " --noise-injectionT 0 --noise-injectionI 0  --max-w 1 --method 0 --quant-actMVM " + str(value) + " --quant-inp " + str(value) + " --quant-w " + str(value) ) 
+                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + str(value)+ "\" --random-seed " + str(random_seeds[i]) + " --noise-injectionT 0 --noise-injectionI 0 --training-steps \"10000,10000,10000\" --learning-rate \"0.0005,0.0001,0.00002\" --finetuning-epochs 0 --drop-p 0 --max-w 1 --method 0 --quant-actMVM " + str(value) + " --quant-inp " + str(value) + " --quant-w " + str(value) ) 
             os.system("qsub "+ 'jobscripts/'+name+'.script')
             q_counter += 1
             if q_counter >= len(avail_q):
@@ -180,9 +180,9 @@ for i in range(trials):
             name = ident_word + "_M1" +variable + "_" + str(value).replace(",","")   + "_" + str(i)
             with open('jobscripts/'+name+'.script', 'w') as f:
                 if isinstance(value, str):
-                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + value+ "\" --random-seed " + str(random_seeds[i]) + " --noise-injectionT 0 --noise-injectionI 0  --max-w 1 --method 1 --quant-actMVM " + str(value) + " --quant-inp " + str(value) + " --quant-w " + str(value) ) 
+                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + value+ "\" --random-seed " + str(random_seeds[i]) + " --noise-injectionT 0 --noise-injectionI 0 --training-steps \"10000,10000,10000\" --learning-rate \"0.0005,0.0001,0.00002\" --finetuning-epochs 0 --drop-p 0 --max-w 1 --method 1 --quant-actMVM " + str(value) + " --quant-inp " + str(value) + " --quant-w " + str(value) ) 
                 else:
-                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + str(value)+ "\" --random-seed " + str(random_seeds[i]) + " --noise-injectionT 0 --noise-injectionI 0  --max-w 1 --method 1 --quant-actMVM " + str(value) + " --quant-inp " + str(value) + " --quant-w " + str(value) ) 
+                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + str(value)+ "\" --random-seed " + str(random_seeds[i]) + " --noise-injectionT 0 --noise-injectionI 0 --training-steps \"10000,10000,10000\" --learning-rate \"0.0005,0.0001,0.00002\" --finetuning-epochs 0 --drop-p 0 --max-w 1 --method 1 --quant-actMVM " + str(value) + " --quant-inp " + str(value) + " --quant-w " + str(value) ) 
             os.system("qsub "+ 'jobscripts/'+name+'.script')
             q_counter += 1
             if q_counter >= len(avail_q):
