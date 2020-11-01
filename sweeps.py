@@ -110,7 +110,7 @@ part4 = ".txt\nmodule load python\nsetenv OMP_NUM_THREADS $NSLOTS\npython KWS_LS
 
 
 
-sweep_parameters = {'hidden':[200, 300, 400, 500]}#'quant-inp':[2,3,4,5,6,7,8], 'quant-actMVM':[2,3,4,5,6,7,8], 'quant-actNM':[2,3,4,5,6,7,8,9,10,11,12], 'n-msb':[1,2,3,4,5,6,7,8,9,10,11,12]}
+sweep_parameters = {'hidden':[114, 200, 300, 400, 500]}#'quant-inp':[2,3,4,5,6,7,8], 'quant-actMVM':[2,3,4,5,6,7,8], 'quant-actNM':[2,3,4,5,6,7,8,9,10,11,12], 'n-msb':[1,2,3,4,5,6,7,8,9,10,11,12]}
 
 
 #sweep_parameters = {'win-length':[640, 641, 654, 668, 682, 696, 712, 728, 746, 762, 782, 801, 822, 844, 866, 890, 916]}
@@ -130,9 +130,9 @@ for i in range(trials):
             name = ident_word + "_" +variable + "_M0" + str(value).replace(",","")   + "_" + str(i)
             with open('jobscripts/'+name+'.script', 'w') as f:
                 if isinstance(value, str):
-                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + value+ "\" --method 0 --random-seed " + str(random_seeds[i])) 
+                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + value+ "\" --method 0 --batch-size 100 --random-seed " + str(random_seeds[i])) 
                 else:
-                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " " + str(value)+ " --method 0 --random-seed " + str(random_seeds[i])) 
+                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " " + str(value)+ " --method 0 --batch-size 100 --random-seed " + str(random_seeds[i])) 
             os.system("qsub "+ 'jobscripts/'+name+'.script')
             q_counter += 1
             if q_counter >= len(avail_q):
@@ -145,9 +145,9 @@ for i in range(trials):
             name = ident_word + "_" +variable + "_M1" + str(value).replace(",","")   + "_" + str(i)
             with open('jobscripts/'+name+'.script', 'w') as f:
                 if isinstance(value, str):
-                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + value+ "\" --method 1 --random-seed " + str(random_seeds[i])) 
+                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + value+ "\" --method 1 --batch-size 100 --random-seed " + str(random_seeds[i])) 
                 else:
-                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " " + str(value)+ " --method 1 --random-seed " + str(random_seeds[i])) 
+                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " " + str(value)+ " --method 1 --batch-size 100 --random-seed " + str(random_seeds[i])) 
             os.system("qsub "+ 'jobscripts/'+name+'.script')
             q_counter += 1
             if q_counter >= len(avail_q):
