@@ -1,0 +1,11 @@
+#!/bin/csh 
+#$ -M cschaef6@nd.edu 
+#$ -m abe
+#$ -q gpu@@joshi
+#$ -l gpu_card=1
+#$ -N hidden_hidden_M0400_2
+#$ -o ./logs/output_hidden_hidden_hidden_M0400_2.txt
+#$ -e ./logs/error_hidden_hidden_hidden_M0400_2.txt
+module load python
+setenv OMP_NUM_THREADS $NSLOTS
+python KWS_LSTM.py --hidden 400 --method 0 --random-seed 8627169
