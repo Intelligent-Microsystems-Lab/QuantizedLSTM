@@ -173,19 +173,19 @@ avail_q = ['gpu@@joshi']
 q_counter = 0
 
 
-for i in range(trials):
-    for variable in sweep_parameters:
-        for value in sweep_parameters[variable]:
-            name = ident_word + "_M0" +variable + "_" + str(value).replace(",","")   + "_" + str(i)
-            with open('jobscripts/'+name+'.script', 'w') as f:
-                if isinstance(value, str):
-                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + str(value)+ "\" --random-seed " + str(random_seeds[i]) + " --max-w 1 --method 0 --quant-actNM 6 --quant-actMVM 6 --quant-inp 6 --quant-w 6"  ) 
-                else:
-                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + str(value)+ "\" --random-seed " + str(random_seeds[i]) + " --max-w 1 --method 0 --quant-actNM 6 --quant-actMVM 6 --quant-inp 6 --quant-w 6"  ) 
-            os.system("qsub "+ 'jobscripts/'+name+'.script')
-            q_counter += 1
-            if q_counter >= len(avail_q):
-                q_counter = 0
+# for i in range(trials):
+#     for variable in sweep_parameters:
+#         for value in sweep_parameters[variable]:
+#             name = ident_word + "_M0" +variable + "_" + str(value).replace(",","")   + "_" + str(i)
+#             with open('jobscripts/'+name+'.script', 'w') as f:
+#                 if isinstance(value, str):
+#                     f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + str(value)+ "\" --random-seed " + str(random_seeds[i]) + " --max-w 1 --method 0 --quant-actNM 6 --quant-actMVM 6 --quant-inp 6 --quant-w 6"  ) 
+#                 else:
+#                     f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + str(value)+ "\" --random-seed " + str(random_seeds[i]) + " --max-w 1 --method 0 --quant-actNM 6 --quant-actMVM 6 --quant-inp 6 --quant-w 6"  ) 
+#             os.system("qsub "+ 'jobscripts/'+name+'.script')
+#             q_counter += 1
+#             if q_counter >= len(avail_q):
+#                 q_counter = 0
 
 
 
@@ -197,7 +197,7 @@ for i in range(trials):
                 if isinstance(value, str):
                     f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + str(value)+ "\" --random-seed " + str(random_seeds[i]) + " --max-w 1 --method 1 --quant-actNM 6 --quant-actMVM 6 --quant-inp 6 --quant-w 6"  ) 
                 else:
-                    ff.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + str(value)+ "\" --random-seed " + str(random_seeds[i]) + " --max-w 1 --method 1 --quant-actNM 6 --quant-actMVM 6 --quant-inp 6 --quant-w 6"  ) 
+                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + str(value)+ "\" --random-seed " + str(random_seeds[i]) + " --max-w 1 --method 1 --quant-actNM 6 --quant-actMVM 6 --quant-inp 6 --quant-w 6"  ) 
             os.system("qsub "+ 'jobscripts/'+name+'.script')
             q_counter += 1
             if q_counter >= len(avail_q):
