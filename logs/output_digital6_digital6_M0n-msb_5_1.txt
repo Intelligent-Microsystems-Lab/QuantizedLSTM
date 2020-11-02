@@ -1,0 +1,24 @@
+Loading python/3.7.3
+  Loading requirement: tcl/8.6.8 gcc/8.3.0
+Namespace(background_frequency=0.8, background_volume=0.1, batch_size=474, canonical_testing=False, cs=0.1, dataloader_num_workers=8, dataset_path_test='data.nosync/speech_commands_test_set_v0.02', dataset_path_train='data.nosync/speech_commands_v0.02', drop_p=0.125, finetuning_epochs=10000, gain_blocks=2, hidden=108, hop_length=320, l2=0.01, learning_rate='0.002,0.0005,0.00008', max_w=1.0, method=0, n_mfcc=40, n_msb=5, noise_injectionI=0.1, noise_injectionT=0.16, pact_a=True, quant_actMVM=6, quant_actNM=6, quant_inp=6, quant_w=6, random_seed=235899598, rows_bias=6, sample_rate=16000, silence_percentage=0.1, testing_percentage=10, time_shift_ms=100.0, training_steps='10000,10000,200', unknown_percentage=0.1, validation_percentage=10, win_length=641, word_list=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'])
+9d2de710-99d4-430a-8de8-be7936b3b188
+Start training with DropConnect:
+Epoch     Train Loss  Train Acc  Vali. Acc  Time (s)
+Traceback (most recent call last):
+  File "KWS_LSTM.py", line 167, in <module>
+    output = model(x_data)
+  File "/afs/crc.nd.edu/user/c/cschaef6/.local/lib/python3.7/site-packages/torch/nn/modules/module.py", line 722, in _call_impl
+    result = self.forward(*input, **kwargs)
+  File "/afs/crc.nd.edu/user/c/cschaef6/QuantizedLSTM/model.py", line 290, in forward
+    lstm_out, _ = self.lstmBlocks(inputs, self.hidden_state)
+  File "/afs/crc.nd.edu/user/c/cschaef6/.local/lib/python3.7/site-packages/torch/nn/modules/module.py", line 722, in _call_impl
+    result = self.forward(*input, **kwargs)
+  File "/afs/crc.nd.edu/user/c/cschaef6/QuantizedLSTM/model.py", line 65, in forward
+    out, state = self.cell(inputs[i], state, w_mask)
+  File "/afs/crc.nd.edu/user/c/cschaef6/.local/lib/python3.7/site-packages/torch/nn/modules/module.py", line 722, in _call_impl
+    result = self.forward(*input, **kwargs)
+  File "/afs/crc.nd.edu/user/c/cschaef6/QuantizedLSTM/model.py", line 213, in forward
+    gates = quant_pass(pact_a_bmm( quant_pass(pact_a_bmm(part1, self.a12), self.abMVM, self.a12) + quant_pass(pact_a_bmm(part2, self.a13), self.abMVM, self.a13), self.a14), self.abNM, self.a14)
+  File "/afs/crc.nd.edu/user/c/cschaef6/QuantizedLSTM/model.py", line 87, in forward
+    x01 = torch.clamp(x_scaled,-1+(1./step_d),1-(1./step_d))
+RuntimeError: CUDA out of memory. Tried to allocate 20.00 MiB (GPU 0; 10.76 GiB total capacity; 9.60 GiB already allocated; 3.12 MiB free; 9.80 GiB reserved in total by PyTorch)
