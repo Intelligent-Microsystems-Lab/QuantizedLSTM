@@ -8,4 +8,4 @@
 #$ -e ./logs/error_hidden_hidden_hidden_M0200_0.txt
 module load python
 setenv OMP_NUM_THREADS $NSLOTS
-python KWS_LSTM.py --hidden 200 --method 0 --random-seed 193012823
+python KWS_LSTM.py --hidden 200 --method 0 --batch-size 100 --random-seed 193012823
