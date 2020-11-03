@@ -8,4 +8,4 @@
 #$ -e ./logs/error_digital6_digital6_M0hidden_114_1.txt
 module load python
 setenv OMP_NUM_THREADS $NSLOTS
-python KWS_LSTM.py --hidden "114" --random-seed 235899598 --max-w 1 --method 0 --quant-actNM 6 --quant-actMVM 6 --quant-inp 6 --quant-w 6
+python KWS_LSTM.py --hidden "114" --random-seed 235899598 --max-w 1 --method 0 --batch-size 100 --quant-actNM 6 --quant-actMVM 6 --quant-inp 6 --quant-w 6
