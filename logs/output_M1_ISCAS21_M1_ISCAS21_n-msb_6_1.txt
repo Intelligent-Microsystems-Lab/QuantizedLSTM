@@ -22,3 +22,31 @@ Traceback (most recent call last):
   File "/afs/crc.nd.edu/user/c/cschaef6/QuantizedLSTM/model.py", line 89, in forward
     x01q =  torch.round(x01 * step_d ) / step_d
 RuntimeError: CUDA out of memory. Tried to allocate 20.00 MiB (GPU 0; 10.76 GiB total capacity; 9.70 GiB already allocated; 11.12 MiB free; 9.79 GiB reserved in total by PyTorch)
+Loading python/3.7.3
+  Loading requirement: tcl/8.6.8 gcc/8.3.0
+usage: KWS_LSTM.py [-h] [--random-seed RANDOM_SEED] [--method METHOD]
+                   [--dataset-path-train DATASET_PATH_TRAIN]
+                   [--dataset-path-test DATASET_PATH_TEST]
+                   [--word-list WORD_LIST [WORD_LIST ...]]
+                   [--batch-size BATCH_SIZE] [--training-steps TRAINING_STEPS]
+                   [--learning-rate LEARNING_RATE]
+                   [--finetuning-epochs FINETUNING_EPOCHS]
+                   [--dataloader-num-workers DATALOADER_NUM_WORKERS]
+                   [--validation-percentage VALIDATION_PERCENTAGE]
+                   [--testing-percentage TESTING_PERCENTAGE]
+                   [--sample-rate SAMPLE_RATE]
+                   [--canonical-testing CANONICAL_TESTING]
+                   [--background-volume BACKGROUND_VOLUME]
+                   [--background-frequency BACKGROUND_FREQUENCY]
+                   [--silence-percentage SILENCE_PERCENTAGE]
+                   [--unknown-percentage UNKNOWN_PERCENTAGE]
+                   [--time-shift-ms TIME_SHIFT_MS] [--win-length WIN_LENGTH]
+                   [--hop-length HOP_LENGTH] [--hidden HIDDEN]
+                   [--n-mfcc N_MFCC] [--noise-injectionT NOISE_INJECTIONT]
+                   [--noise-injectionI NOISE_INJECTIONI]
+                   [--quant-actMVM QUANT_ACTMVM] [--quant-actNM QUANT_ACTNM]
+                   [--quant-inp QUANT_INP] [--quant-w QUANT_W] [--l2 L2]
+                   [--n-msb N_MSB] [--cs CS] [--max-w MAX_W] [--drop-p DROP_P]
+                   [--pact-a PACT_A] [--rows-bias ROWS_BIAS]
+                   [--gain-blocks GAIN_BLOCKS]
+KWS_LSTM.py: error: argument --method: expected one argument
