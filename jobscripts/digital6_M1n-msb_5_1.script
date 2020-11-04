@@ -1,7 +1,7 @@
 #!/bin/csh 
 #$ -M cschaef6@nd.edu 
 #$ -m abe
-#$ -q gpu@@joshi
+#$ -q gpu@qa-rtx6k-041.crc.nd.edu
 #$ -l gpu_card=1
 #$ -N digital6_M1n-msb_5_1
 #$ -o ./logs/output_digital6_digital6_M1n-msb_5_1.txt
