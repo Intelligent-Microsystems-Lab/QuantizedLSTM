@@ -43,14 +43,12 @@ def convex_hull(points):
 
 
 # CIM results
-inp_bits = (pd.read_csv("QuantizedLSTMs - M0_InpBits.csv").dropna(), pd.read_csv("QuantizedLSTMs - M1_InpBits.csv").dropna())
-out_bits = (pd.read_csv("QuantizedLSTMs - M0_OutBits.csv").dropna(), pd.read_csv("QuantizedLSTMs - M1_OutBits.csv").dropna())
-nm_bits  = (pd.read_csv("QuantizedLSTMs - M0_NMbits.csv").dropna(), pd.read_csv("QuantizedLSTMs - M1_NMbits.csv").dropna())
-nmsb     = (pd.read_csv("QuantizedLSTMs - M0_NMSB.csv").dropna(), pd.read_csv("QuantizedLSTMs - M1_NMSB.csv").dropna())
-hidden   = (pd.read_csv("QuantizedLSTMs - M0_hidden.csv").dropna(), pd.read_csv("QuantizedLSTMs - M1_hidden.csv").dropna())
+inp_bits = (pd.read_csv("M0_InpBits.csv").dropna(), pd.read_csv("M1_InpBits.csv").dropna())
+out_bits = (pd.read_csv("M0_OutBits.csv").dropna(), pd.read_csv("M1_OutBits.csv").dropna())
+nm_bits  = (pd.read_csv("M0_NMbits.csv").dropna(), pd.read_csv("M1_NMbits.csv").dropna())
+nmsb     = (pd.read_csv("M0_NMSB.csv").dropna(), pd.read_csv("M1_NMSB.csv").dropna())
+hidden   = (pd.read_csv("M0_hidden.csv").dropna(), pd.read_csv("M1_hidden.csv").dropna())
 
-hidden = nm_bits
-nmsb = nm_bits
 
 max_acc = max(inp_bits[0][['#1','#2','#3']].max().max(), inp_bits[1][['#1','#2','#3']].max().max(), out_bits[0][['#1','#2','#3']].max().max(), out_bits[1][['#1','#2','#3']].max().max(), nm_bits[0][['#1','#2','#3']].max().max(), nm_bits[1][['#1','#2','#3']].max().max(), nmsb[0][['#1','#2','#3']].max().max(), nmsb[1][['#1','#2','#3']].max().max(), hidden[0][['#1','#2','#3']].max().max(), hidden[1][['#1','#2','#3']].max().max() )
 min_acc = min(inp_bits[0][['#1','#2','#3']].min().min(), inp_bits[1][['#1','#2','#3']].min().min(), out_bits[0][['#1','#2','#3']].min().min(), out_bits[1][['#1','#2','#3']].min().min(), nm_bits[0][['#1','#2','#3']].min().min(), nm_bits[1][['#1','#2','#3']].min().min(), nmsb[0][['#1','#2','#3']].min().min(), nmsb[1][['#1','#2','#3']].min().min(), hidden[0][['#1','#2','#3']].min().min(), hidden[1][['#1','#2','#3']].min().min() )
@@ -58,9 +56,9 @@ max_j = max(inp_bits[0][['uJ']].max().max(), inp_bits[1][['uJ']].max().max(), ou
 min_j = min(inp_bits[0][['uJ']].min().min(), inp_bits[1][['uJ']].min().min(), out_bits[0][['uJ']].min().min(), out_bits[1][['uJ']].min().min(), nm_bits[0][['uJ']].min().min(), nm_bits[1][['uJ']].min().min(), nmsb[0][['uJ']].min().min(), nmsb[1][['uJ']].min().min(), hidden[0][['uJ']].min().min(), hidden[1][['uJ']].min().min() )
 
 # digital results
-d_bits = (pd.read_csv("QuantizedLSTMs - M0_dbits.csv").dropna(), pd.read_csv("QuantizedLSTMs - M1_dbits.csv").dropna())
-d_nmsb = (pd.read_csv("QuantizedLSTMs - M0_dmsb.csv").dropna(), pd.read_csv("QuantizedLSTMs - M1_dmsb.csv").dropna())
-d_hidden  = (pd.read_csv("QuantizedLSTMs - M0_dhidden.csv").dropna(), pd.read_csv("QuantizedLSTMs - M1_dhidden.csv").dropna())
+d_bits = (pd.read_csv("M0_dbits.csv").dropna(), pd.read_csv("M1_dbits.csv").dropna())
+d_nmsb = (pd.read_csv("M0_dmsb.csv").dropna(), pd.read_csv("M1_dmsb.csv").dropna())
+d_hidden  = (pd.read_csv("M0_dhidden.csv").dropna(), pd.read_csv("M1_dhidden.csv").dropna())
 
 
 ############
@@ -70,7 +68,7 @@ d_hidden  = (pd.read_csv("QuantizedLSTMs - M0_dhidden.csv").dropna(), pd.read_cs
 #M0
 x = np.concatenate([inp_bits[0]["uJ"], out_bits[0]["uJ"], nm_bits[0]["uJ"], nmsb[0]["uJ"], hidden[0]["uJ"]])
 y = np.concatenate([inp_bits[0][['#1', '#2', '#3']].mean(1), out_bits[0][['#1', '#2', '#3']].mean(1), nm_bits[0][['#1', '#2', '#3']].mean(1), nmsb[0][['#1', '#2', '#3']].mean(1), hidden[0][['#1', '#2', '#3']].mean(1)])
-n = np.concatenate([[str(x)+'ib' for x in inp_bits[0]["Input Bits"]], [str(x)+'ob' for x in out_bits[0]["Output Bits"]], [str(x)+'nc' for x in nm_bits[0]["Non CIM bits"]], [str(x)+'msb' for x in nmsb[0]["Non CIM bits"]], [str(x)+'hi' for x in nmsb[0]["Non CIM bits"]]])
+n = np.concatenate([[str(x)+'ib' for x in inp_bits[0]["Input Bits"]], [str(x)+'ob' for x in out_bits[0]["Output Bits"]], [str(x)+'nc' for x in nm_bits[0]["Non CIM bits"]], [str(x)+'msb' for x in nmsb[0]["N MSB"]], [str(x)+'hi' for x in hidden[0]["Hidden dim"]]])
 
 points_m0 = [(x[i], y[i]) for i in range(len(x))] 
 hull_m0 = reversed(convex_hull(points_m0))
@@ -80,21 +78,30 @@ xcim0, ycim0 =zip(*hull_m0)
 #M1
 x = np.concatenate([inp_bits[1]["uJ"], out_bits[1]["uJ"], nm_bits[1]["uJ"], nmsb[1]["uJ"], hidden[1]["uJ"]])
 y = np.concatenate([inp_bits[1][['#1', '#2', '#3']].mean(1), out_bits[1][['#1', '#2', '#3']].mean(1), nm_bits[1][['#1', '#2', '#3']].mean(1), nmsb[1][['#1', '#2', '#3']].mean(1), hidden[1][['#1', '#2', '#3']].mean(1)])
-n = np.concatenate([[str(x)+'ib' for x in inp_bits[1]["Input Bits"]], [str(x)+'ob' for x in out_bits[1]["Output Bits"]], [str(x)+'nc' for x in nm_bits[1]["Non CIM bits"]], [str(x)+'msb' for x in nmsb[1]["Non CIM bits"]], [str(x)+'hi' for x in nmsb[1]["Non CIM bits"]]])
+n = np.concatenate([[str(x)+'ib' for x in inp_bits[1]["Input Bits"]], [str(x)+'ob' for x in out_bits[1]["Output Bits"]], [str(x)+'nc' for x in nm_bits[1]["Non CIM bits"]], [str(x)+'msb' for x in nmsb[1]["N MSB"]], [str(x)+'hi' for x in hidden[1]["Hidden dim"]]])
 
 points_m1 = [(x[i], y[i]) for i in range(len(x))] 
 hull_m1 = reversed(convex_hull(points_m1))
 xcim1, ycim1 =zip(*hull_m1)
 
-# #digital M0
-# x = np.concatenate([inp_bits["uJ"], out_bits["uJ"], nm_bits["uJ"], nmsb["uJ"]])
-# y = np.concatenate([inp_bits[['#1', '#2', '#3']].mean(1), out_bits[['#1', '#2', '#3']].mean(1), nm_bits[['#1', '#2', '#3']].mean(1), nmsb[['#1', '#2', '#3']].mean(1)])
-# n = np.concatenate([[x+'ib' for x in inp_bits["Input Bits"]], [x+'ob' for x in out_bits["Output Bits"]], [x+'nc' for x in nm_bits["Non CIM bits"]], [str(x)+'msb' for x in nmsb["N MSB"]]])
+#digital M0
+x = np.concatenate([d_bits[0]["uJ"], d_nmsb[0]["uJ"], d_hidden[0]["uJ"]])
+y = np.concatenate([d_bits[0][['#1', '#2', '#3']].mean(1), d_nmsb[0][['#1', '#2', '#3']].mean(1), d_hidden[0][['#1', '#2', '#3']].mean(1)])
+n = np.concatenate([[str(x)+'ib' for x in d_bits[0]["Bits"]], [str(x)+'msb' for x in d_nmsb[0]["N MSB"]], [str(x)+'hi' for x in d_hidden[0]["Hidden dim"]]])
 
-# #digital M1
-# x = np.concatenate([inp_bits["uJ"], out_bits["uJ"], nm_bits["uJ"], nmsb["uJ"]])
-# y = np.concatenate([inp_bits[['#1', '#2', '#3']].mean(1), out_bits[['#1', '#2', '#3']].mean(1), nm_bits[['#1', '#2', '#3']].mean(1), nmsb[['#1', '#2', '#3']].mean(1)])
-# n = np.concatenate([[x+'ib' for x in inp_bits["Input Bits"]], [x+'ob' for x in out_bits["Output Bits"]], [x+'nc' for x in nm_bits["Non CIM bits"]], [str(x)+'msb' for x in nmsb["N MSB"]]])
+d_points_m0 = [(x[i], y[i]) for i in range(len(x))] 
+d_hull_m0 = reversed(convex_hull(d_points_m0))
+d_xcim0, d_ycim0 =zip(*d_hull_m0)
+
+
+#digital M1
+x = np.concatenate([d_bits[1]["uJ"], d_nmsb[1]["uJ"], d_hidden[1]["uJ"]])
+y = np.concatenate([d_bits[1][['#1', '#2', '#3']].mean(1), d_nmsb[1][['#1', '#2', '#3']].mean(1), d_hidden[1][['#1', '#2', '#3']].mean(1)])
+n = np.concatenate([[str(x)+'ib' for x in d_bits[1]["Bits"]], [str(x)+'msb' for x in d_nmsb[1]["N MSB"]], [str(x)+'hi' for x in d_hidden[1]["Hidden dim"]]])
+
+d_points_m1 = [(x[i], y[i]) for i in range(len(x))] 
+d_hull_m1 = reversed(convex_hull(d_points_m1))
+d_xcim1, d_ycim1 =zip(*d_hull_m1)
 
 
 plt.rcParams["font.weight"] = "bold"
@@ -119,14 +126,15 @@ axes.yaxis.set_tick_params(width=2)
 
 axes.plot(xcim0, ycim0,'x-',color= 'red', label="CIM (M0)")
 axes.plot(xcim1, ycim1,'x-',color= 'blue', label="CIM (M1)")
-# axes.plot(,'x-',color=, label="Digital (M0)")
-# axes.plot(,'x-',color=, label="Digital (M1)")
+axes.plot(d_xcim0, d_ycim0,'x--',color= 'red', label="Digital (M0)")
+axes.plot(d_xcim1, d_ycim1,'x--',color= 'blue', label="Digital (M1)")
 
 
-
-axes.set_xlabel('uJ')
+axes.set_xlabel('Orders of Magnitude J')
 axes.set_ylabel('Accuracy')
-plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.17), ncol=4, frameon=False)
+plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.17), ncol=2, frameon=False)
+
+axes.set_xscale('log')
 
 plt.tight_layout()
 plt.savefig('frontiers.png')
@@ -163,15 +171,15 @@ axes.yaxis.set_tick_params(width=2)
 sc1 = axes.scatter([.5]*7, list(inp_bits[0]['Input Bits']), c = list(inp_bits[0][['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size)
 sc2 = axes.scatter([1.5]*7, list(out_bits[0]['Output Bits']), c = list(out_bits[0][['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size)
 sc3 = axes.scatter([2.5]*11, list(nm_bits[0]['Non CIM bits']), c = list(nm_bits[0][['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size)
-sc4 = axes.scatter([3.5]*11, list(nmsb[0]['Non CIM bits']), c = list(nmsb[0][['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size)
-sc5 = axes.scatter([4.5]*11, list(hidden[0]['Non CIM bits']), c = list(nmsb[0][['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size)
+sc4 = axes.scatter([3.5]*6, list(nmsb[0]['N MSB']), c = list(nmsb[0][['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size)
+sc5 = axes.scatter([4.5]*5, [1,2,3,4,5], c = list(hidden[0][['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size)
 
 
 sc6 = axes.scatter([1]*7, list(inp_bits[1]['Input Bits']), c = list(inp_bits[1][['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size)
 sc7 = axes.scatter([2]*7, list(out_bits[1]['Output Bits']), c = list(out_bits[1][['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size)
 sc8 = axes.scatter([3]*11, list(nm_bits[1]['Non CIM bits']), c = list(nm_bits[1][['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size)
-sc9 = axes.scatter([4]*11, list(nmsb[1]['Non CIM bits']), c = list(nmsb[1][['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size)
-sc10 = axes.scatter([5]*11, list(hidden[1]['Non CIM bits']), c = list(nmsb[1][['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size)
+sc9 = axes.scatter([4]*6, list(nmsb[1]['N MSB']), c = list(nmsb[1][['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size)
+sc10 = axes.scatter([5]*5, [1,2,3,4,5], c = list(hidden[1][['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size)
 
 axes.set_xlabel('')
 axes.set_ylabel('# Bits/Blocks/Hidden')
@@ -229,15 +237,15 @@ axes.yaxis.set_tick_params(width=2)
 sc1 = axes.scatter([.5]*7, list(inp_bits[0]['Input Bits']), c = list(inp_bits[0][['uJ']].mean(1)) , marker = "s",  vmin=min_j, vmax=max_j, s=sym_marker_size)
 sc2 = axes.scatter([1.5]*7, list(out_bits[0]['Output Bits']), c = list(out_bits[0][['uJ']].mean(1)) , marker = "s",  vmin=min_j, vmax=max_j, s=sym_marker_size)
 sc3 = axes.scatter([2.5]*11, list(nm_bits[0]['Non CIM bits']), c = list(nm_bits[0][['uJ']].mean(1)) , marker = "s",  vmin=min_j, vmax=max_j, s=sym_marker_size)
-sc4 = axes.scatter([3.5]*11, list(nmsb[0]['Non CIM bits']), c = list(nmsb[0][['uJ']].mean(1)) , marker = "s",  vmin=min_j, vmax=max_j, s=sym_marker_size)
-sc5 = axes.scatter([4.5]*11, list(hidden[0]['Non CIM bits']), c = list(nmsb[0][['uJ']].mean(1)) , marker = "s",  vmin=min_j, vmax=max_j, s=sym_marker_size)
+sc4 = axes.scatter([3.5]*6, list(nmsb[0]['N MSB']), c = list(nmsb[0][['uJ']].mean(1)) , marker = "s",  vmin=min_j, vmax=max_j, s=sym_marker_size)
+sc5 = axes.scatter([4.5]*5, [1,2,3,4,5], c = list(hidden[0][['uJ']].mean(1)) , marker = "s",  vmin=min_j, vmax=max_j, s=sym_marker_size)
 
 
 sc6 = axes.scatter([1]*7, list(inp_bits[1]['Input Bits']), c = list(inp_bits[1][['uJ']].mean(1)) , marker = "s",  vmin=min_j, vmax=max_j, s=sym_marker_size)
 sc7 = axes.scatter([2]*7, list(out_bits[1]['Output Bits']), c = list(out_bits[1][['uJ']].mean(1)) , marker = "s",  vmin=min_j, vmax=max_j, s=sym_marker_size)
 sc8 = axes.scatter([3]*11, list(nm_bits[1]['Non CIM bits']), c = list(nm_bits[1][['uJ']].mean(1)) , marker = "s",  vmin=min_j, vmax=max_j, s=sym_marker_size)
-sc9 = axes.scatter([4]*11, list(nmsb[1]['Non CIM bits']), c = list(nmsb[1][['uJ']].mean(1)) , marker = "s",  vmin=min_j, vmax=max_j, s=sym_marker_size)
-sc10 = axes.scatter([5]*11, list(hidden[1]['Non CIM bits']), c = list(nmsb[1][['uJ']].mean(1)) , marker = "s",  vmin=min_j, vmax=max_j, s=sym_marker_size)
+sc9 = axes.scatter([4]*6, list(nmsb[1]['N MSB']), c = list(nmsb[1][['uJ']].mean(1)) , marker = "s",  vmin=min_j, vmax=max_j, s=sym_marker_size)
+sc10 = axes.scatter([5]*5, [1,2,3,4,5], c = list(hidden[1][['uJ']].mean(1)) , marker = "s",  vmin=min_j, vmax=max_j, s=sym_marker_size)
 
 axes.set_xlabel('')
 axes.set_ylabel('# Bits/Blocks/Hidden')
