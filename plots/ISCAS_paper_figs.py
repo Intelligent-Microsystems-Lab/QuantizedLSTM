@@ -119,8 +119,8 @@ axes.xaxis.set_tick_params(width=2)
 axes.yaxis.set_tick_params(width=2)
 
 
-axes.plot(xcim0, ycim0,'x-',color= 'blue', label="CIM")
-axes.plot(xcim0_p, ycim0_p,'x-',color= 'green', label="CIM (restricted)")
+axes.plot(xcim0[1:], ycim0[1:],'x-',color= 'blue', label="CIM")
+axes.plot(xcim0_p[1:], ycim0_p[1:],'x-',color= 'green', label="CIM (restricted)")
 axes.plot(d_xcim0, d_ycim0,'x-',color= 'red', label="Digital")
 
 
@@ -298,12 +298,13 @@ plt.close()
 ############
 # Composition Study
 ############
-e_comp.index = [x.split('.')[-1] for x in e_comp['Unnamed: 0']]
 
-cim_ec = e_comp['CIM']
-cim_ec = cim_ec.loc[~(cim_ec==0)]
-digital_ec = e_comp['digital']
-digital_ec = digital_ec.loc[~(digital_ec==0)]
+cim_ec = e_comp['C_LSTM']
+cim_ec.index = e_comp['C_NAMES']
+cim_ec = cim_ec.loc[~(cim_ec==0)]/1000000   
+digital_ec = e_comp['D_LSTM']
+digital_ec.index = e_comp['D_NAMES']
+digital_ec = digital_ec.loc[~(digital_ec==0)]/1000000   
 
 plt.rcParams["font.weight"] = "bold"
 plt.rcParams["axes.labelweight"] = "bold"
@@ -313,29 +314,101 @@ plt.clf()
 plt.rc('font', family='sans-serif')
 plt.rc('font', weight='bold')
 plt.rc('font', size='12')
-fig, axes = plt.subplots(nrows=1, ncols=2) #
+fig, axes = plt.subplots(nrows=2, ncols=2,gridspec_kw={'width_ratios': [1, 1], 'height_ratios': [1, 4]}, sharex=True) #
+
+
+for axis in ['bottom','left']:
+  axes[1][0].spines[axis].set_linewidth(2)
+  axes[0][0].spines[axis].set_linewidth(2)
+for axis in ['top','right']:
+  axes[1][0].spines[axis].set_linewidth(0)
+  axes[0][0].spines[axis].set_linewidth(0)
+axes[1][0].xaxis.set_tick_params(width=0)
+axes[1][0].yaxis.set_tick_params(width=2)
+axes[0][0].xaxis.set_tick_params(width=0)
+axes[0][0].yaxis.set_tick_params(width=2)
+
+
+for axis in ['bottom','left']:
+  axes[1][1].spines[axis].set_linewidth(2)
+  axes[0][1].spines[axis].set_linewidth(2)
+for axis in ['top','right']:
+  axes[1][1].spines[axis].set_linewidth(0)
+  axes[0][1].spines[axis].set_linewidth(0)
+axes[1][1].xaxis.set_tick_params(width=0)
+axes[1][1].yaxis.set_tick_params(width=2)
+axes[0][1].xaxis.set_tick_params(width=0)
+axes[0][1].yaxis.set_tick_params(width=2)
+
+p1 = axes[0][0].bar(1, cim_ec[0], .25, color = 'tab:blue')
+p2 = axes[0][0].bar(1, cim_ec[4], .25, bottom=cim_ec[0], color = 'tab:orange')
+p3 = axes[0][0].bar(1, cim_ec[2], .25, bottom=cim_ec[0] + cim_ec[4], color = 'tab:green')
+p4 = axes[0][0].bar(1, cim_ec[5], .25, bottom=cim_ec[0] + cim_ec[4] + cim_ec[2], color = 'tab:red')
+p5 = axes[0][0].bar(1, cim_ec[3], .25, bottom=cim_ec[0] + cim_ec[4] + cim_ec[2] + cim_ec[5], color = 'tab:purple')
+p6 = axes[0][0].bar(1, cim_ec[1], .25, bottom=cim_ec[0] + cim_ec[4] + cim_ec[2] + cim_ec[5] + cim_ec[3], color = 'tab:brown')
+
+
+p1 = axes[1][0].bar(1, cim_ec[0], .25, color = 'tab:blue')
+p2 = axes[1][0].bar(1, cim_ec[4], .25, bottom=cim_ec[0], color = 'tab:orange')
+p3 = axes[1][0].bar(1, cim_ec[2], .25, bottom=cim_ec[0] + cim_ec[4], color = 'tab:green')
+p4 = axes[1][0].bar(1, cim_ec[5], .25, bottom=cim_ec[0] + cim_ec[4] + cim_ec[2], color = 'tab:red')
+p5 = axes[1][0].bar(1, cim_ec[3], .25, bottom=cim_ec[0] + cim_ec[4] + cim_ec[2] + cim_ec[5], color = 'tab:purple')
+p6 = axes[1][0].bar(1, cim_ec[1], .25, bottom=cim_ec[0] + cim_ec[4] + cim_ec[2] + cim_ec[5] + cim_ec[3], color = 'tab:brown')
+
+
+p1_r = axes[0][1].bar(1, digital_ec[1], .25, color = 'tab:red')
+p2_r = axes[0][1].bar(1, digital_ec[4], .25, bottom = digital_ec[1], color = 'tab:pink')
+p3_r = axes[0][1].bar(1, digital_ec[0], .25, bottom = digital_ec[1] + digital_ec[4], color = 'tab:gray')
+p4_r = axes[0][1].bar(1, digital_ec[2], .25, bottom = digital_ec[1] + digital_ec[4] + digital_ec[0], color = 'tab:olive')
+p5_r = axes[0][1].bar(1, digital_ec[3], .25, bottom = digital_ec[1] + digital_ec[4] + digital_ec[2] + digital_ec[0], color = 'tab:cyan')
+p6_r = axes[0][1].bar(1, digital_ec[5], .25, bottom = digital_ec[1] + digital_ec[4] + digital_ec[2] + digital_ec[3] + digital_ec[0], color = 'gold')
+
+p1_r = axes[1][1].bar(1, digital_ec[1], .25, color = 'tab:red')
+p2_r = axes[1][1].bar(1, digital_ec[4], .25, bottom = digital_ec[1], color = 'tab:pink')
+p3_r = axes[1][1].bar(1, digital_ec[0], .25, bottom = digital_ec[1] + digital_ec[4], color = 'tab:gray')
+p4_r = axes[1][1].bar(1, digital_ec[2], .25, bottom = digital_ec[1] + digital_ec[4] + digital_ec[0], color = 'tab:olive')
+p5_r = axes[1][1].bar(1, digital_ec[3], .25, bottom = digital_ec[1] + digital_ec[4] + digital_ec[2] + digital_ec[0], color = 'tab:cyan')
+p6_r = axes[1][1].bar(1, digital_ec[5], .25, bottom = digital_ec[1] + digital_ec[4] + digital_ec[2] + digital_ec[3] + digital_ec[0], color = 'gold')
 
 
 
-# for axis in ['bottom','left']:
-#   axes.spines[axis].set_linewidth(2)
-# for axis in ['top','right']:
-#   axes.spines[axis].set_linewidth(0)
-# axes.xaxis.set_tick_params(width=2)
-# axes.yaxis.set_tick_params(width=2)
+axes[0][0].set_ylim(.1268, .1279) 
+axes[1][0].set_ylim(0, .00248)
+
+axes[0][1].set_ylim(1.57, 1.86)
+axes[1][1].set_ylim(0, .31)
 
 
-# axes.plot(xcim0, ycim0,'x-',color= 'blue', label="CIM")
-# axes.plot(xcim0_p, ycim0_p,'x-',color= 'green', label="CIM (restricted)")
-# axes.plot(d_xcim0, d_ycim0,'x-',color= 'red', label="Digital")
+axes[1][0].get_xaxis().set_ticks([])
+axes[1][1].get_xaxis().set_ticks([])
+
+axes[0][1].spines['bottom'].set_visible(False)
+axes[0][0].spines['bottom'].set_visible(False)
 
 
-# axes.set_xlabel('uJ per Decision')
-# axes.set_ylabel('Accuracy')
-# plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.17), ncol=3, frameon=False)
 
-# axes.set_xscale('log')
+axes[1][0].set_ylabel('uJ')
+axes[1][1].set_ylabel('uJ')
+axes[1][0].set_xlabel('CIM')
+axes[1][1].set_xlabel('Digital')
+axes[1][1].legend((p1[0], p2[0], p3[0], p4[0], p5[0], p6[0], p2_r[0], p3_r[0], p4_r[0], p5_r[0], p6_r[0]), ('DAC', 'Add', 'CIM Cell', 'Sigmoid', 'Mult', 'ADC', 'IFMAP', 'MAC', 'PSUM', 'Weights', 'Global Buffer'), bbox_to_anchor=(1.05, 1.3), ncol=1, frameon=False)
+
+
+d = .10  # how big to make the diagonal lines in axes coordinates
+kwargs = dict(transform=axes[0][0].transAxes, color='k', clip_on=False)
+axes[0][0].plot( (-d, +d), (.0, .0), **kwargs, linewidth = 2)        # top-left diagonal
+kwargs = dict(transform=axes[1][0].transAxes, color='k', clip_on=False)
+axes[1][0].plot( (-d, +d), (1, 1), **kwargs, linewidth = 2)        # top-left diagonal
+kwargs = dict(transform=axes[0][1].transAxes, color='k', clip_on=False)
+axes[0][1].plot( (-d, +d), (.0, .0), **kwargs, linewidth = 2)        # top-left diagonal
+kwargs = dict(transform=axes[1][1].transAxes, color='k', clip_on=False)
+axes[1][1].plot( (-d, +d), ( 1, 1), **kwargs, linewidth = 2)        # top-left diagonal
+
 
 plt.tight_layout()
+fig.subplots_adjust(hspace=.1)
 plt.savefig('comp.png')
 plt.close()
+
+
+
