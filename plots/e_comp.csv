@@ -1,0 +1,10 @@
+C_NAMES,C_LSTM,C_FC,D_NAMES,D_LSTM,D_FC
+system_arch.DRAM,0,0,MAC,23252.548,145.464
+system_arch.chip.shared_glb,0,0,Sigmoid,426.36,0
+system_arch.chip.D2A_NoC,24.576,3.072,psum_spad,107864.064,525.312
+system_arch.chip.A2D_NoC,125304.832,15663.104,weights_spad,107864.064,525.312
+system_arch.chip.PE[0].mac,140.448,0.684,ifmap_spad,54755.3279999999,350.208
+system_arch.chip.PE[0].scratchpad,0,0,DummyBuffer,0,0
+system_arch.chip.scaler.scaler,1571.328,90.288,shared_glb,1514290.084,9708.07
+system_arch.chip.elementwise.elementwise,35.568,0,DRAM',0,0
+system_arch.chip.Sigmoid.Sigmoid,426.36,0,system_arch.chip.Sigmoid.Sigmoid,0,0
