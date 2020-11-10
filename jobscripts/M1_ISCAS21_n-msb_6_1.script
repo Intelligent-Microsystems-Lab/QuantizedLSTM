@@ -1,11 +1,14 @@
 #!/bin/csh 
 #$ -M cschaef6@nd.edu 
 #$ -m abe
-#$ -q gpu@qa-rtx6k-040.crc.nd.edu
+#$ -q gpu@@joshi
 #$ -l gpu_card=1
-#$ -N M1_ISCAS21_n-msb_6_1
-#$ -o ./logs/output_M1_ISCAS21_M1_ISCAS21_n-msb_6_1.txt
-#$ -e ./logs/error_M1_ISCAS21_M1_ISCAS21_n-msb_6_1.txt
+#$ -N ARM_118
+#$ -o ./logs/output_arm_118.txt
+#$ -e ./logs/error_arm_118.txt
 module load python
 setenv OMP_NUM_THREADS $NSLOTS
-python KWS_LSTM.py --n-msb 6 --random-seed 235899598 --method 1
+
+python train.py --model_architecture basic_lstm --model_size_info 118 --dct_coefficient_count 40 --window_size_ms 40 --window_stride_ms 20 --learning_rate 0.0005,0.0001,0.00002 --how_many_training_steps 10000,10000,10000 --summaries_dir work/Basic_LSTM/Basic_LSTM1/retrain_logs --train_dir work/Basic_LSTM/Basic_LSTM1/training 
+
+

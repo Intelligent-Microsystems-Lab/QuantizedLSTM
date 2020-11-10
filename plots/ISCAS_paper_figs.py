@@ -101,12 +101,12 @@ d_xcim0, d_ycim0 =zip(*d_hull_m0)
 
 plt.rcParams["font.weight"] = "bold"
 plt.rcParams["axes.labelweight"] = "bold"
-plt.rc('font', size='14')
+plt.rc('font', size='15')
 
 plt.clf()
 plt.rc('font', family='sans-serif')
 plt.rc('font', weight='bold')
-plt.rc('font', size='12')
+plt.rc('font', size='15')
 fig, axes = plt.subplots(nrows=1, ncols=1) #
 
 
@@ -119,9 +119,9 @@ axes.xaxis.set_tick_params(width=2)
 axes.yaxis.set_tick_params(width=2)
 
 
-axes.plot(xcim0[1:], ycim0[1:],'x-',color= 'blue', label="CIM")
-axes.plot(xcim0_p[1:], ycim0_p[1:],'x-',color= 'green', label="CIM (restricted)")
-axes.plot(d_xcim0, d_ycim0,'x-',color= 'red', label="Digital")
+axes.plot(xcim0[1:], ycim0[1:],'x-',color= 'blue', label="CIM", linewidth= 2)
+axes.plot(xcim0_p[1:], ycim0_p[1:],'x-',color= 'green', label="CIM (restricted)", linewidth= 2)
+axes.plot(d_xcim0, d_ycim0,'x-',color= 'red', label="Digital", linewidth= 2)
 
 
 axes.set_xlabel('uJ per Decision')
@@ -147,7 +147,7 @@ plt.rc('font', size='14')
 plt.clf()
 plt.rc('font', family='sans-serif')
 plt.rc('font', weight='bold')
-plt.rc('font', size='12')
+plt.rc('font', size='14')
 fig, axes = plt.subplots(nrows=1, ncols=2,gridspec_kw={'width_ratios': [3, 1]}) #
 
 for axis in ['bottom','left']:
@@ -223,7 +223,7 @@ plt.rc('font', size='14')
 plt.clf()
 plt.rc('font', family='sans-serif')
 plt.rc('font', weight='bold')
-plt.rc('font', size='12')
+plt.rc('font', size='14')
 fig, axes = plt.subplots(nrows=1, ncols=2,gridspec_kw={'width_ratios': [3, 1]}) #
 
 for axis in ['bottom','left']:
@@ -313,8 +313,8 @@ plt.rc('font', size='14')
 plt.clf()
 plt.rc('font', family='sans-serif')
 plt.rc('font', weight='bold')
-plt.rc('font', size='12')
-fig, axes = plt.subplots(nrows=2, ncols=2,gridspec_kw={'width_ratios': [1, 1], 'height_ratios': [1, 4]}, sharex=True) #
+plt.rc('font', size='13')
+fig, axes = plt.subplots(nrows=2, ncols=2,gridspec_kw={'width_ratios': [2, 1], 'height_ratios': [1, 4]}, sharex=False, figsize=(7.8,4.8)) #
 
 
 for axis in ['bottom','left']:
@@ -340,47 +340,112 @@ axes[1][1].yaxis.set_tick_params(width=2)
 axes[0][1].xaxis.set_tick_params(width=0)
 axes[0][1].yaxis.set_tick_params(width=2)
 
-p1 = axes[0][0].bar(1, cim_ec[0], .25, color = 'tab:blue')
-p2 = axes[0][0].bar(1, cim_ec[4], .25, bottom=cim_ec[0], color = 'tab:orange')
-p3 = axes[0][0].bar(1, cim_ec[2], .25, bottom=cim_ec[0] + cim_ec[4], color = 'tab:green')
-p4 = axes[0][0].bar(1, cim_ec[5], .25, bottom=cim_ec[0] + cim_ec[4] + cim_ec[2], color = 'tab:red')
-p5 = axes[0][0].bar(1, cim_ec[3], .25, bottom=cim_ec[0] + cim_ec[4] + cim_ec[2] + cim_ec[5], color = 'tab:purple')
-p6 = axes[0][0].bar(1, cim_ec[1], .25, bottom=cim_ec[0] + cim_ec[4] + cim_ec[2] + cim_ec[5] + cim_ec[3], color = 'tab:brown')
+wdith_bars = .65
+pos1 = .25
+pos2 = 1
 
+p1_r = axes[0][0].bar(pos1, digital_ec[1], wdith_bars, color = 'lime')
+p2_r = axes[0][0].bar(pos1, digital_ec[4], wdith_bars, bottom = digital_ec[1], color = 'tab:pink')
+p3_r = axes[0][0].bar(pos1, digital_ec[0], wdith_bars, bottom = digital_ec[1] + digital_ec[4], color = 'tab:gray')
+p4_r = axes[0][0].bar(pos1, digital_ec[2], wdith_bars, bottom = digital_ec[1] + digital_ec[4] + digital_ec[0], color = 'tab:olive')
+p5_r = axes[0][0].bar(pos1, digital_ec[3], wdith_bars, bottom = digital_ec[1] + digital_ec[4] + digital_ec[2] + digital_ec[0], color = 'tab:cyan')
+p6_r = axes[0][0].bar(pos1, digital_ec[5], wdith_bars, bottom = digital_ec[1] + digital_ec[4] + digital_ec[2] + digital_ec[3] + digital_ec[0], color = 'gold')
 
-p1 = axes[1][0].bar(1, cim_ec[0], .25, color = 'tab:blue')
-p2 = axes[1][0].bar(1, cim_ec[4], .25, bottom=cim_ec[0], color = 'tab:orange')
-p3 = axes[1][0].bar(1, cim_ec[2], .25, bottom=cim_ec[0] + cim_ec[4], color = 'tab:green')
-p4 = axes[1][0].bar(1, cim_ec[5], .25, bottom=cim_ec[0] + cim_ec[4] + cim_ec[2], color = 'tab:red')
-p5 = axes[1][0].bar(1, cim_ec[3], .25, bottom=cim_ec[0] + cim_ec[4] + cim_ec[2] + cim_ec[5], color = 'tab:purple')
-p6 = axes[1][0].bar(1, cim_ec[1], .25, bottom=cim_ec[0] + cim_ec[4] + cim_ec[2] + cim_ec[5] + cim_ec[3], color = 'tab:brown')
-
-
-p1_r = axes[0][1].bar(1, digital_ec[1], .25, color = 'tab:red')
-p2_r = axes[0][1].bar(1, digital_ec[4], .25, bottom = digital_ec[1], color = 'tab:pink')
-p3_r = axes[0][1].bar(1, digital_ec[0], .25, bottom = digital_ec[1] + digital_ec[4], color = 'tab:gray')
-p4_r = axes[0][1].bar(1, digital_ec[2], .25, bottom = digital_ec[1] + digital_ec[4] + digital_ec[0], color = 'tab:olive')
-p5_r = axes[0][1].bar(1, digital_ec[3], .25, bottom = digital_ec[1] + digital_ec[4] + digital_ec[2] + digital_ec[0], color = 'tab:cyan')
-p6_r = axes[0][1].bar(1, digital_ec[5], .25, bottom = digital_ec[1] + digital_ec[4] + digital_ec[2] + digital_ec[3] + digital_ec[0], color = 'gold')
-
-p1_r = axes[1][1].bar(1, digital_ec[1], .25, color = 'tab:red')
-p2_r = axes[1][1].bar(1, digital_ec[4], .25, bottom = digital_ec[1], color = 'tab:pink')
-p3_r = axes[1][1].bar(1, digital_ec[0], .25, bottom = digital_ec[1] + digital_ec[4], color = 'tab:gray')
-p4_r = axes[1][1].bar(1, digital_ec[2], .25, bottom = digital_ec[1] + digital_ec[4] + digital_ec[0], color = 'tab:olive')
-p5_r = axes[1][1].bar(1, digital_ec[3], .25, bottom = digital_ec[1] + digital_ec[4] + digital_ec[2] + digital_ec[0], color = 'tab:cyan')
-p6_r = axes[1][1].bar(1, digital_ec[5], .25, bottom = digital_ec[1] + digital_ec[4] + digital_ec[2] + digital_ec[3] + digital_ec[0], color = 'gold')
+p1_r = axes[1][0].bar(pos1, digital_ec[1], wdith_bars, color = 'lime')
+p2_r = axes[1][0].bar(pos1, digital_ec[4], wdith_bars, bottom = digital_ec[1], color = 'tab:pink')
+p3_r = axes[1][0].bar(pos1, digital_ec[0], wdith_bars, bottom = digital_ec[1] + digital_ec[4], color = 'tab:gray')
+p4_r = axes[1][0].bar(pos1, digital_ec[2], wdith_bars, bottom = digital_ec[1] + digital_ec[4] + digital_ec[0], color = 'tab:olive')
+p5_r = axes[1][0].bar(pos1, digital_ec[3], wdith_bars, bottom = digital_ec[1] + digital_ec[4] + digital_ec[2] + digital_ec[0], color = 'tab:cyan')
+p6_r = axes[1][0].bar(pos1, digital_ec[5], wdith_bars, bottom = digital_ec[1] + digital_ec[4] + digital_ec[2] + digital_ec[3] + digital_ec[0], color = 'gold')
 
 
 
-axes[0][0].set_ylim(.1268, .1279) 
-axes[1][0].set_ylim(0, .00248)
-
-axes[0][1].set_ylim(1.57, 1.86)
-axes[1][1].set_ylim(0, .31)
 
 
-axes[1][0].get_xaxis().set_ticks([])
-axes[1][1].get_xaxis().set_ticks([])
+p1 = axes[0][0].bar(pos2, cim_ec[0], wdith_bars, color = 'tab:blue')
+p2 = axes[0][0].bar(pos2, cim_ec[4], wdith_bars, bottom=cim_ec[0], color = 'tab:orange')
+p3 = axes[0][0].bar(pos2, cim_ec[2], wdith_bars, bottom=cim_ec[0] + cim_ec[4], color = 'tab:green')
+p4 = axes[0][0].bar(pos2, cim_ec[5], wdith_bars, bottom=cim_ec[0] + cim_ec[4] + cim_ec[2], color = 'tab:red')
+p5 = axes[0][0].bar(pos2, cim_ec[3], wdith_bars, bottom=cim_ec[0] + cim_ec[4] + cim_ec[2] + cim_ec[5], color = 'tab:purple')
+p6 = axes[0][0].bar(pos2, cim_ec[1], wdith_bars, bottom=cim_ec[0] + cim_ec[4] + cim_ec[2] + cim_ec[5] + cim_ec[3], color = 'tab:brown')
+
+
+p1 = axes[1][0].bar(pos2, cim_ec[0], wdith_bars, color = 'tab:blue')
+p2 = axes[1][0].bar(pos2, cim_ec[4], wdith_bars, bottom=cim_ec[0], color = 'tab:orange')
+p3 = axes[1][0].bar(pos2, cim_ec[2], wdith_bars, bottom=cim_ec[0] + cim_ec[4], color = 'tab:green')
+p4 = axes[1][0].bar(pos2, cim_ec[5], wdith_bars, bottom=cim_ec[0] + cim_ec[4] + cim_ec[2], color = 'tab:red')
+p5 = axes[1][0].bar(pos2, cim_ec[3], wdith_bars, bottom=cim_ec[0] + cim_ec[4] + cim_ec[2] + cim_ec[5], color = 'tab:purple')
+p6 = axes[1][0].bar(pos2, cim_ec[1], wdith_bars, bottom=cim_ec[0] + cim_ec[4] + cim_ec[2] + cim_ec[5] + cim_ec[3], color = 'tab:brown')
+
+
+
+
+# zoom in
+
+p1 = axes[0][1].bar(1, cim_ec[0], .5, color = 'tab:blue')
+p2 = axes[0][1].bar(1, cim_ec[4], .5, bottom=cim_ec[0], color = 'tab:orange')
+p3 = axes[0][1].bar(1, cim_ec[2], .5, bottom=cim_ec[0] + cim_ec[4], color = 'tab:green')
+p4 = axes[0][1].bar(1, cim_ec[5], .5, bottom=cim_ec[0] + cim_ec[4] + cim_ec[2], color = 'tab:red')
+p5 = axes[0][1].bar(1, cim_ec[3], .5, bottom=cim_ec[0] + cim_ec[4] + cim_ec[2] + cim_ec[5], color = 'tab:purple')
+p6 = axes[0][1].bar(1, cim_ec[1], .5, bottom=cim_ec[0] + cim_ec[4] + cim_ec[2] + cim_ec[5] + cim_ec[3], color = 'tab:brown')
+
+
+p1 = axes[1][1].bar(1, cim_ec[0], .5, color = 'tab:blue')
+p2 = axes[1][1].bar(1, cim_ec[4], .5, bottom=cim_ec[0], color = 'tab:orange')
+p3 = axes[1][1].bar(1, cim_ec[2], .5, bottom=cim_ec[0] + cim_ec[4], color = 'tab:green')
+p4 = axes[1][1].bar(1, cim_ec[5], .5, bottom=cim_ec[0] + cim_ec[4] + cim_ec[2], color = 'tab:red')
+p5 = axes[1][1].bar(1, cim_ec[3], .5, bottom=cim_ec[0] + cim_ec[4] + cim_ec[2] + cim_ec[5], color = 'tab:purple')
+p6 = axes[1][1].bar(1, cim_ec[1], .5, bottom=cim_ec[0] + cim_ec[4] + cim_ec[2] + cim_ec[5] + cim_ec[3], color = 'tab:brown')
+
+
+
+labels = [item.get_text() for item in axes[1][0].get_xticklabels()]
+labels = ['D' for x in labels]
+labels[1] = 'Digital'
+labels[2] = 'CIM'
+axes[1][0].set_xticklabels(labels)
+
+labels = [item.get_text() for item in axes[0][0].get_xticklabels()]
+labels = ['' for x in labels]
+axes[0][0].set_xticklabels(labels)
+
+labels = [item.get_text() for item in axes[0][1].get_xticklabels()]
+labels = ['' for x in labels]
+axes[0][1].set_xticklabels(labels)
+
+labels = [item.get_text() for item in axes[1][1].get_xticklabels()]
+labels[0] = ''
+labels[2] = 'CIM'
+axes[1][1].set_xticklabels(labels)
+
+
+
+# labels = [item.get_text() for item in axes[0][0].get_yticklabels()]
+# labels = ['' for x in labels]
+# axes[0][0].set_yticklabels(labels)
+
+# labels = [item.get_text() for item in axes[0][1].get_yticklabels()]
+# labels = ['' for x in labels]
+# axes[0][1].set_yticklabels(labels)
+
+# labels = [item.get_text() for item in axes[1][0].get_yticklabels()]
+# labels = ['' for x in labels]
+# axes[1][0].set_yticklabels(labels)
+
+# labels = [item.get_text() for item in axes[1][1].get_yticklabels()]
+# labels = ['' for x in labels]
+# axes[1][1].set_yticklabels(labels)
+
+
+axes[0][1].set_ylim(.1268, .1279) 
+axes[1][1].set_ylim(0, .00248)
+
+axes[0][0].set_ylim(1.57, 1.86)
+axes[1][0].set_ylim(0, .31)
+
+
+#axes[1][0].get_xaxis().set_ticks([])
+#axes[1][1].get_xaxis().set_ticks([])
 
 axes[0][1].spines['bottom'].set_visible(False)
 axes[0][0].spines['bottom'].set_visible(False)
@@ -389,9 +454,14 @@ axes[0][0].spines['bottom'].set_visible(False)
 
 axes[1][0].set_ylabel('uJ')
 axes[1][1].set_ylabel('uJ')
-axes[1][0].set_xlabel('CIM')
-axes[1][1].set_xlabel('Digital')
-axes[1][1].legend((p1[0], p2[0], p3[0], p4[0], p5[0], p6[0], p2_r[0], p3_r[0], p4_r[0], p5_r[0], p6_r[0]), ('DAC', 'Add', 'CIM Cell', 'Sigmoid', 'Mult', 'ADC', 'IFMAP', 'MAC', 'PSUM', 'Weights', 'Global Buffer'), bbox_to_anchor=(1.05, 1.3), ncol=1, frameon=False)
+# axes[1][0].set_xlabel('CIM')
+# axes[1][1].set_xlabel('Digital')
+
+leg1 = axes[1][1].legend(reversed((p1[0], p2[0], p3[0], p4[0], p5[0], p6[0])), reversed(('DAC (25 pJ)', 'Add (36 pJ)', 'CIM Cell (140 pJ)', 'Sigmoid (426 pJ)', 'Mult (1.57 nJ)', 'ADC (125.3 nJ)')), bbox_to_anchor=(1.05, 1.3), ncol=1, frameon=False, title = 'CIM')
+
+leg2 = axes[1][1].legend(reversed((p1_r[0], p2_r[0], p3_r[0], p4_r[0], p5_r[0], p6_r[0])), reversed(('Sigmoid (420 pJ)', 'IFMAP (54.75 nJ)', 'MAC (23.25 nJ)', 'PSUM (107.86 nJ)', 'Weights (107.86 nJ)', 'Global Buffer (1.5143 uJ)')), bbox_to_anchor=(1.05, .6), ncol=1, frameon=False, title = 'Digital')
+
+plt.gca().add_artist(leg1)
 
 
 d = .10  # how big to make the diagonal lines in axes coordinates
@@ -404,9 +474,12 @@ axes[0][1].plot( (-d, +d), (.0, .0), **kwargs, linewidth = 2)        # top-left 
 kwargs = dict(transform=axes[1][1].transAxes, color='k', clip_on=False)
 axes[1][1].plot( (-d, +d), ( 1, 1), **kwargs, linewidth = 2)        # top-left diagonal
 
-
+plt.xticks(ha='center')
 plt.tight_layout()
+
+# fig.subplots_adjust(wspace=1)
 fig.subplots_adjust(hspace=.1)
+fig.subplots_adjust(right=.5)
 plt.savefig('comp.png')
 plt.close()
 
