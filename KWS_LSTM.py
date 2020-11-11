@@ -185,7 +185,7 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, epoch_list[-1])):
 
         train_time = time.time() - start_time
         start_time = time.time()
-        print("{0:05d}     {1:.4f}      {2:.4f}     {3:.4f}     {4:.4f}   {5:.4f}".format(e, loss_val, train_acc[-1], best_acc, train_time, model.cosine_sim()))
+        print("{0:05d}     {1:.4f}      {2:.4f}     {3:.4f}     {4:.4f}   {5:.4f}".format(e, loss_val, train_acc[-1], val_acc[-1], train_time, model.cosine_sim()))
         plot_curves(train_acc, val_acc, model_uuid)
 
    
@@ -242,7 +242,7 @@ for e, (x_data, y_label) in enumerate(islice(train_dataloader, args.finetuning_e
         train_time = time.time() - start_time
         start_time = time.time()
     
-        print("{0:05d}     {1:.4f}      {2:.4f}     {3:.4f}     {4:.4f}   {5:.4f}".format(e, loss_val, train_acc[-1], best_acc, train_time, model.cosine_sim()))
+        print("{0:05d}     {1:.4f}      {2:.4f}     {3:.4f}     {4:.4f}   {5:.4f}".format(e, loss_val, train_acc[-1], val_acc[-1], train_time, model.cosine_sim()))
         plot_curves(train_acc, val_acc, model_uuid)
 
 

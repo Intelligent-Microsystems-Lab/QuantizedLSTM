@@ -388,7 +388,7 @@ class KWS_LSTM_cs(nn.Module):
             for j in range(self.n_msb):
                 sims[i,j] = self.c_sim(weights[i,:], weights[j,:])
 
-        return (sims.sum().sum()-self.n_msb)/(self.n_msb**2)
+        return torch.abs((sims.sum().sum()-self.n_msb)/(self.n_msb**2))
 
     def set_noise(self, nl):
         self.noise_level = nl
@@ -495,7 +495,7 @@ class KWS_LSTM_mix(nn.Module):
         else:
             raise Exception("Configuration does not have specified mapping")
 
-        return out
+        return torch.abs(out)
 
     def set_noise(self, nl):
         self.noise_level = nl
