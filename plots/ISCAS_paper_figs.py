@@ -51,7 +51,7 @@ nmsb     = pd.read_csv("M0_NMSB.csv").dropna()
 hidden   = pd.read_csv("M0_hidden.csv").dropna()
 
 e_comp   = pd.read_csv("e_comp.csv").dropna()
-
+arm_ua   = pd.read_csv("ARM.csv").dropna()
 
 max_acc = max(inp_bits[['#1','#2','#3']].max().max(), out_bits[['#1','#2','#3']].max().max(), nm_bits[['#1','#2','#3']].max().max(), nmsb[['#1','#2','#3']].max().max(), hidden[['#1','#2','#3']].max().max())
 min_acc = min(inp_bits[['#1','#2','#3']].min().min(), out_bits[['#1','#2','#3']].min().min(), nm_bits[['#1','#2','#3']].min().min(), nmsb[['#1','#2','#3']].min().min(), hidden[['#1','#2','#3']].min().min())
@@ -96,6 +96,20 @@ d_points_m0 = [(x[i], y[i]) for i in range(len(x))]
 d_hull_m0 = reversed(convex_hull(d_points_m0))
 d_xcim0, d_ycim0 =zip(*d_hull_m0)
 
+#ARM
+x = np.concatenate([arm_ua["uJ 118"], arm_ua["uJ 214"], arm_ua["uJ 344"]])
+y = np.concatenate([arm_ua["Hidden 118"], arm_ua["Hidden 214"], arm_ua["Hidden 344"]])/100
+
+# x = x[y < .91]
+# y = y[y < .91]
+
+x = x[y > .70]
+y = y[y > .70]
+
+arm_points_m0 = [(x[i], y[i]) for i in range(len(x))] 
+arm_hull_m0 = reversed(convex_hull(arm_points_m0))
+arm_xcim0, arm_ycim0 =zip(*arm_hull_m0)
+
 
 
 
@@ -119,15 +133,18 @@ axes.xaxis.set_tick_params(width=2)
 axes.yaxis.set_tick_params(width=2)
 
 
-axes.plot(xcim0[1:], ycim0[1:],'x-',color= 'blue', label="CIM", linewidth= 2)
-axes.plot(xcim0_p[1:], ycim0_p[1:],'x-',color= 'green', label="CIM (restricted)", linewidth= 2)
-axes.plot(d_xcim0, d_ycim0,'x-',color= 'red', label="Digital", linewidth= 2)
+axes.plot(xcim0, [1-x for x in ycim0],'x-',color= 'blue', label="CIM", linewidth= 2)
+axes.plot(xcim0_p, [1-x for x in ycim0_p],'x-',color= 'green', label="CIM [?]", linewidth= 2)
+axes.plot(d_xcim0, [1-x for x in d_ycim0],'x-',color= 'red', label="Digital", linewidth= 2)
+axes.plot(arm_xcim0[:-1], [1-x for x in arm_ycim0[:-1]],'x-',color= 'm', label="Digital [?]", linewidth= 2)
 
-
+axes.set_ylim(0 , 1 - .85) 
 axes.set_xlabel('uJ per Decision')
-axes.set_ylabel('Accuracy')
-plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.17), ncol=3, frameon=False)
+axes.set_ylabel('Test Error')
+plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.25), ncol=2, mode="expand", borderaxespad=0, frameon=False)
 
+
+plt.yticks(np.arange(0, .175, .025))
 axes.set_xscale('log')
 
 plt.tight_layout()
