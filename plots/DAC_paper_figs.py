@@ -56,13 +56,16 @@ m1_nm_bits  = pd.read_csv("M1_NMbits.csv").dropna()
 m1_nmsb     = pd.read_csv("M1_NMSB.csv").dropna()
 m1_hidden   = pd.read_csv("M1_hidden.csv").dropna()
 
+curve_data   = pd.read_csv("train_curve.csv").dropna()
+curve_data['Epoch'][203:] = curve_data['Epoch'][203:] + 20200 
+
 arm_ua   = pd.read_csv("ARM.csv").dropna()
 
 max_acc = max(m0_inp_bits[['#1','#2','#3']].max().max(), m0_out_bits[['#1','#2','#3']].max().max(), m0_nm_bits[['#1','#2','#3']].max().max(), m0_nmsb[['#1','#2','#3']].max().max(), m0_hidden[['#1','#2','#3']].max().max(), m1_inp_bits[['#1','#2','#3']].max().max(), m1_out_bits[['#1','#2','#3']].max().max(), m1_nm_bits[['#1','#2','#3']].max().max(), m1_nmsb[['#1','#2','#3']].max().max(), m1_hidden[['#1','#2','#3']].max().max())
 min_acc = min(m0_inp_bits[['#1','#2','#3']].min().min(), m0_out_bits[['#1','#2','#3']].min().min(), m0_nm_bits[['#1','#2','#3']].min().min(), m0_nmsb[['#1','#2','#3']].min().min(), m0_hidden[['#1','#2','#3']].min().min(), m1_inp_bits[['#1','#2','#3']].min().min(), m1_out_bits[['#1','#2','#3']].min().min(), m1_nm_bits[['#1','#2','#3']].min().min(), m1_nmsb[['#1','#2','#3']].min().min(), m1_hidden[['#1','#2','#3']].min().min())
 
-max_j = max(m0_inp_bits[['uJ']].max().max(), m0_out_bits[['uJ']].max().max(), m0_nm_bits[['uJ']].max().max(), m0_nmsb[['uJ']].max().max(), m0_hidden[['uJ']].max().max(),       m1_inp_bits[['uJ']].max().max(), m1_out_bits[['uJ']].max().max(), m1_nm_bits[['uJ']].max().max(), m1_nmsb[['uJ']].max().max(), m1_hidden[['uJ']].max().max())
-min_j = min(m0_inp_bits[['uJ']].min().min(), m0_out_bits[['uJ']].min().min(), m0_nm_bits[['uJ']].min().min(), m0_nmsb[['uJ']].min().min(), m0_hidden[['uJ']].min().min(),        m1_inp_bits[['uJ']].min().min(), m1_out_bits[['uJ']].min().min(), m1_nm_bits[['uJ']].min().min(), m1_nmsb[['uJ']].min().min(), m1_hidden[['uJ']].min().min())
+max_j = max(m0_inp_bits[['uJ']].max().max(), m0_out_bits[['uJ']].max().max(), m0_nm_bits[['uJ']].max().max(), m0_nmsb[['uJ']].max().max(), m0_hidden[['uJ']].max().max(), m1_inp_bits[['uJ']].max().max(), m1_out_bits[['uJ']].max().max(), m1_nm_bits[['uJ']].max().max(), m1_nmsb[['uJ']].max().max(), m1_hidden[['uJ']].max().max())
+min_j = min(m0_inp_bits[['uJ']].min().min(), m0_out_bits[['uJ']].min().min(), m0_nm_bits[['uJ']].min().min(), m0_nmsb[['uJ']].min().min(), m0_hidden[['uJ']].min().min(), m1_inp_bits[['uJ']].min().min(), m1_out_bits[['uJ']].min().min(), m1_nm_bits[['uJ']].min().min(), m1_nmsb[['uJ']].min().min(), m1_hidden[['uJ']].min().min())
 
 
 ############
@@ -70,23 +73,41 @@ min_j = min(m0_inp_bits[['uJ']].min().min(), m0_out_bits[['uJ']].min().min(), m0
 ############
 
 #M0
-x = np.concatenate([inp_bits["uJ"], out_bits["uJ"], nm_bits["uJ"], nmsb["uJ"], hidden["uJ"]])
-y = np.concatenate([inp_bits[['#1', '#2', '#3']].mean(1), out_bits[['#1', '#2', '#3']].mean(1), nm_bits[['#1', '#2', '#3']].mean(1), nmsb[['#1', '#2', '#3']].mean(1), hidden[['#1', '#2', '#3']].mean(1)])
-n = np.concatenate([[str(x)+'ib' for x in inp_bits["Input Bits"]], [str(x)+'ob' for x in out_bits["Output Bits"]], [str(x)+'nc' for x in nm_bits["Non CIM bits"]], [str(x)+'msb' for x in nmsb["N MSB"]], [str(x)+'hi' for x in hidden["Hidden dim"]]])
+x = np.concatenate([m0_inp_bits["uJ"], m0_out_bits["uJ"], m0_nm_bits["uJ"], m0_nmsb["uJ"], m0_hidden["uJ"]])
+y = np.concatenate([m0_inp_bits[['#1', '#2', '#3']].mean(1), m0_out_bits[['#1', '#2', '#3']].mean(1), m0_nm_bits[['#1', '#2', '#3']].mean(1), m0_nmsb[['#1', '#2', '#3']].mean(1), m0_hidden[['#1', '#2', '#3']].mean(1)])
+n = np.concatenate([[str(x)+'ib' for x in m0_inp_bits["Input Bits"]], [str(x)+'ob' for x in m0_out_bits["Output Bits"]], [str(x)+'nc' for x in m0_nm_bits["Non CIM bits"]], [str(x)+'msb' for x in m0_nmsb["N MSB"]], [str(x)+'hi' for x in m0_hidden["Hidden dim"]]])
 
 points_m0 = [(x[i], y[i]) for i in range(len(x))] 
 hull_m0 = reversed(convex_hull(points_m0))
 xcim0, ycim0 =zip(*hull_m0)
 
-#M1
-x = np.concatenate([inp_bits["uJ"], out_bits["uJ"], nm_bits["uJ"], nmsb["uJ"], hidden["uJ"]])[[0,1,2,7,8,9,10,11,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]] 
-y = np.concatenate([inp_bits[['#1', '#2', '#3']].mean(1), out_bits[['#1', '#2', '#3']].mean(1), nm_bits[['#1', '#2', '#3']].mean(1), nmsb[['#1', '#2', '#3']].mean(1), hidden[['#1', '#2', '#3']].mean(1)])[[0,1,2,7,8,9,10,11,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]] 
-n = np.concatenate([[str(x)+'ib' for x in inp_bits["Input Bits"]], [str(x)+'ob' for x in out_bits["Output Bits"]], [str(x)+'nc' for x in nm_bits["Non CIM bits"]], [str(x)+'msb' for x in nmsb["N MSB"]], [str(x)+'hi' for x in hidden["Hidden dim"]]])[[0,1,2,7,8,9,10,11,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]] 
+#M0 - possible
+x = np.concatenate([m0_inp_bits["uJ"], m0_out_bits["uJ"], m0_nm_bits["uJ"], m0_nmsb["uJ"], m0_hidden["uJ"]])[[0,1,2,7,8,9,10,11,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]] 
+y = np.concatenate([m0_inp_bits[['#1', '#2', '#3']].mean(1), m0_out_bits[['#1', '#2', '#3']].mean(1), m0_nm_bits[['#1', '#2', '#3']].mean(1), m0_nmsb[['#1', '#2', '#3']].mean(1), m0_hidden[['#1', '#2', '#3']].mean(1)])[[0,1,2,7,8,9,10,11,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]] 
+n = np.concatenate([[str(x)+'ib' for x in m0_inp_bits["Input Bits"]], [str(x)+'ob' for x in m0_out_bits["Output Bits"]], [str(x)+'nc' for x in m0_nm_bits["Non CIM bits"]], [str(x)+'msb' for x in m0_nmsb["N MSB"]], [str(x)+'hi' for x in m0_hidden["Hidden dim"]]])[[0,1,2,7,8,9,10,11,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]] 
 
 points_m0_p = [(x[i], y[i]) for i in range(len(x))] 
 hull_m0_p = reversed(convex_hull(points_m0_p))
 xcim0_p, ycim0_p =zip(*hull_m0_p)
 
+
+#M1
+x = np.concatenate([m1_inp_bits["uJ"], m1_out_bits["uJ"], m1_nm_bits["uJ"], m1_nmsb["uJ"], m1_hidden["uJ"]])
+y = np.concatenate([m1_inp_bits[['#1', '#2', '#3']].mean(1), m1_out_bits[['#1', '#2', '#3']].mean(1), m1_nm_bits[['#1', '#2', '#3']].mean(1), m1_nmsb[['#1', '#2', '#3']].mean(1), m1_hidden[['#1', '#2', '#3']].mean(1)])
+n = np.concatenate([[str(x)+'ib' for x in m1_inp_bits["Input Bits"]], [str(x)+'ob' for x in m1_out_bits["Output Bits"]], [str(x)+'nc' for x in m1_nm_bits["Non CIM bits"]], [str(x)+'msb' for x in m1_nmsb["N MSB"]], [str(x)+'hi' for x in m1_hidden["Hidden dim"]]])
+
+points_m1 = [(x[i], y[i]) for i in range(len(x))] 
+hull_m1 = reversed(convex_hull(points_m1))
+xcim1, ycim1 =zip(*hull_m1)
+
+#M1 - possible
+x = np.concatenate([m1_inp_bits["uJ"], m1_out_bits["uJ"], m1_nm_bits["uJ"], m1_nmsb["uJ"], m1_hidden["uJ"]])[[0,1,2,7,8,9,10,11,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]] 
+y = np.concatenate([m1_inp_bits[['#1', '#2', '#3']].mean(1), m1_out_bits[['#1', '#2', '#3']].mean(1), m1_nm_bits[['#1', '#2', '#3']].mean(1), m1_nmsb[['#1', '#2', '#3']].mean(1), m1_hidden[['#1', '#2', '#3']].mean(1)])[[0,1,2,7,8,9,10,11,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]] 
+n = np.concatenate([[str(x)+'ib' for x in m1_inp_bits["Input Bits"]], [str(x)+'ob' for x in m1_out_bits["Output Bits"]], [str(x)+'nc' for x in m1_nm_bits["Non CIM bits"]], [str(x)+'msb' for x in m1_nmsb["N MSB"]], [str(x)+'hi' for x in m1_hidden["Hidden dim"]]])[[0,1,2,7,8,9,10,11,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]] 
+
+points_m1_p = [(x[i], y[i]) for i in range(len(x))] 
+hull_m1_p = reversed(convex_hull(points_m1_p))
+xcim1_p, ycim1_p =zip(*hull_m1_p)
 
 #ARM
 x = np.concatenate([arm_ua["uJ 118"], arm_ua["uJ 214"], arm_ua["uJ 344"]])
@@ -113,7 +134,7 @@ plt.clf()
 plt.rc('font', family='sans-serif')
 plt.rc('font', weight='bold')
 plt.rc('font', size='15')
-fig, axes = plt.subplots(nrows=1, ncols=1) #
+fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(7.0,4.8)) #
 
 
 
@@ -125,22 +146,23 @@ axes.xaxis.set_tick_params(width=2)
 axes.yaxis.set_tick_params(width=2)
 
 
-axes.plot(xcim0, [1-x for x in ycim0],'x-',color= 'blue', label="CIM", linewidth= 2)
-axes.plot(xcim0_p, [1-x for x in ycim0_p],'x-',color= 'green', label="CIM [?]", linewidth= 2)
-axes.plot(d_xcim0, [1-x for x in d_ycim0],'x-',color= 'red', label="Digital", linewidth= 2)
+axes.plot(xcim0, [1-x for x in ycim0],'x-',color= 'blue', label="CIM M1 ", linewidth= 2)
+axes.plot(xcim0_p, [1-x for x in ycim0_p],'x-',color= 'green', label="CIM M1 [?]", linewidth= 2)
+axes.plot(xcim1, [1-x for x in ycim1],'x-',color= 'red', label="CIM M2", linewidth= 2)
+axes.plot(xcim1_p, [1-x for x in ycim1_p],'x-',color= 'y', label="CIM M2 [?]", linewidth= 2)
 axes.plot(arm_xcim0[:-1], [1-x for x in arm_ycim0[:-1]],'x-',color= 'm', label="Digital [?]", linewidth= 2)
 
 axes.set_ylim(0 , 1 - .85) 
 axes.set_xlabel('uJ per Decision')
 axes.set_ylabel('Test Error')
-plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.25), ncol=2, mode="expand", borderaxespad=0, frameon=False)
+plt.legend(loc='upper center', bbox_to_anchor=(0.4, 1.25), ncol=3, borderaxespad=0, frameon=False)
 
 
 plt.yticks(np.arange(0, .175, .025))
 axes.set_xscale('log')
 
 plt.tight_layout()
-plt.savefig('frontiers.png')
+plt.savefig('DAC_frontiers.png')
 plt.close()
 
 
@@ -174,24 +196,36 @@ for axis in ['top','right']:
 axes[1].xaxis.set_tick_params(width=2)
 axes[1].yaxis.set_tick_params(width=2)
 
-sc1 = axes[0].scatter([.5]*7, list(inp_bits['Input Bits']), c = list(inp_bits[['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size,cmap='coolwarm')
-sc2 = axes[0].scatter([1.]*7, list(out_bits['Output Bits']), c = list(out_bits[['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size,cmap='coolwarm')
-sc3 = axes[0].scatter([1.5]*11, list(nm_bits['Non CIM bits']), c = list(nm_bits[['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size,cmap='coolwarm')
-sc4 = axes[0].scatter([2.]*6, list(nmsb['N MSB']), c = list(nmsb[['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size,cmap='coolwarm')
+sc1 = axes[0].scatter([.5]*7, list(m0_inp_bits['Input Bits']), c = list(m0_inp_bits[['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size,cmap='coolwarm')
+sc2 = axes[0].scatter([1.5]*7, list(m0_out_bits['Output Bits']), c = list(m0_out_bits[['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size,cmap='coolwarm')
+sc3 = axes[0].scatter([2.5]*11, list(m0_nm_bits['Non CIM bits']), c = list(m0_nm_bits[['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size,cmap='coolwarm')
+sc4 = axes[0].scatter([3.5]*6, list(m0_nmsb['N MSB']), c = list(m0_nmsb[['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size,cmap='coolwarm')
+
+sc11 = axes[0].scatter([1]*7, list(m1_inp_bits['Input Bits']), c = list(m1_inp_bits[['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size,cmap='coolwarm')
+sc21 = axes[0].scatter([2]*7, list(m1_out_bits['Output Bits']), c = list(m1_out_bits[['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size,cmap='coolwarm')
+sc31 = axes[0].scatter([3]*11, list(m1_nm_bits['Non CIM bits']), c = list(m1_nm_bits[['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size,cmap='coolwarm')
+sc41 = axes[0].scatter([4]*6, list(m1_nmsb['N MSB']), c = list(m1_nmsb[['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size,cmap='coolwarm')
 
 
-sc5 = axes[1].scatter([1]*5, [114,200,300,400,500], c = list(hidden[['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size,cmap='coolwarm')
+sc5 = axes[1].scatter([.25]*5, [114,200,300,400,500], c = list(m0_hidden[['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size,cmap='coolwarm')
+
+sc51 = axes[1].scatter([.75]*5, [114,200,300,400,500], c = list(m1_hidden[['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size,cmap='coolwarm')
 
 axes[0].set_xlabel('')
 axes[0].set_ylabel('# Bits/Blocks')
 
-axes[0].set_xticks([.5, 1., 1.5, 2])
+axes[0].set_xticks([.5, 1., 1.5, 2, 2.5, 3, 3.5, 4])
 
 labels = [item.get_text() for item in axes[0].get_xticklabels()]
-labels[0] = 'Input Bits'
-labels[1] = 'Output Bits'
-labels[2] = 'Non CIM Bits'
-labels[3] = 'Blocks'
+labels[0] = 'Input Bits M1'
+labels[2] = 'Output Bits M1'
+labels[4] = 'Non CIM Bits M1'
+labels[6] = 'Blocks M1'
+
+labels[1] = 'Input Bits M2'
+labels[3] = 'Output Bits M2'
+labels[5] = 'Non CIM Bits M2'
+labels[7] = 'Blocks M2'
 
 axes[0].set_xticklabels(labels)
 plt.setp(axes[0].xaxis.get_majorticklabels(), rotation=55)
@@ -201,10 +235,15 @@ plt.setp(axes[0].xaxis.get_majorticklabels(), ha='right')
 axes[1].set_xlabel('')
 axes[1].set_ylabel('# Hidden')
 
-plt.xticks([1])
+axes[1].set_xlim((0,1))
+
+
+plt.xticks([.25 ,.75 ])
 
 labels = [item.get_text() for item in axes[1].get_xticklabels()]
-labels[0] = 'Hidden'
+labels[0] = 'Hidden M1'
+labels[1] = 'Hidden M2'
+
 axes[1].set_xticklabels(labels)
 
 
@@ -218,7 +257,235 @@ cbar.ax.set_xlabel('Test \nAccuracy')
 
 plt.legend(frameon=False)
 plt.tight_layout()
-plt.savefig('acc_abl.png')
+plt.savefig('DAC_acc_abl.png')
 plt.close()
 
 
+
+############
+# Train Curve
+############
+
+plt.rcParams["font.weight"] = "bold"
+plt.rcParams["axes.labelweight"] = "bold"
+plt.rc('font', size='15')
+
+plt.clf()
+plt.rc('font', family='sans-serif')
+plt.rc('font', weight='bold')
+plt.rc('font', size='15')
+fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(9.4,4.8)) #
+
+
+
+for axis in ['bottom','left']:
+  axes.spines[axis].set_linewidth(2)
+for axis in ['top','right']:
+  axes.spines[axis].set_linewidth(0)
+axes.xaxis.set_tick_params(width=2)
+axes.yaxis.set_tick_params(width=2)
+
+
+ta = axes.plot(list(curve_data['Epoch']), curve_data['M1_1 Train Acc'],'-',color= 'b', label="Training Accuracy", linewidth= 1.5)
+va = axes.plot(list(curve_data['Epoch']), curve_data['M1_1 Vali. Acc'],'-',color= 'g', label="Validation Accuracy", linewidth= 1.5)
+
+
+
+axes.set_xlabel('Epoch')
+axes.set_ylabel('Accuracy')
+
+ax2 = axes.twinx()
+
+for axis in ['bottom','left', 'right']:
+  ax2.spines[axis].set_linewidth(2)
+for axis in ['top']:
+  ax2.spines[axis].set_linewidth(0)
+ax2.xaxis.set_tick_params(width=2)
+ax2.yaxis.set_tick_params(width=2)
+
+tl = ax2.plot(list(curve_data['Epoch']), curve_data['M1_1 Train Loss'],'-',color= 'r', label="Training Loss", linewidth= 1.5)
+
+
+ax2.set_ylabel('Loss')
+
+lns = ta+va+tl
+labs = [l.get_label() for l in lns]
+axes.legend(lns, labs, bbox_to_anchor=(-0.05,1.02,1.1,.2), loc='lower left', mode = 'expand', frameon=False, ncol = 3, borderaxespad=0)
+
+plt.tight_layout()
+plt.savefig('DAC_curve_M1_1.png')
+plt.close()
+
+
+
+
+plt.rcParams["font.weight"] = "bold"
+plt.rcParams["axes.labelweight"] = "bold"
+plt.rc('font', size='15')
+
+plt.clf()
+plt.rc('font', family='sans-serif')
+plt.rc('font', weight='bold')
+plt.rc('font', size='15')
+fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(9.4,4.8)) #
+
+
+
+for axis in ['bottom','left']:
+  axes.spines[axis].set_linewidth(2)
+for axis in ['top','right']:
+  axes.spines[axis].set_linewidth(0)
+axes.xaxis.set_tick_params(width=2)
+axes.yaxis.set_tick_params(width=2)
+
+
+ta = axes.plot(list(curve_data['Epoch']), curve_data['M0_0 Train Acc'],'-',color= 'b', label="Training Accuracy", linewidth= 1.5)
+va = axes.plot(list(curve_data['Epoch']), curve_data['M0_0 Vali. Acc'],'-',color= 'g', label="Validation Accuracy", linewidth= 1.5)
+
+
+
+axes.set_xlabel('Epoch')
+axes.set_ylabel('Accuracy')
+
+ax2 = axes.twinx()
+
+for axis in ['bottom','left', 'right']:
+  ax2.spines[axis].set_linewidth(2)
+for axis in ['top']:
+  ax2.spines[axis].set_linewidth(0)
+ax2.xaxis.set_tick_params(width=2)
+ax2.yaxis.set_tick_params(width=2)
+
+tl = ax2.plot(list(curve_data['Epoch']), curve_data['M0_0 Train Loss'],'-',color= 'r', label="Training Loss", linewidth= 1.5)
+
+
+ax2.set_ylabel('Loss')
+
+lns = ta+va+tl
+labs = [l.get_label() for l in lns]
+axes.legend(lns, labs, bbox_to_anchor=(-0.05,1.02,1.1,.2), loc='lower left', mode = 'expand', frameon=False, ncol = 3, borderaxespad=0)
+
+plt.tight_layout()
+plt.savefig('DAC_curve_M0_0.png')
+plt.close()
+
+
+
+
+plt.rcParams["font.weight"] = "bold"
+plt.rcParams["axes.labelweight"] = "bold"
+plt.rc('font', size='15')
+
+plt.clf()
+plt.rc('font', family='sans-serif')
+plt.rc('font', weight='bold')
+plt.rc('font', size='15')
+fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(9.4,4.8)) #
+
+
+
+for axis in ['bottom','left']:
+  axes.spines[axis].set_linewidth(2)
+for axis in ['top','right']:
+  axes.spines[axis].set_linewidth(0)
+axes.xaxis.set_tick_params(width=2)
+axes.yaxis.set_tick_params(width=2)
+
+
+ta = axes.plot(list(curve_data['Epoch']), curve_data['M0_0 Train Acc'],'-',color= 'b', label="Method 1", linewidth= 1.5)
+va = axes.plot(list(curve_data['Epoch']), curve_data['M1_1 Train Acc'],'-',color= 'g', label="Method 2", linewidth= 1.5)
+
+
+
+axes.set_xlabel('Epoch')
+axes.set_ylabel('Accuracy')
+
+
+lns = ta+va
+labs = [l.get_label() for l in lns]
+axes.legend(lns, labs, bbox_to_anchor=(-0.,1.02,.6,.2), loc='lower left', mode = 'expand', frameon=False, ncol = 3, borderaxespad=0,title = "Training Accuracy")
+
+plt.tight_layout()
+plt.savefig('DAC_train_mix.png')
+plt.close()
+
+
+
+
+plt.rcParams["font.weight"] = "bold"
+plt.rcParams["axes.labelweight"] = "bold"
+plt.rc('font', size='15')
+
+plt.clf()
+plt.rc('font', family='sans-serif')
+plt.rc('font', weight='bold')
+plt.rc('font', size='15')
+fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(9.4,4.8)) #
+
+
+
+for axis in ['bottom','left']:
+  axes.spines[axis].set_linewidth(2)
+for axis in ['top','right']:
+  axes.spines[axis].set_linewidth(0)
+axes.xaxis.set_tick_params(width=2)
+axes.yaxis.set_tick_params(width=2)
+
+
+ta = axes.plot(list(curve_data['Epoch']), curve_data['M0_0 Train Loss'],'-',color= 'b', label="Method 1", linewidth= 1.5)
+va = axes.plot(list(curve_data['Epoch']), curve_data['M1_1 Train Loss'],'-',color= 'g', label="Method 2", linewidth= 1.5)
+
+
+
+axes.set_xlabel('Epoch')
+axes.set_ylabel('Accuracy')
+
+
+lns = ta+va
+labs = [l.get_label() for l in lns]
+axes.legend(lns, labs, bbox_to_anchor=(-0.,1.02,.6,.2), loc='lower left', mode = 'expand', frameon=False, ncol = 3, borderaxespad=0,title = "Training Loss")
+
+plt.tight_layout()
+plt.savefig('DAC_loss_mix.png')
+plt.close()
+
+
+
+
+
+plt.rcParams["font.weight"] = "bold"
+plt.rcParams["axes.labelweight"] = "bold"
+plt.rc('font', size='15')
+
+plt.clf()
+plt.rc('font', family='sans-serif')
+plt.rc('font', weight='bold')
+plt.rc('font', size='15')
+fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(9.4,4.8)) #
+
+
+
+for axis in ['bottom','left']:
+  axes.spines[axis].set_linewidth(2)
+for axis in ['top','right']:
+  axes.spines[axis].set_linewidth(0)
+axes.xaxis.set_tick_params(width=2)
+axes.yaxis.set_tick_params(width=2)
+
+
+ta = axes.plot(list(curve_data['Epoch']), curve_data['M0_0 Vali. Acc'],'-',color= 'b', label="Method 1", linewidth= 1.5)
+va = axes.plot(list(curve_data['Epoch']), curve_data['M1_1 Vali. Acc'],'-',color= 'g', label="Method 2", linewidth= 1.5)
+
+
+
+axes.set_xlabel('Epoch')
+axes.set_ylabel('Accuracy')
+
+
+lns = ta+va
+labs = [l.get_label() for l in lns]
+axes.legend(lns, labs, bbox_to_anchor=(-0.,1.02,.6,.2), loc='lower left', mode = 'expand', frameon=False, ncol = 3, borderaxespad=0,title = "Validation Accuracy")
+
+plt.tight_layout()
+plt.savefig('DAC_vali_mix.png')
+plt.close()
