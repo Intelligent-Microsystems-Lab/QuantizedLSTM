@@ -1,7 +1,7 @@
 #!/bin/csh 
 #$ -M cschaef6@nd.edu 
 #$ -m abe
-#$ -q gpu@@joshi
+#$ -q gpu@qa-rtx6k-041.crc.nd.edu
 #$ -l gpu_card=1
 #$ -N DAC21_n-msb_M16_1
 #$ -o ./logs/output_DAC21_DAC21_n-msb_M16_1.txt
