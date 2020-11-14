@@ -262,7 +262,7 @@ class LinLayer_bmm(nn.Module):
         self.a2 = nn.Parameter(torch.tensor([16.]*n_blocks), requires_grad = pact_a)
 
     def forward(self, input):
-        return quant_pass(pact_a_bmm(CustomMM_bmm.apply(quant_pass(pact_a_bmm(input, self.a1), self.ib, self.a1), self.weights, self.bias, self.noise_level, self.wb, self.bias_r), self.a2), self.abMVM, self.a2, self.w_noise, self.act_noise)
+        return quant_pass(pact_a_bmm(CustomMM_bmm.apply(quant_pass(pact_a_bmm(input, self.a1), self.ib, self.a1), self.weights, self.bias, self.noise_level, self.wb, self.bias_r, self.w_noise, self.act_noise), self.a2), self.abMVM, self.a2, self.w_noise, self.act_noise)
 
 
 class KWS_LSTM_bmm(nn.Module):
