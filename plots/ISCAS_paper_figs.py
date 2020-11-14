@@ -133,10 +133,34 @@ axes.xaxis.set_tick_params(width=2)
 axes.yaxis.set_tick_params(width=2)
 
 
+# orientation lines
+#axes.vlines(min(arm_xcim0),0, .15, linestyles='dashed', alpha=0.3)
+axes.vlines(xcim0[-2],0, .15, linestyles='dashed', alpha=0.3)
+axes.hlines(1- max(arm_ycim0),0, 5400, linestyles='dashed', alpha=0.3)
+
+
 axes.plot(xcim0, [1-x for x in ycim0],'x-',color= 'blue', label="CIM", linewidth= 2)
-axes.plot(xcim0_p, [1-x for x in ycim0_p],'x-',color= 'green', label="CIM [?]", linewidth= 2)
+axes.plot(xcim0_p, [1-x for x in ycim0_p],'x-',color= 'green', label="CIM [17]", linewidth= 2)
 axes.plot(d_xcim0, [1-x for x in d_ycim0],'x-',color= 'red', label="Digital", linewidth= 2)
-axes.plot(arm_xcim0[:-1], [1-x for x in arm_ycim0[:-1]],'x-',color= 'm', label="Digital [?]", linewidth= 2)
+axes.plot(arm_xcim0[:-1], [1-x for x in arm_ycim0[:-1]],'x-',color= 'm', label="Digital [13]", linewidth= 2)
+
+
+
+
+
+# arrows
+axes.arrow(227.7869391039999, 0.09766666666666668, 0, -0.03856666666666675, length_includes_head=True, head_width=40, head_length=0.008,color= 'k', linewidth = 1)
+axes.annotate("3.85%", xy=(230.7869391039999, 0.0783833333333333))
+
+
+
+axes.arrow(95, 0.08319999999999994, -69.43018964800001, 0, length_includes_head=True, head_width=.006, head_length=8,color= 'k', linewidth = .05)
+axes.annotate("73.08%", xy=(25, .07))
+
+
+
+axes.arrow(min(arm_xcim0), .145, -(min(arm_xcim0) - xcim0_p[1]), 0, length_includes_head=True, head_width=.006, head_length=3,color= 'k', linewidth  = .05)
+axes.annotate("93.18%", xy=(16, .134))
 
 axes.set_ylim(0 , 1 - .85) 
 axes.set_xlabel('uJ per Decision')
@@ -182,13 +206,13 @@ for axis in ['top','right']:
 axes[1].xaxis.set_tick_params(width=2)
 axes[1].yaxis.set_tick_params(width=2)
 
-sc1 = axes[0].scatter([.5]*7, list(inp_bits['Input Bits']), c = list(inp_bits[['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size,cmap='coolwarm')
-sc2 = axes[0].scatter([1.]*7, list(out_bits['Output Bits']), c = list(out_bits[['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size,cmap='coolwarm')
-sc3 = axes[0].scatter([1.5]*11, list(nm_bits['Non CIM bits']), c = list(nm_bits[['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size,cmap='coolwarm')
-sc4 = axes[0].scatter([2.]*6, list(nmsb['N MSB']), c = list(nmsb[['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size,cmap='coolwarm')
+sc1 = axes[0].scatter([.5]*7, list(inp_bits['Input Bits']), c = list(inp_bits[['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size,cmap='coolwarm_r')
+sc2 = axes[0].scatter([1.]*7, list(out_bits['Output Bits']), c = list(out_bits[['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size,cmap='coolwarm_r')
+sc3 = axes[0].scatter([1.5]*11, list(nm_bits['Non CIM bits']), c = list(nm_bits[['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size,cmap='coolwarm_r')
+sc4 = axes[0].scatter([2.]*6, list(nmsb['N MSB']), c = list(nmsb[['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size,cmap='coolwarm_r')
 
 
-sc5 = axes[1].scatter([1]*5, [114,200,300,400,500], c = list(hidden[['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size,cmap='coolwarm')
+sc5 = axes[1].scatter([1]*5, [114,200,300,400,500], c = list(hidden[['#1','#2','#3']].mean(1)) , marker = "s",  vmin=min_acc, vmax=max_acc, s=sym_marker_size,cmap='coolwarm_r')
 
 axes[0].set_xlabel('')
 axes[0].set_ylabel('# Bits/Blocks')
@@ -258,13 +282,13 @@ for axis in ['top','right']:
 axes[1].xaxis.set_tick_params(width=2)
 axes[1].yaxis.set_tick_params(width=2)
 
-sc1 = axes[0].scatter([.5]*7, list(inp_bits['Input Bits']), c = list(inp_bits[['uJ']].mean(1)) , marker = "s",  vmin=min_j, vmax=max_j, s=sym_marker_size,cmap='coolwarm_r')
-sc2 = axes[0].scatter([1.]*7, list(out_bits['Output Bits']), c = list(out_bits[['uJ']].mean(1)) , marker = "s",  vmin=min_j, vmax=max_j, s=sym_marker_size,cmap='coolwarm_r')
-sc3 = axes[0].scatter([1.5]*11, list(nm_bits['Non CIM bits']), c = list(nm_bits[['uJ']].mean(1)) , marker = "s",  vmin=min_j, vmax=max_j, s=sym_marker_size,cmap='coolwarm_r')
-sc4 = axes[0].scatter([2.]*6, list(nmsb['N MSB']), c = list(nmsb[['uJ']].mean(1)) , marker = "s",  vmin=min_j, vmax=max_j, s=sym_marker_size,cmap='coolwarm_r')
+sc1 = axes[0].scatter([.5]*7, list(inp_bits['Input Bits']), c = list(inp_bits[['uJ']].mean(1)) , marker = "s",  vmin=min_j, vmax=max_j, s=sym_marker_size,cmap='coolwarm')
+sc2 = axes[0].scatter([1.]*7, list(out_bits['Output Bits']), c = list(out_bits[['uJ']].mean(1)) , marker = "s",  vmin=min_j, vmax=max_j, s=sym_marker_size,cmap='coolwarm')
+sc3 = axes[0].scatter([1.5]*11, list(nm_bits['Non CIM bits']), c = list(nm_bits[['uJ']].mean(1)) , marker = "s",  vmin=min_j, vmax=max_j, s=sym_marker_size,cmap='coolwarm')
+sc4 = axes[0].scatter([2.]*6, list(nmsb['N MSB']), c = list(nmsb[['uJ']].mean(1)) , marker = "s",  vmin=min_j, vmax=max_j, s=sym_marker_size,cmap='coolwarm')
 
 
-sc5 = axes[1].scatter([1]*5, [114,200,300,400,500], c = list(hidden[['uJ']].mean(1)) , marker = "s",  vmin=min_j, vmax=max_j, s=sym_marker_size,cmap='coolwarm_r')
+sc5 = axes[1].scatter([1]*5, [114,200,300,400,500], c = list(hidden[['uJ']].mean(1)) , marker = "s",  vmin=min_j, vmax=max_j, s=sym_marker_size,cmap='coolwarm')
 
 #axes[1].set_xlim((.9,1.1))
 
