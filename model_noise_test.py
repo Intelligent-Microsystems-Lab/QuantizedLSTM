@@ -246,7 +246,7 @@ class LinLayer_bmm(nn.Module):
         self.bias_r = bias_r
 
         self.w_noise = w_noise
-        selt.act_noise = act_noise
+        self.act_noise = act_noise
 
         self.weights = nn.Parameter(torch.randn(int(n_blocks), int(inp_dim), int(out_dim)))
         self.bias = nn.Parameter(torch.randn(int(n_blocks), 1, int(out_dim)))
