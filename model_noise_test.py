@@ -237,7 +237,7 @@ class LSTMCellQ_bmm(nn.Module):
         return new_h, (new_h, new_c)
 
 class LinLayer_bmm(nn.Module):
-    def __init__(self, inp_dim, out_dim, noise_level, abMVM, ib, wb, n_blocks, pact_a, bias_r, self.w_noise, self.act_noise):
+    def __init__(self, inp_dim, out_dim, noise_level, abMVM, ib, wb, n_blocks, pact_a, bias_r, w_noise, act_noise):
         super(LinLayer_bmm, self).__init__()
         self.abMVM = abMVM
         self.ib = ib
