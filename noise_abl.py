@@ -129,6 +129,13 @@ checkpoint_dict = torch.load('./checkpoints/bde83981-38a9-4ff1-9504-34b182dc99e2
 model.load_state_dict(checkpoint_dict['model_dict'])
 model.set_noise(args.noise_injectionI)
 model.set_drop_p(0)
+
+
+model.lstmBlocks.cell.w_noise
+model.finFC.w_noise
+model.lstmBlocks.cell.act_noise
+model.finFC.act_noise
+
 acc_aux = []
 
 for i_batch, sample_batch in enumerate(test_dataloader):
