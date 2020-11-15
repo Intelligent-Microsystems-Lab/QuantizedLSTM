@@ -131,10 +131,10 @@ model.set_noise(args.noise_injectionI)
 model.set_drop_p(0)
 
 
-model.lstmBlocks.cell.w_noise
-model.finFC.w_noise
-model.lstmBlocks.cell.act_noise
-model.finFC.act_noise
+model.lstmBlocks.cell.w_noise = .0
+model.finFC.w_noise = .0
+model.lstmBlocks.cell.act_noise = .0
+model.finFC.act_noise = .0
 
 acc_aux = []
 
