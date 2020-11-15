@@ -136,6 +136,8 @@ class CustomMM_bmm(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input, weight, bias, nl, wb, bias_r, w_noise, act_noise):
 
+        import pdb; pdb.set_trace()
+
         #noise_w = torch.randn(weight.shape, device = input.device) * weight.max() * nl
         #bias_w  = torch.randn(bias.shape, device = bias.device) * bias.max() * nl
 
@@ -263,8 +265,7 @@ class LinLayer_bmm(nn.Module):
         self.a2 = nn.Parameter(torch.tensor([16.]*n_blocks), requires_grad = pact_a)
 
     def forward(self, input):
-        import pdb; pdb.set_trace()
-        return quant_pass(pact_a_bmm(CustomMM_bmm.apply(quant_pass(pact_a_bmm(input, self.a1), self.ib, self.a1), self.weights, self.bias, self.noise_level, self.wb, self.bias_r, self.w_noise, self.act_noise), self.a2), self.abMVM, self.a2, self.w_noise, self.act_noise)
+        return quant_pass(pact_a_bmm(CustomMM_bmm.apply(quant_pass(pact_a_bmm(input, self.a1), self.ib, self.a1), self.weights, self.bias, self.noise_level, self.wb, self.bias_r, self.w_noise, self.act_noise), self.a2), self.abMVM, self.a2)
 
 
 class KWS_LSTM_bmm(nn.Module):
