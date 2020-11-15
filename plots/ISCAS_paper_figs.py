@@ -154,13 +154,13 @@ axes.annotate("3.85%", xy=(230.7869391039999, 0.0783833333333333))
 
 
 
-axes.arrow(95, 0.08319999999999994, -69.43018964800001, 0, length_includes_head=True, head_width=.006, head_length=8,color= 'k', linewidth = .05)
-axes.annotate("73.08%", xy=(25, .07))
+axes.arrow(95, 0.08319999999999994, -69.43018964800001, 0, length_includes_head=True, head_width=.006, head_length=8,color= 'k', linewidth = .05, arrowprops=dict(arrowstyle='<-'))
+axes.annotate(r'$3.71\times$', xy=(25, .07))
 
 
 
-axes.arrow(min(arm_xcim0), .145, -(min(arm_xcim0) - xcim0_p[1]), 0, length_includes_head=True, head_width=.006, head_length=3,color= 'k', linewidth  = .05)
-axes.annotate("93.18%", xy=(16, .134))
+axes.arrow(min(arm_xcim0), .145, -(min(arm_xcim0) - xcim0_p[1]), 0, length_includes_head=True, head_width=.006, head_length=3,color= 'k', linewidth  = .05, arrowprops=dict(arrowstyle='<-'))
+axes.annotate(r'$14.67\times$', xy=(16, .134))
 
 axes.set_ylim(0 , 1 - .85) 
 axes.set_xlabel('uJ per Decision')
