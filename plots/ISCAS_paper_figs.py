@@ -140,7 +140,7 @@ axes.hlines(1- max(arm_ycim0),0, 5400, linestyles='dashed', alpha=0.3)
 
 
 axes.plot(xcim0, [1-x for x in ycim0],'x-',color= 'blue', label="CIM", linewidth= 2)
-axes.plot(xcim0_p, [1-x for x in ycim0_p],'x-',color= 'green', label="CIM [17]", linewidth= 2)
+axes.plot(xcim0_p, [1-x for x in ycim0_p],'x-',color= 'green', label="CIM [16]", linewidth= 2)
 axes.plot(d_xcim0, [1-x for x in d_ycim0],'x-',color= 'red', label="Digital", linewidth= 2)
 axes.plot(arm_xcim0[:-1], [1-x for x in arm_ycim0[:-1]],'x-',color= 'm', label="Digital [13]", linewidth= 2)
 
@@ -154,12 +154,15 @@ axes.annotate("3.85%", xy=(230.7869391039999, 0.0783833333333333))
 
 
 
-axes.arrow(95, 0.08319999999999994, -69.43018964800001, 0, length_includes_head=True, head_width=.006, head_length=8,color= 'k', linewidth = .05, arrowprops=dict(arrowstyle='<-'))
+#axes.arrow(95, 0.08319999999999994, -69.43018964800001, 0, length_includes_head=True, head_width=.006, head_length=8,color= 'k', linewidth = .05)
+
+axes.arrow(25.56981035199999, 0.08319999999999994, 69.43018964800001, 0, length_includes_head=True, head_width=.006, head_length=25,color= 'k', linewidth = .05)
 axes.annotate(r'$3.71\times$', xy=(25, .07))
 
 
 
-axes.arrow(min(arm_xcim0), .145, -(min(arm_xcim0) - xcim0_p[1]), 0, length_includes_head=True, head_width=.006, head_length=3,color= 'k', linewidth  = .05, arrowprops=dict(arrowstyle='<-'))
+#axes.arrow(min(arm_xcim0), .145, -(min(arm_xcim0) - xcim0_p[1]), 0, length_includes_head=True, head_width=.006, head_length=3,color= 'k', linewidth  = .05)
+axes.arrow(min(arm_xcim0) - (min(arm_xcim0) - xcim0_p[1]), .145, (min(arm_xcim0) - xcim0_p[1]), 0, length_includes_head=True, head_width=.006, head_length=20,color= 'k', linewidth  = .05)
 axes.annotate(r'$14.67\times$', xy=(16, .134))
 
 axes.set_ylim(0 , 1 - .85) 

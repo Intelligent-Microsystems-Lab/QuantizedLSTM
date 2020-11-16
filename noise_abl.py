@@ -12,7 +12,8 @@ import numpy as np
 
 from dataloader import SpeechCommandsGoogle
 import model as model_lib
-from model_noise_test import KWS_LSTM_mix, KWS_LSTM_bmm, KWS_LSTM_cs, pre_processing
+#from model_noise_test import KWS_LSTM_mix, KWS_LSTM_bmm, KWS_LSTM_cs, pre_processing
+from model import KWS_LSTM_mix, KWS_LSTM_bmm, KWS_LSTM_cs, pre_processing
 from figure_scripts import plot_curves
 
 torch.manual_seed(42)
@@ -23,74 +24,16 @@ else:
     device = torch.device("cpu")
 
 
-parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+checkpoint_dict = torch.load('./checkpoints/bde83981-38a9-4ff1-9504-34b182dc99e2.pkl')
 
-# general config
-parser.add_argument("--random-seed", type=int, default=80085, help='Random Seed')
-parser.add_argument("--method", type=int, default=1, help='Method: 0 - blocks, 1 - orthogonality, 2 - mix')
-parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speech_commands_v0.02', help='Path to Dataset')
-parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
-parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
-parser.add_argument("--batch-size", type=int, default=474, help='Batch Size')
-# parser.add_argument("--training-steps", type=str, default='10000,10000,10000', help='Training Steps')
-# parser.add_argument("--learning-rate", type=str, default='0.0005,0.0001,0.00002', help='Learning Rate')
-parser.add_argument("--training-steps", type=str, default='10000,10000,200', help='Training Steps') #,10000,10000 ; ,10000
-parser.add_argument("--learning-rate", type=str, default='0.002,0.0005,0.00008', help='Learning Rate') #,0.0001,0.00002 ; ,0.00008
-parser.add_argument("--finetuning-epochs", type=int, default=10000, help='Number of epochs for finetuning')
-parser.add_argument("--dataloader-num-workers", type=int, default=8, help='Number Workers Dataloader')
-parser.add_argument("--validation-percentage", type=int, default=10, help='Validation Set Percentage')
-parser.add_argument("--testing-percentage", type=int, default=10, help='Testing Set Percentage')
-parser.add_argument("--sample-rate", type=int, default=16000, help='Audio Sample Rate')
-parser.add_argument("--canonical-testing", type=int, default=0, help='Whether to use the canoncial test data (0 non canoncial, 1 canoncial.')
-
-parser.add_argument("--background-volume", type=float, default=.1, help='How loud the background noise should be, between 0 and 1.') 
-parser.add_argument("--background-frequency", type=float, default=.8, help='How many of the training samples have background noise mixed in.') 
-parser.add_argument('--silence-percentage', type=float, default=.1, help='How much of the training data should be silence.')
-parser.add_argument('--unknown-percentage', type=float, default=.1, help='How much of the training data should be unknown words.')
-parser.add_argument('--time-shift-ms', type=float, default=100.0, help='Range to randomly shift the training audio by in time.')
-parser.add_argument("--win-length", type=int, default=641, help='Window size in ms') # 640
-parser.add_argument("--hop-length", type=int, default=320, help='Length of hop between STFT windows') #320
-
-parser.add_argument("--hidden", type=int, default=114, help='Number of hidden LSTM units') 
-parser.add_argument("--n-mfcc", type=int, default=40, help='Number of mfc coefficients to retain') # 40 before
-
-parser.add_argument("--noise-injectionT", type=float, default=0.16, help='Percentage of noise injected to weights')
-parser.add_argument("--noise-injectionI", type=float, default=0.1, help='Percentage of noise injected to weights')
-parser.add_argument("--quant-actMVM", type=int, default=6, help='Bits available for MVM activations/state')
-parser.add_argument("--quant-actNM", type=int, default=8, help='Bits available for non-MVM activations/state')
-parser.add_argument("--quant-inp", type=int, default=4, help='Bits available for inputs')
-parser.add_argument("--quant-w", type=int, default=None, help='Bits available for weights')
-
-parser.add_argument("--l2", type=float, default=.01, help='Strength of L2 norm')
-parser.add_argument("--n-msb", type=int, default=4, help='Number of blocks available')
-parser.add_argument("--cs", type=float, default=.1, help='Strength cosine similarity penalization')
-
-parser.add_argument("--max-w", type=float, default=.1, help='Maximumg weight')
-parser.add_argument("--drop-p", type=float, default=.125, help='Dropconnect probability')
-parser.add_argument("--pact-a", type=int, default=1, help='Whether scaling parameter is trainable (1:on,0:off)')
-
-parser.add_argument("--rows-bias", type=int, default=6, help='How many rows for the bias')
-
-
-parser.add_argument("--gain-blocks", type=int, default=2, help='Fox mixed method, how many parallel blocks')
-
-args = parser.parse_args()
-args.canonical_testing = bool(args.canonical_testing)
-args.pact_a = bool(args.pact_a)
-args.hidden = args.hidden - args.rows_bias
-args.hop_length = args.win_length // 2
-
-print(args)
-
+args = checkpoint_dict['arguments']
 model_lib.max_w = args.max_w
-
 
 torch.manual_seed(args.random_seed)
 np.random.seed(args.random_seed)
 
 epoch_list = np.cumsum([int(x) for x in args.training_steps.split(',')])
 lr_list = [float(x) for x in args.learning_rate.split(',')]
-
 
 mfcc_cuda = torchaudio.transforms.MFCC(sample_rate = args.sample_rate, n_mfcc = args.n_mfcc, log_mels = True, melkwargs = {'win_length' : args.win_length, 'hop_length' : args.hop_length, 'n_fft' : args.win_length, 'pad': 0, 'f_min' : 20, 'f_max': 4000, 'n_mels' : args.n_mfcc*4}).to(device)
 
@@ -107,7 +50,6 @@ train_dataloader = torch.utils.data.DataLoader(speech_dataset_train, batch_size=
 test_dataloader = torch.utils.data.DataLoader(speech_dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
 validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_size=args.batch_size, shuffle=True, num_workers=args.dataloader_num_workers)
 
-
 if args.method == 0:
     model = KWS_LSTM_bmm(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = 0, drop_p = args.drop_p, n_msb = args.n_msb, pact_a = args.pact_a, bias_r = args.rows_bias)
 elif args.method == 1:
@@ -117,25 +59,14 @@ elif args.method == 2:
     model = KWS_LSTM_mix(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = 0, drop_p = args.drop_p, n_msb = args.n_msb, pact_a = args.pact_a, bias_r = args.rows_bias, gain_blocks = args.gain_blocks)
 else:
     raise Exception("Unknown method: Please use 0 for quantized LSTM blocks or 1 for bit splitting.")
-
 model.to(device)
 
 
 
-# Testing
-print("Start testing:")
-#quant inp 5
-checkpoint_dict = torch.load('./checkpoints/bde83981-38a9-4ff1-9504-34b182dc99e2.pkl')
+
 model.load_state_dict(checkpoint_dict['model_dict'])
 model.set_noise(args.noise_injectionI)
 model.set_drop_p(0)
-
-
-model.lstmBlocks.cell.w_noise = .0
-model.finFC.w_noise = .0
-model.lstmBlocks.cell.act_noise = .0
-model.finFC.act_noise = .0
-
 acc_aux = []
 
 for i_batch, sample_batch in enumerate(test_dataloader):
