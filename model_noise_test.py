@@ -135,10 +135,12 @@ def w_init(fp, wb):
 class CustomMM_bmm(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input, weight, bias, nl, wb, bias_r, w_noise, act_noise):
+
         import pdb; pdb.set_trace()
 
-        noise_w = torch.randn(weight.shape, device = input.device) * max_w * nl
-        bias_w  = torch.randn(bias.shape, device = bias.device) * max_w * nl
+        noise_w = torch.randn(weight.shape, device = input.device) * w_noise
+        bias_w  = torch.randn(bias.shape, device = bias.device) * w_noise
+
         weight = torch.clamp(weight, -max_w, max_w)
         bias = torch.clamp(bias, -bias_r, bias_r)
 
@@ -147,6 +149,10 @@ class CustomMM_bmm(torch.autograd.Function):
 
         ctx.save_for_backward(input, weight, bias)
         output = input.bmm(wq + noise_w) + bq + bias_w
+
+
+        act_w = torch.randn(output.shape, device = output.device) * act_noise
+
         return output
 
     @staticmethod

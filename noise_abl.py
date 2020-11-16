@@ -68,6 +68,10 @@ model.to(device)
 model.load_state_dict(checkpoint_dict['model_dict'])
 model.set_noise(args.noise_injectionI)
 model.set_drop_p(0)
+
+model.lstmBlocks.cell.act_noise = .1
+model.finFC.act_noise = .1
+
 acc_aux = []
 
 for i_batch, sample_batch in enumerate(test_dataloader):
