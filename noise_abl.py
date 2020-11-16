@@ -64,22 +64,55 @@ model.to(device)
 
 
 
+w_noise_list = np.arange(0,.1, .001).repeat(3)
+w_res = []
+act_res = []
 
-model.load_state_dict(checkpoint_dict['model_dict'])
-model.set_noise(args.noise_injectionI)
-model.set_drop_p(0)
+for lvl_n in w_noise_list:
+    # weight noise sensitivty
+    model.load_state_dict(checkpoint_dict['model_dict'])
+    model.set_noise(args.noise_injectionI)
+    model.set_drop_p(0)
 
-model.lstmBlocks.cell.act_noise = .1
-model.finFC.act_noise = .1
+    model.lstmBlocks.cell.act_noise = 0
+    model.finFC.act_noise = 0
+    model.lstmBlocks.cell.w_noise = lvl_n
+    model.finFC.w_noise = lvl_n
 
-acc_aux = []
+    acc_aux = []
 
-for i_batch, sample_batch in enumerate(test_dataloader):
-    x_data, y_label = sample_batch
-    x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
+    for i_batch, sample_batch in enumerate(test_dataloader):
+        x_data, y_label = sample_batch
+        x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
 
-    output = model(x_data)
-    acc_aux.append((output.argmax(dim=1) == y_label))
+        output = model(x_data)
+        acc_aux.append((output.argmax(dim=1) == y_label))
 
-test_acc = torch.cat(acc_aux).float().mean().item()
-print("Test Accuracy: {0:.4f}".format(test_acc))
+    test_acc = torch.cat(acc_aux).float().mean().item()
+    w_res.append(test_acc)
+    print("Test Accuracy: {0:.4f} {1:.4f}".format(test_acc, lvl_n))
+
+
+for lvl_n in w_noise_list:
+    # act noise sensitivty
+    model.load_state_dict(checkpoint_dict['model_dict'])
+    model.set_noise(args.noise_injectionI)
+    model.set_drop_p(0)
+
+    model.lstmBlocks.cell.act_noise = lvl_n
+    model.finFC.act_noise = lvl_n
+    model.lstmBlocks.cell.w_noise = 0
+    model.finFC.w_noise = 0
+
+    acc_aux = []
+
+    for i_batch, sample_batch in enumerate(test_dataloader):
+        x_data, y_label = sample_batch
+        x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
+
+        output = model(x_data)
+        acc_aux.append((output.argmax(dim=1) == y_label))
+
+    test_acc = torch.cat(acc_aux).float().mean().item()
+    act_res.append(test_acc)
+    print("Test Accuracy: {0:.4f} {1:.4f}".format(test_acc, lvl_n))

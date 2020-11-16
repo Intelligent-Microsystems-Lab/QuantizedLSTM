@@ -135,9 +135,6 @@ def w_init(fp, wb):
 class CustomMM_bmm(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input, weight, bias, nl, wb, bias_r, w_noise, act_noise):
-
-        import pdb; pdb.set_trace()
-
         noise_w = torch.randn(weight.shape, device = input.device) * w_noise
         bias_w  = torch.randn(bias.shape, device = bias.device) * w_noise
 
