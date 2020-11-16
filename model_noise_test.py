@@ -365,7 +365,7 @@ class KWS_LSTM_cs(nn.Module):
         self.c_sim = nn.CosineSimilarity(dim=0, eps=1e-6)
 
         # LSTM layer
-        self.lstmBlocks = LSTMLayer(LSTMCellQ_bmm, self.drop_p, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.n_msb, pact_a, bias_r, , act_noise)
+        self.lstmBlocks = LSTMLayer(LSTMCellQ_bmm, self.drop_p, self.input_dim, self.hidden_dim, self.wb, self.ib, self.abMVM, self.abNM, self.noise_level, self.n_msb, pact_a, bias_r, w_noise, act_noise)
 
         # final FC layer
         self.finFC = LinLayer_bmm(self.hidden_dim, 12, noise_level, abMVM, ib, wb, self.n_msb, pact_a, bias_r, w_noise, act_noise)
