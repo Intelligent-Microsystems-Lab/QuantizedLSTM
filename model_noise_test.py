@@ -162,7 +162,7 @@ class CustomMM_bmm(torch.autograd.Function):
         if ctx.needs_input_grad[2]:
             grad_bias = grad_output.sum(1)
 
-        return grad_input, grad_weight.permute(0,2,1), grad_bias.unsqueeze(1), None, None, None, None, None
+        return grad_input, grad_weight.permute(0,2,1), grad_bias.unsqueeze(1), None, None, None
 
 
 class LSTMCellQ_bmm(nn.Module):

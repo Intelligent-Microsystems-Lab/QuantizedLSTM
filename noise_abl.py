@@ -12,8 +12,8 @@ import numpy as np
 
 from dataloader import SpeechCommandsGoogle
 import model as model_lib
-#from model_noise_test import KWS_LSTM_mix, KWS_LSTM_bmm, KWS_LSTM_cs, pre_processing
-from model import KWS_LSTM_mix, KWS_LSTM_bmm, KWS_LSTM_cs, pre_processing
+from model_noise_test import KWS_LSTM_mix, KWS_LSTM_bmm, KWS_LSTM_cs, pre_processing
+#from model import KWS_LSTM_mix, KWS_LSTM_bmm, KWS_LSTM_cs, pre_processing
 from figure_scripts import plot_curves
 
 torch.manual_seed(42)
