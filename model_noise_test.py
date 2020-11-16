@@ -162,7 +162,7 @@ class CustomMM_bmm(torch.autograd.Function):
         if ctx.needs_input_grad[2]:
             grad_bias = grad_output.sum(1)
 
-        return grad_input, grad_weight.permute(0,2,1), grad_bias.unsqueeze(1), None, None, None
+        return grad_input, grad_weight.permute(0,2,1), grad_bias.unsqueeze(1), None, None, None, None, None
 
 
 class LSTMCellQ_bmm(nn.Module):
@@ -205,7 +205,7 @@ class LSTMCellQ_bmm(nn.Module):
 
         # MVM
         if input.shape[0] == self.n_blocks:
-            part1 = CustomMM_bmm.apply(quant_pass(pact_a_bmm(input, self.a1), self.ib, self.a1), self.weight_ih, self.bias_ih, self.noise_level, self.wb, self.bias_r)
+            part1 = CustomMM_bmm.apply(quant_pass(pact_a_bmm(input, self.a1), self.ib, self.a1), self.weight_ih, self.bias_ih, self.noise_level, self.wb, self.bias_r, -88, -88)
         else:
             part1 = CustomMM_bmm.apply(quant_pass(pact_a_bmm(input.repeat(self.n_blocks, 1, 1), self.a1), self.ib, self.a1), self.weight_ih, self.bias_ih, self.noise_level, self.wb, self.bias_r, -88, -88)
         part2 = CustomMM_bmm.apply(quant_pass(pact_a_bmm(hx, self.a11), self.ib, self.a11), self.weight_hh * w_mask, self.bias_hh, self.noise_level, self.wb, self.bias_r, -88, -88)
