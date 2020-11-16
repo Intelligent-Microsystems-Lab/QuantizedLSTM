@@ -11,8 +11,9 @@ import torch.optim as optim
 import numpy as np
 
 from dataloader import SpeechCommandsGoogle
-import model as model_lib
+import model_noise_test as model_lib
 from model_noise_test import KWS_LSTM_mix, KWS_LSTM_bmm, KWS_LSTM_cs, pre_processing
+#import model as model_lib
 #from model import KWS_LSTM_mix, KWS_LSTM_bmm, KWS_LSTM_cs, pre_processing
 from figure_scripts import plot_curves
 
@@ -53,7 +54,7 @@ validation_dataloader = torch.utils.data.DataLoader(speech_dataset_val, batch_si
 if args.method == 0:
     model = KWS_LSTM_bmm(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = 0, drop_p = args.drop_p, n_msb = args.n_msb, pact_a = args.pact_a, bias_r = args.rows_bias)
 elif args.method == 1:
-    model = KWS_LSTM_cs(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = 0, drop_p = args.drop_p, n_msb = args.n_msb, pact_a = args.pact_a, bias_r = args.rows_bias)
+    model = KWS_LSTM_cs(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = 0, drop_p = args.drop_p, n_msb = args.n_msb, pact_a = args.pact_a, bias_r = args.rows_bias, w_noise = -99, act_noise = -99)
 elif args.method == 2:
     args.n_msb = int(args.n_msb/args.gain_blocks)
     model = KWS_LSTM_mix(input_dim = args.n_mfcc, hidden_dim = args.hidden, output_dim = len(args.word_list), device = device, wb = args.quant_w, abMVM = args.quant_actMVM, abNM = args.quant_actNM, ib = args.quant_inp, noise_level = 0, drop_p = args.drop_p, n_msb = args.n_msb, pact_a = args.pact_a, bias_r = args.rows_bias, gain_blocks = args.gain_blocks)
