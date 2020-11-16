@@ -134,7 +134,7 @@ def w_init(fp, wb):
 
 class CustomMM_bmm(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, input, weight, bias, nl, wb, bias_r): # w_noise, act_noise
+    def forward(ctx, input, weight, bias, nl, wb, bias_r):
         #noise_w = torch.randn(weight.shape, device = input.device) * weight.max() * nl
         #bias_w  = torch.randn(bias.shape, device = bias.device) * bias.max() * nl
 
@@ -205,10 +205,10 @@ class LSTMCellQ_bmm(nn.Module):
 
         # MVM
         if input.shape[0] == self.n_blocks:
-            part1 = CustomMM_bmm.apply(quant_pass(pact_a_bmm(input, self.a1), self.ib, self.a1), self.weight_ih, self.bias_ih, self.noise_level, self.wb, self.bias_r) #, -88, -88
+            part1 = CustomMM_bmm.apply(quant_pass(pact_a_bmm(input, self.a1), self.ib, self.a1), self.weight_ih, self.bias_ih, self.noise_level, self.wb, self.bias_r)
         else:
-            part1 = CustomMM_bmm.apply(quant_pass(pact_a_bmm(input.repeat(self.n_blocks, 1, 1), self.a1), self.ib, self.a1), self.weight_ih, self.bias_ih, self.noise_level, self.wb, self.bias_r) #, -88, -88
-        part2 = CustomMM_bmm.apply(quant_pass(pact_a_bmm(hx, self.a11), self.ib, self.a11), self.weight_hh * w_mask, self.bias_hh, self.noise_level, self.wb, self.bias_r) #, -88, -88
+            part1 = CustomMM_bmm.apply(quant_pass(pact_a_bmm(input.repeat(self.n_blocks, 1, 1), self.a1), self.ib, self.a1), self.weight_ih, self.bias_ih, self.noise_level, self.wb, self.bias_r)
+        part2 = CustomMM_bmm.apply(quant_pass(pact_a_bmm(hx, self.a11), self.ib, self.a11), self.weight_hh * w_mask, self.bias_hh, self.noise_level, self.wb, self.bias_r)
 
         gates = quant_pass(pact_a_bmm( quant_pass(pact_a_bmm(part1, self.a12), self.abMVM, self.a12) + quant_pass(pact_a_bmm(part2, self.a13), self.abMVM, self.a13), self.a14), self.abNM, self.a14)
 
@@ -256,7 +256,7 @@ class LinLayer_bmm(nn.Module):
         self.a2 = nn.Parameter(torch.tensor([16.]*n_blocks), requires_grad = pact_a)
 
     def forward(self, input):
-        return quant_pass(pact_a_bmm(CustomMM_bmm.apply(quant_pass(pact_a_bmm(input, self.a1), self.ib, self.a1), self.weights, self.bias, self.noise_level, self.wb, self.bias_r), self.a2), self.abMVM, self.a2) #, -88, -88
+        return quant_pass(pact_a_bmm(CustomMM_bmm.apply(quant_pass(pact_a_bmm(input, self.a1), self.ib, self.a1), self.weights, self.bias, self.noise_level, self.wb, self.bias_r), self.a2), self.abMVM, self.a2)
 
 
 class KWS_LSTM_bmm(nn.Module):
