@@ -77,7 +77,7 @@ model.to(device)
 
 
 #w_noise_list = np.arange(0,.1, .0005).repeat(20)
-w_noise_list = np.arange(0,.1, .005).repeat(20)
+w_noise_list = np.arange(0,1, .05).repeat(20)
 #w_noise_list = [0.1]
 
 w_res = []
