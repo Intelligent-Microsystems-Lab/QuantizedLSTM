@@ -30,8 +30,10 @@ else:
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 # general config
-parser.add_argument("--act", help='Act')
-parser.add_argument("--weight", help='Weight')
+parser.add_argument("--act", dest='act', action='store_true')
+parser.add_argument("--weight", dest='weight', action='store_true')
+parser.set_defaults(act=False)
+parser.set_defaults(weight=False)
 
 op_flip = parser.parse_args()
 
@@ -75,7 +77,8 @@ model.to(device)
 
 
 #w_noise_list = np.arange(0,.1, .0005).repeat(20)
-w_noise_list = np.arange(0,1, .0005).repeat(20)
+#w_noise_list = np.arange(0,1, .0005).repeat(20)
+w_noise_list = [0.1]
 
 w_res = []
 act_res = []
