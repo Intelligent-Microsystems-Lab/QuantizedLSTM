@@ -8,4 +8,4 @@
 #$ -e ./logs/error_act_noise_abl.txt
 module load python
 setenv OMP_NUM_THREADS $NSLOTS
-python noise_able.py --act
+python noise_abl.py --act

@@ -8,4 +8,4 @@
 #$ -e ./logs/error_weight_noise_abl.txt
 module load python
 setenv OMP_NUM_THREADS $NSLOTS
-python noise_able.py --weight
+python noise_abl.py --weight
