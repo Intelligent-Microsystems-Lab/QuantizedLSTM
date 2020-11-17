@@ -30,8 +30,8 @@ else:
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 # general config
-parser.add_argument("--act", type=bool, help='Act')
-parser.add_argument("--weight", type=bool, help='Weight')
+parser.add_argument("--act", help='Act')
+parser.add_argument("--weight", help='Weight')
 
 op_flip = parser.parse_args()
 
