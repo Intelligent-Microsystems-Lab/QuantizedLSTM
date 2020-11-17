@@ -1,0 +1,11 @@
+#!/bin/csh 
+#$ -M cschaef6@nd.edu 
+#$ -m abe
+#$ -q gpu@@joshi
+#$ -l gpu_card=1
+#$ -N act_noise_abl
+#$ -o ./logs/output_act_noise_abl.txt
+#$ -e ./logs/error_act_noise_abl.txt
+module load python
+setenv OMP_NUM_THREADS $NSLOTS
+python noise_able.py --act

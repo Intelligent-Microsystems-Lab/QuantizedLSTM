@@ -9,6 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
+import pandas as pd
 
 from dataloader import SpeechCommandsGoogle
 import model_noise_test as model_lib
@@ -24,6 +25,15 @@ if torch.cuda.is_available():
 else:
     device = torch.device("cpu")
 
+
+
+parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+# general config
+parser.add_argument("--act", type=bool, default=False, help='Act')
+parser.add_argument("--weight", type=bool, default=False, help='Weight')
+
+op_flip = parser.parse_args()
 
 checkpoint_dict = torch.load('./checkpoints/bde83981-38a9-4ff1-9504-34b182dc99e2.pkl')
 
@@ -64,55 +74,68 @@ model.to(device)
 
 
 
-w_noise_list = np.arange(0,.1, .001).repeat(3)
+#w_noise_list = np.arange(0,.1, .0005).repeat(20)
+w_noise_list = np.arange(0,1, .0005).repeat(20)
+
 w_res = []
 act_res = []
 
-for lvl_n in w_noise_list:
-    # weight noise sensitivty
-    model.load_state_dict(checkpoint_dict['model_dict'])
-    model.set_noise(args.noise_injectionI)
-    model.set_drop_p(0)
+if op_flip.weight:
+    print("Weight")
+    for lvl_n in w_noise_list:
+        # weight noise sensitivty
+        model.load_state_dict(checkpoint_dict['model_dict'])
+        model.set_noise(args.noise_injectionI)
+        model.set_drop_p(0)
 
-    model.lstmBlocks.cell.act_noise = 0
-    model.finFC.act_noise = 0
-    model.lstmBlocks.cell.w_noise = lvl_n
-    model.finFC.w_noise = lvl_n
+        model.lstmBlocks.cell.act_noise = 0
+        model.finFC.act_noise = 0
+        model.lstmBlocks.cell.w_noise = lvl_n
+        model.finFC.w_noise = lvl_n
 
-    acc_aux = []
+        acc_aux = []
 
-    for i_batch, sample_batch in enumerate(test_dataloader):
-        x_data, y_label = sample_batch
-        x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
+        for i_batch, sample_batch in enumerate(test_dataloader):
+            x_data, y_label = sample_batch
+            x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
 
-        output = model(x_data)
-        acc_aux.append((output.argmax(dim=1) == y_label))
+            output = model(x_data)
+            acc_aux.append((output.argmax(dim=1) == y_label))
 
-    test_acc = torch.cat(acc_aux).float().mean().item()
-    w_res.append(test_acc)
-    print("Test Accuracy: {0:.4f} {1:.4f}".format(test_acc, lvl_n))
+        test_acc = torch.cat(acc_aux).float().mean().item()
+        w_res.append(test_acc)
 
+        res_df = pd.DataFrame({'w_noise_list':w_noise_list[:len(w_res)],'w_res':w_res})
+        res_df.to_csv('w_noise.csv')
 
-for lvl_n in w_noise_list:
-    # act noise sensitivty
-    model.load_state_dict(checkpoint_dict['model_dict'])
-    model.set_noise(args.noise_injectionI)
-    model.set_drop_p(0)
+        print("Test Accuracy: {0:.4f} {1:.4f}".format(test_acc, lvl_n))
 
-    model.lstmBlocks.cell.act_noise = lvl_n
-    model.finFC.act_noise = lvl_n
-    model.lstmBlocks.cell.w_noise = 0
-    model.finFC.w_noise = 0
+if op_flip.act:
+    print("Act")
+    for lvl_n in w_noise_list:
+        # act noise sensitivty
+        model.load_state_dict(checkpoint_dict['model_dict'])
+        model.set_noise(args.noise_injectionI)
+        model.set_drop_p(0)
 
-    acc_aux = []
+        model.lstmBlocks.cell.act_noise = lvl_n
+        model.finFC.act_noise = lvl_n
+        model.lstmBlocks.cell.w_noise = 0
+        model.finFC.w_noise = 0
 
-    for i_batch, sample_batch in enumerate(test_dataloader):
-        x_data, y_label = sample_batch
-        x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
+        acc_aux = []
 
-        output = model(x_data)
-        acc_aux.append((output.argmax(dim=1) == y_label))
+        for i_batch, sample_batch in enumerate(test_dataloader):
+            x_data, y_label = sample_batch
+            x_data, y_label = pre_processing(x_data, y_label, device, mfcc_cuda)
 
-    test_acc = torch.cat(acc_aux).float().mean().item()
-    act_res.append(test_acc)
-    print("Test Accuracy: {0:.4f} {1:.4f}".format(test_acc, lvl_n))
+            output = model(x_data)
+            acc_aux.append((output.argmax(dim=1) == y_label))
+
+        test_acc = torch.cat(acc_aux).float().mean().item()
+        act_res.append(test_acc)
+
+        res_df = pd.DataFrame({'w_noise_list':w_noise_list[:len(act_res)],'act_res':act_res})
+        res_df.to_csv('act_noise.csv')
+
+        print("Test Accuracy: {0:.4f} {1:.4f}".format(test_acc, lvl_n))
