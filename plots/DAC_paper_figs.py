@@ -318,6 +318,9 @@ plt.savefig('DAC_j_abl.png')
 plt.close()
 
 
+
+
+
 ############
 # Train Curve
 ############
@@ -386,14 +389,43 @@ plt.tight_layout()
 plt.savefig('DAC_curve.png')
 plt.close()
 
+
+
 ############
 # Noise Scatter
 ############
 
-
 act_data = pd.read_csv("act_noise.csv").dropna()
 noise_data = pd.read_csv("w_noise.csv").dropna()
 
+act_x = []
+act_y = []
+act_e = []
+for i in np.unique(act_data['w_noise_list']):
+    act_x.append(i)
+    act_y.append(act_data[act_data['w_noise_list'] == i]['act_res'].mean() )
+    act_e.append(act_data[act_data['w_noise_list'] == i]['act_res'].std() )
+
+
+w_x = []
+w_y = []
+w_e = []
+for i in np.unique(noise_data['w_noise_list']):
+    w_x.append(i)
+    w_y.append(noise_data[noise_data['w_noise_list'] == i]['w_res'].mean() )
+    w_e.append(noise_data[noise_data['w_noise_list'] == i]['w_res'].std() )
+
+act_x = np.array(act_x)
+act_y = 1 - np.array(act_y)
+act_e = np.array(act_e)
+
+act_mask = act_y < .15
+
+w_x = np.array(w_x)
+w_y = 1 - np.array(w_y)
+w_e = np.array(w_e)
+
+w_mask = w_y < .15
 
 plt.rcParams["font.weight"] = "bold"
 plt.rcParams["axes.labelweight"] = "bold"
@@ -403,21 +435,48 @@ plt.clf()
 plt.rc('font', family='sans-serif')
 plt.rc('font', weight='bold')
 plt.rc('font', size='15')
-fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(11.4,5.8)) #
-
-
+fig, axes = plt.subplots(nrows=2, ncols=1) #
 
 for axis in ['bottom','left']:
-  axes.spines[axis].set_linewidth(2)
+  axes[0].spines[axis].set_linewidth(2)
 for axis in ['top','right']:
-  axes.spines[axis].set_linewidth(0)
-axes.xaxis.set_tick_params(width=2)
-axes.yaxis.set_tick_params(width=2)
+  axes[0].spines[axis].set_linewidth(0)
+axes[0].xaxis.set_tick_params(width=2)
+axes[0].yaxis.set_tick_params(width=2)
+
+for axis in ['bottom','left']:
+  axes[1].spines[axis].set_linewidth(2)
+for axis in ['top','right']:
+  axes[1].spines[axis].set_linewidth(0)
+axes[1].xaxis.set_tick_params(width=2)
+axes[1].yaxis.set_tick_params(width=2)
 
 
+axes[0].hlines(1-0.9055 ,0, max(w_x[w_mask]), linestyles='dashed', alpha=0.3)
+axes[0].plot(w_x[w_mask], w_y[w_mask], '-', color="blue")
+axes[0].fill_between(w_x[w_mask], w_y[w_mask]-w_e[w_mask], w_y[w_mask]+w_e[w_mask], alpha = .4, color='blue')
+axes[0].set_title('Weight Noise Effect')
+
+
+axes[1].hlines(1-0.9055 ,0, max(act_x[act_mask]), linestyles='dashed', alpha=0.3)
+axes[1].plot(act_x[act_mask], act_y[act_mask], '-', color="red")
+axes[1].fill_between(act_x[act_mask], act_y[act_mask]-act_e[act_mask], act_y[act_mask]+act_e[act_mask], alpha = .4, color='red')
+axes[1].set_title('Activation Noise Effect')
+
+#axes[0].scatter(act_data['w_noise_list'], 1-act_data['act_res'], marker= 'x', color = 'blue', label = 'Weight Noise')
+#axes[0].scatter([], [], marker = 'x', color = 'red', label = 'Activation Noise')
+
+
+
+#axes[1].scatter(noise_data['w_noise_list'], 1-noise_data['w_res'], marker = 'x', color = 'red', label = 'Activation Noise')
+
+
+axes[1].set_xlabel(r'$\sigma$ of Gaussian Noise')
+axes[0].set_ylabel('Error')
+axes[1].set_ylabel('Error')
+#axes[0].legend(bbox_to_anchor=(-0.05,1.02,.8,.2), loc='lower left', mode = 'expand', frameon=False, ncol = 2, borderaxespad=0)
 
 
 plt.tight_layout()
 plt.savefig('DAC_noise.png')
 plt.close()
-

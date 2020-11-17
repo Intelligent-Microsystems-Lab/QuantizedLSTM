@@ -150,7 +150,7 @@ class CustomMM_bmm(torch.autograd.Function):
 
         act_w = torch.randn(output.shape, device = output.device) * act_noise
 
-        return output
+        return output + act_w
 
     @staticmethod
     def backward(ctx, grad_output):
