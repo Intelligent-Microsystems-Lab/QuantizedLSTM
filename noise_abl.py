@@ -77,7 +77,7 @@ model.to(device)
 
 
 #w_noise_list = np.arange(0,.1, .0005).repeat(20)
-w_noise_list = np.arange(0,1, .0005).repeat(20)
+w_noise_list = np.arange(0,.1, .005).repeat(20)
 #w_noise_list = [0.1]
 
 w_res = []
@@ -109,7 +109,7 @@ if op_flip.weight:
         w_res.append(test_acc)
 
         res_df = pd.DataFrame({'w_noise_list':w_noise_list[:len(w_res)],'w_res':w_res})
-        res_df.to_csv('w_noise.csv')
+        res_df.to_csv('w_noise1.csv')
 
         print("Test Accuracy: {0:.4f} {1:.4f}".format(test_acc, lvl_n))
 
@@ -139,6 +139,6 @@ if op_flip.act:
         act_res.append(test_acc)
 
         res_df = pd.DataFrame({'w_noise_list':w_noise_list[:len(act_res)],'act_res':act_res})
-        res_df.to_csv('act_noise.csv')
+        res_df.to_csv('act_noise1.csv')
 
         print("Test Accuracy: {0:.4f} {1:.4f}".format(test_acc, lvl_n))
