@@ -61,11 +61,11 @@ hidden   = pd.read_csv("M1_hidden.csv").dropna()
 
 arm_ua   = pd.read_csv("ARM.csv").dropna()
 
-max_acc = max( m1_inp_bits[['#1','#2','#3']].max().max(), m1_out_bits[['#1','#2','#3']].max().max(), m1_nm_bits[['#1','#2','#3']].max().max(), m1_nmsb[['#1','#2','#3']].max().max(), m1_hidden[['#1','#2','#3']].max().max())
-min_acc = min( m1_inp_bits[['#1','#2','#3']].min().min(), m1_out_bits[['#1','#2','#3']].min().min(), m1_nm_bits[['#1','#2','#3']].min().min(), m1_nmsb[['#1','#2','#3']].min().min(), m1_hidden[['#1','#2','#3']].min().min())
+max_acc = max( inp_bits[['#1','#2','#3']].max().max(), out_bits[['#1','#2','#3']].max().max(), nm_bits[['#1','#2','#3']].max().max(), nmsb[['#1','#2','#3']].max().max(), hidden[['#1','#2','#3']].max().max())
+min_acc = min( inp_bits[['#1','#2','#3']].min().min(), out_bits[['#1','#2','#3']].min().min(), nm_bits[['#1','#2','#3']].min().min(), nmsb[['#1','#2','#3']].min().min(), hidden[['#1','#2','#3']].min().min())
 
-max_j = max( m1_inp_bits[['uJ']].max().max(), m1_out_bits[['uJ']].max().max(), m1_nm_bits[['uJ']].max().max(), m1_nmsb[['uJ']].max().max(), m1_hidden[['uJ']].max().max())
-min_j = min( m1_inp_bits[['uJ']].min().min(), m1_out_bits[['uJ']].min().min(), m1_nm_bits[['uJ']].min().min(), m1_nmsb[['uJ']].min().min(), m1_hidden[['uJ']].min().min())
+max_j = max( inp_bits[['uJ']].max().max(), out_bits[['uJ']].max().max(), nm_bits[['uJ']].max().max(), nmsb[['uJ']].max().max(), hidden[['uJ']].max().max())
+min_j = min( inp_bits[['uJ']].min().min(), out_bits[['uJ']].min().min(), nm_bits[['uJ']].min().min(), nmsb[['uJ']].min().min(), hidden[['uJ']].min().min())
 
 
 ############
@@ -74,18 +74,18 @@ min_j = min( m1_inp_bits[['uJ']].min().min(), m1_out_bits[['uJ']].min().min(), m
 
 
 #M1
-x = np.concatenate([m1_inp_bits["uJ"], m1_out_bits["uJ"], m1_nm_bits["uJ"], m1_nmsb["uJ"], m1_hidden["uJ"]])
-y = np.concatenate([m1_inp_bits[['#1', '#2', '#3']].mean(1), m1_out_bits[['#1', '#2', '#3']].mean(1), m1_nm_bits[['#1', '#2', '#3']].mean(1), m1_nmsb[['#1', '#2', '#3']].mean(1), m1_hidden[['#1', '#2', '#3']].mean(1)])
-n = np.concatenate([[str(x)+'ib' for x in m1_inp_bits["Input Bits"]], [str(x)+'ob' for x in m1_out_bits["Output Bits"]], [str(x)+'nc' for x in m1_nm_bits["Non CIM bits"]], [str(x)+'msb' for x in m1_nmsb["N MSB"]], [str(x)+'hi' for x in m1_hidden["Hidden dim"]]])
+x = np.concatenate([inp_bits["uJ"], out_bits["uJ"], nm_bits["uJ"], nmsb["uJ"], hidden["uJ"]])
+y = np.concatenate([inp_bits[['#1', '#2', '#3']].mean(1), out_bits[['#1', '#2', '#3']].mean(1), nm_bits[['#1', '#2', '#3']].mean(1), nmsb[['#1', '#2', '#3']].mean(1), hidden[['#1', '#2', '#3']].mean(1)])
+n = np.concatenate([[str(x)+'ib' for x in inp_bits["Input Bits"]], [str(x)+'ob' for x in out_bits["Output Bits"]], [str(x)+'nc' for x in nm_bits["Non CIM bits"]], [str(x)+'msb' for x in nmsb["N MSB"]], [str(x)+'hi' for x in hidden["Hidden dim"]]])
 
 points_m1 = [(x[i], y[i]) for i in range(len(x))] 
 hull_m1 = reversed(convex_hull(points_m1))
 xcim1, ycim1 =zip(*hull_m1)
 
 #M1 - possible
-x = np.concatenate([m1_inp_bits["uJ"], m1_out_bits["uJ"], m1_nm_bits["uJ"], m1_nmsb["uJ"], m1_hidden["uJ"]])[[0,1,2,7,8,9,10,11,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]] 
-y = np.concatenate([m1_inp_bits[['#1', '#2', '#3']].mean(1), m1_out_bits[['#1', '#2', '#3']].mean(1), m1_nm_bits[['#1', '#2', '#3']].mean(1), m1_nmsb[['#1', '#2', '#3']].mean(1), m1_hidden[['#1', '#2', '#3']].mean(1)])[[0,1,2,7,8,9,10,11,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]] 
-n = np.concatenate([[str(x)+'ib' for x in m1_inp_bits["Input Bits"]], [str(x)+'ob' for x in m1_out_bits["Output Bits"]], [str(x)+'nc' for x in m1_nm_bits["Non CIM bits"]], [str(x)+'msb' for x in m1_nmsb["N MSB"]], [str(x)+'hi' for x in m1_hidden["Hidden dim"]]])[[0,1,2,7,8,9,10,11,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]] 
+x = np.concatenate([inp_bits["uJ"], out_bits["uJ"], nm_bits["uJ"], nmsb["uJ"], hidden["uJ"]])[[0,1,2,7,8,9,10,11,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]] 
+y = np.concatenate([inp_bits[['#1', '#2', '#3']].mean(1), out_bits[['#1', '#2', '#3']].mean(1), nm_bits[['#1', '#2', '#3']].mean(1), nmsb[['#1', '#2', '#3']].mean(1), hidden[['#1', '#2', '#3']].mean(1)])[[0,1,2,7,8,9,10,11,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]] 
+n = np.concatenate([[str(x)+'ib' for x in inp_bits["Input Bits"]], [str(x)+'ob' for x in out_bits["Output Bits"]], [str(x)+'nc' for x in nm_bits["Non CIM bits"]], [str(x)+'msb' for x in nmsb["N MSB"]], [str(x)+'hi' for x in hidden["Hidden dim"]]])[[0,1,2,7,8,9,10,11,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]] 
 
 points_m1_p = [(x[i], y[i]) for i in range(len(x))] 
 hull_m1_p = reversed(convex_hull(points_m1_p))
@@ -353,7 +353,7 @@ axes.xaxis.set_tick_params(width=2)
 axes.yaxis.set_tick_params(width=2)
 
 
-axes.plot()
+#axes.plot()
 
 max_y = max((max(1-curve_data['3 Train Acc']), max(1-curve_data['3 Vali. Acc']),  max(1-curve_data['1 Train Acc']), max(1-curve_data['1 Vali. Acc'])))
 min_y = min((min(1-curve_data['3 Train Acc']), min(1-curve_data['3 Vali. Acc']),  min(1-curve_data['1 Train Acc']), min(1-curve_data['1 Vali. Acc'])))
@@ -386,4 +386,38 @@ plt.tight_layout()
 plt.savefig('DAC_curve.png')
 plt.close()
 
+############
+# Noise Scatter
+############
+
+
+act_data = pd.read_csv("act_noise.csv").dropna()
+noise_data = pd.read_csv("w_noise.csv").dropna()
+
+
+plt.rcParams["font.weight"] = "bold"
+plt.rcParams["axes.labelweight"] = "bold"
+plt.rc('font', size='15')
+
+plt.clf()
+plt.rc('font', family='sans-serif')
+plt.rc('font', weight='bold')
+plt.rc('font', size='15')
+fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(11.4,5.8)) #
+
+
+
+for axis in ['bottom','left']:
+  axes.spines[axis].set_linewidth(2)
+for axis in ['top','right']:
+  axes.spines[axis].set_linewidth(0)
+axes.xaxis.set_tick_params(width=2)
+axes.yaxis.set_tick_params(width=2)
+
+
+
+
+plt.tight_layout()
+plt.savefig('DAC_noise.png')
+plt.close()
 
