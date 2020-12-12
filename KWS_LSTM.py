@@ -79,6 +79,8 @@ args.pact_a = bool(args.pact_a)
 args.hidden = args.hidden - args.rows_bias
 args.hop_length = args.win_length // 2
 
+args.rows_bias = args.rows_bias * args.max_w
+
 print(args)
 
 model_lib.max_w = args.max_w

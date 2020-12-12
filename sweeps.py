@@ -1,7 +1,7 @@
 import os
 import numpy as np
 
-ident_word = "DAC21"
+ident_word = "correct_wb"
 
 part1 = "#!/bin/csh \n#$ -M cschaef6@nd.edu \n#$ -m abe\n#$ -q " 
 part11 = "\n#$ -l gpu_card=1\n#$ -N "
@@ -117,7 +117,7 @@ part4 = ".txt\nmodule load python\nsetenv OMP_NUM_THREADS $NSLOTS\npython KWS_LS
 
 
 #sweep_parameters = {'cs':[.1, 0]}
-sweep_parameters = {'quant-inp':[2,3,4,5,6,7,8], 'quant-actMVM':[2,3,4,5,6,7,8], 'quant-actNM':[2,3,4,5,6,7,8,9,10,11,12], 'n-msb':[1,2,3,4,5,6]}
+# sweep_parameters = {'quant-inp':[2,3,4,5,6,7,8], 'quant-actMVM':[2,3,4,5,6,7,8], 'quant-actNM':[2,3,4,5,6,7,8,9,10,11,12], 'n-msb':[1,2,3,4,5,6]}
 trials = 3
 
 random_seeds = [193012823 ,235899598, 8627169, 103372330, 14339038, 221706254, 46192121, 188833202, 37306063, 171928928]
@@ -142,37 +142,37 @@ q_counter = 0
 #                 q_counter = 0
 
 
-for i in range(trials):
-    for variable in sweep_parameters:
-        for value in sweep_parameters[variable]:
-            name = ident_word + "_" +variable + "_M1" + str(value).replace(",","")   + "_" + str(i)
-            with open('jobscripts/'+name+'.script', 'w') as f:
-                if isinstance(value, str):
-                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + value+ "\" --method 1 --random-seed " + str(random_seeds[i])) 
-                else:
-                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " " + str(value)+ " --method 1 --random-seed " + str(random_seeds[i])) 
-            os.system("qsub "+ 'jobscripts/'+name+'.script')
-            q_counter += 1
-            if q_counter >= len(avail_q):
-                q_counter = 0
+# for i in range(trials):
+#     for variable in sweep_parameters:
+#         for value in sweep_parameters[variable]:
+#             name = ident_word + "_" +variable + "_M1" + str(value).replace(",","")   + "_" + str(i)
+#             with open('jobscripts/'+name+'.script', 'w') as f:
+#                 if isinstance(value, str):
+#                     f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + value+ "\" --method 1 --random-seed " + str(random_seeds[i])) 
+#                 else:
+#                     f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " " + str(value)+ " --method 1 --random-seed " + str(random_seeds[i])) 
+#             os.system("qsub "+ 'jobscripts/'+name+'.script')
+#             q_counter += 1
+#             if q_counter >= len(avail_q):
+#                 q_counter = 0
 
 
 
-sweep_parameters = {'hidden':[114, 200, 300, 400, 500]}
+# sweep_parameters = {'hidden':[114, 200, 300, 400, 500]}
 
-for i in range(trials):
-    for variable in sweep_parameters:
-        for value in sweep_parameters[variable]:
-            name = ident_word + "_" +variable + "_M1" + str(value).replace(",","")   + "_" + str(i)
-            with open('jobscripts/'+name+'.script', 'w') as f:
-                if isinstance(value, str):
-                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + value+ "\" --method 1 --batch-size 100 --random-seed " + str(random_seeds[i])) 
-                else:
-                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " " + str(value)+ " --method 1 --batch-size 100 --random-seed " + str(random_seeds[i])) 
-            os.system("qsub "+ 'jobscripts/'+name+'.script')
-            q_counter += 1
-            if q_counter >= len(avail_q):
-                q_counter = 0
+# for i in range(trials):
+#     for variable in sweep_parameters:
+#         for value in sweep_parameters[variable]:
+#             name = ident_word + "_" +variable + "_M1" + str(value).replace(",","")   + "_" + str(i)
+#             with open('jobscripts/'+name+'.script', 'w') as f:
+#                 if isinstance(value, str):
+#                     f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + value+ "\" --method 1 --batch-size 100 --random-seed " + str(random_seeds[i])) 
+#                 else:
+#                     f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " " + str(value)+ " --method 1 --batch-size 100 --random-seed " + str(random_seeds[i])) 
+#             os.system("qsub "+ 'jobscripts/'+name+'.script')
+#             q_counter += 1
+#             if q_counter >= len(avail_q):
+#                 q_counter = 0
 
 ################
 # digital
@@ -222,3 +222,24 @@ for i in range(trials):
 #             q_counter += 1
 #             if q_counter >= len(avail_q):
 #                 q_counter = 0
+
+
+
+
+
+bias = [1, 2, 4, 6, 8]
+max_w = [.5, .1, .15, .2]
+
+for i in range(trials):
+    for cb in bias:
+        for cw in max_w:
+            name = ident_word + "_" + str(cb) + "_" + str(cw) + "_M1_" + str(i)
+            with open('jobscripts/'+name+'.script', 'w') as f:
+                if isinstance(value, str):
+                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + value+ "\" --method 1 --batch-size 100 --random-seed " + str(random_seeds[i])) 
+                else:
+                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --rows-bias " + str(cb) + " --max-w " + str(cw) + " --method 1 --batch-size 100 --random-seed " + str(random_seeds[i])) 
+            os.system("qsub "+ 'jobscripts/'+name+'.script')
+            q_counter += 1
+            if q_counter >= len(avail_q):
+                q_counter = 0

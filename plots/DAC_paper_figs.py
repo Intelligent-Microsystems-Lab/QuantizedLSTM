@@ -43,6 +43,7 @@ def convex_hull(points):
 
 
 
+
 # CIM results
 # m0_inp_bits = pd.read_csv("M0_InpBits.csv").dropna()
 # m0_out_bits = pd.read_csv("M0_OutBits.csv").dropna()
@@ -129,7 +130,7 @@ axes.yaxis.set_tick_params(width=2)
 
 
 
-axes.vlines(xcim1[-2],0, .15, linestyles='dashed', alpha=0.3)
+axes.vlines(xcim1[-3],0, .15, linestyles='dashed', alpha=0.3)
 axes.hlines(1- max(arm_ycim0),0, 5400, linestyles='dashed', alpha=0.3)
 
 
@@ -138,14 +139,15 @@ axes.plot(xcim1_p, [1-x for x in ycim1_p],'x-',color= 'blue', label="CIM [?]", l
 axes.plot(arm_xcim0[:-1], [1-x for x in arm_ycim0[:-1]],'x-',color= 'm', label="Digital [?]", linewidth= 2)
 
 
-axes.arrow(200, 1 - max(ycim1), 0, -0.03610000000000013, length_includes_head=True, head_width=40, head_length=0.008,color= 'k', linewidth = 1)
-axes.annotate("3.61%", xy=(210, 0.0783833333333333))
+axes.arrow(200, 1 - max(ycim1), 0, (1- max(arm_ycim0)) - (1 - max(ycim1)), length_includes_head=True, head_width=35, head_length=0.008,color= 'k', linewidth = 1)
+axes.annotate("3.18%", xy=(210, 0.0783833333333333))
 
-axes.arrow(97.64801177700001, 0.08299999999999996, -72.06955812500001, 0, length_includes_head=True, head_width=.006, head_length=8,color= 'k', linewidth = .05)
-axes.annotate("73.81%", xy=(35, .07))
+axes.arrow(25.578453651999993, 0.08299999999999996, 72.06955812500001, 0, length_includes_head=True, head_width=.006, head_length=25,color= 'k', linewidth = .05)
+axes.annotate(r'$3.81\times$', xy=(35, .07))
 
 
-axes.set_ylim(0 , 1 - .85) 
+axes.set_ylim(0.05 , 1 - .85) 
+#axes.set_xlim(0, 400)
 axes.set_xlabel('uJ per Decision')
 axes.set_ylabel('Test Error')
 plt.legend(loc='upper center', bbox_to_anchor=(0.4, 1.25), ncol=3, borderaxespad=0, frameon=False)
@@ -157,6 +159,86 @@ axes.set_xscale('log')
 plt.tight_layout()
 plt.savefig('DAC_frontiers.png')
 plt.close()
+
+
+
+############
+# Area Cycle Energy
+############
+
+x11 = np.concatenate([inp_bits["uJ"], out_bits["uJ"], nm_bits["uJ"], nmsb["uJ"], hidden["uJ"]])
+y_area = np.concatenate([inp_bits[['Area']].mean(1), out_bits[['Area']].mean(1), nm_bits[['Area']].mean(1), nmsb[['Area']].mean(1), hidden[['Area']].mean(1)])/1e+6
+y_cycles = 2000000/np.concatenate([inp_bits[['Cycles']].mean(1), out_bits[['Cycles']].mean(1), nm_bits[['Cycles']].mean(1), nmsb[['Cycles']].mean(1), hidden[['Cycles']].mean(1)])
+y11 = (y_cycles/y_area)
+
+n = np.concatenate([[str(x)+'ib' for x in inp_bits["Input Bits"]], [str(x)+'ob' for x in out_bits["Output Bits"]], [str(x)+'nc' for x in nm_bits["Non CIM bits"]], [str(x)+'msb' for x in nmsb["N MSB"]], [str(x)+'hi' for x in hidden["Hidden dim"]]])
+
+points_m1 = [(x11[i], y11[i]) for i in range(len(x11))] 
+hull_m1 = reversed(convex_hull(points_m1))
+xcim1, ycim1 =zip(*hull_m1)
+
+
+#M1 - possible
+x12 = np.concatenate([inp_bits["uJ"], out_bits["uJ"], nm_bits["uJ"], nmsb["uJ"], hidden["uJ"]])[[0,1,2,7,8,9,10,11,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]] 
+y_area = np.concatenate([inp_bits[['Area']].mean(1), out_bits[['Area']].mean(1), nm_bits[['Area']].mean(1), nmsb[['Area']].mean(1), hidden[['Area']].mean(1)])[[0,1,2,7,8,9,10,11,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]] /1e+6
+y_cycles = 2000000/np.concatenate([inp_bits[['Cycles']].mean(1), out_bits[['Cycles']].mean(1), nm_bits[['Cycles']].mean(1), nmsb[['Cycles']].mean(1), hidden[['Cycles']].mean(1)])[[0,1,2,7,8,9,10,11,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]]
+y12 = (y_cycles/y_area)
+n = np.concatenate([[str(x)+'ib' for x in inp_bits["Input Bits"]], [str(x)+'ob' for x in out_bits["Output Bits"]], [str(x)+'nc' for x in nm_bits["Non CIM bits"]], [str(x)+'msb' for x in nmsb["N MSB"]], [str(x)+'hi' for x in hidden["Hidden dim"]]])[[0,1,2,7,8,9,10,11,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]] 
+
+points_m1_p = [(x12[i], y12[i]) for i in range(len(x12))] 
+hull_m1_p = reversed(convex_hull(points_m1_p))
+xcim1_p, ycim1_p =zip(*hull_m1_p)
+
+
+#ARM
+x13 = np.concatenate([arm_ua["uJ 118"], arm_ua["uJ 214"], arm_ua["uJ 344"], arm_ua["4x4 uJ 118"], arm_ua["4x4 uJ 214"], arm_ua["4x4 uJ 344"], arm_ua["6x8 uJ 118"], arm_ua["6x8 uJ 214"], arm_ua["6x8 uJ 344"], arm_ua["5x9 uJ 118"], arm_ua["5x9 uJ 214"], arm_ua["5x9 uJ 344"], arm_ua["10x8 uJ 118"], arm_ua["10x8 uJ 214"], arm_ua["10x8 uJ 344"], arm_ua["12x12 uJ 118"], arm_ua["12x12 uJ 214"], arm_ua["12x12 uJ 344"]])
+y_area = np.concatenate([arm_ua["Area 118"], arm_ua["Area 214"], arm_ua["Area 344"], arm_ua["4x4 Area 118"], arm_ua["4x4 Area 214"], arm_ua["4x4 Area 344"], arm_ua["6x8 Area 118"], arm_ua["6x8 Area 214"], arm_ua["6x8 Area 344"], arm_ua["5x9 Area 118"], arm_ua["5x9 Area 214"], arm_ua["5x9 Area 344"], arm_ua["10x8 Area 118"], arm_ua["10x8 Area 214"], arm_ua["10x8 Area 344"], arm_ua["12x12 Area 118"], arm_ua["12x12 Area 214"], arm_ua["12x12 Area 344"]])/1e+6
+y_cycles = 2000000/np.concatenate([arm_ua["Cycle 118"], arm_ua["Cycle 214"], arm_ua["Cycle 344"], arm_ua["4x4 Cycle 118"], arm_ua["4x4 Cycle 214"], arm_ua["4x4 Cycle 344"], arm_ua["6x8 Cycle 118"], arm_ua["6x8 Cycle 214"], arm_ua["6x8 Cycle 344"], arm_ua["5x9 Cycle 118"], arm_ua["5x9 Cycle 214"], arm_ua["5x9 Cycle 344"], arm_ua["10x8 Cycle 118"], arm_ua["10x8 Cycle 214"], arm_ua["10x8 Cycle 344"], arm_ua["12x12 Cycle 118"], arm_ua["12x12 Cycle 214"], arm_ua["12x12 Cycle 344"]])
+y13 = (y_cycles/y_area)
+
+arm_points_m0 = [(x13[i], y13[i]) for i in range(len(x13))] 
+arm_hull_m0 = reversed(convex_hull(arm_points_m0))
+arm_xcim0, arm_ycim0 =zip(*arm_hull_m0)
+
+
+plt.rcParams["font.weight"] = "bold"
+plt.rcParams["axes.labelweight"] = "bold"
+plt.rc('font', size='15')
+
+plt.clf()
+plt.rc('font', family='sans-serif')
+plt.rc('font', weight='bold')
+plt.rc('font', size='15')
+fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(7.0,4.8)) #
+
+
+
+for axis in ['bottom','left']:
+  axes.spines[axis].set_linewidth(2)
+for axis in ['top','right']:
+  axes.spines[axis].set_linewidth(0)
+axes.xaxis.set_tick_params(width=2)
+axes.yaxis.set_tick_params(width=2)
+
+
+#axes.plot(xcim1, ycim1,'x-',color= 'red', label="CIM", linewidth= 2)
+#axes.plot(xcim1_p, ycim1_p,'x-',color= 'blue', label="CIM [?]", linewidth= 2)
+#axes.plot(arm_xcim0, arm_ycim0,'x-',color= 'm', label="Digital [?]", linewidth= 2)
+
+axes.scatter(x11, 1/y11, marker='x', color= 'red')
+axes.scatter(x12, 1/y12, marker='x', color= 'blue')
+axes.scatter(x13, 1/y13, marker='x', color= 'm')
+
+
+axes.set_xlabel('Energy in uJ')
+axes.set_ylabel(r'1 / Decision per $s \cdot mm^2$')
+plt.legend(loc='upper center', bbox_to_anchor=(0.4, 1.25), ncol=3, borderaxespad=0, frameon=False)
+axes.set_xscale('log')
+
+plt.tight_layout()
+plt.savefig('DAC_opsmm.png')
+plt.close()
+
 
 
 
@@ -395,8 +477,8 @@ plt.close()
 # Noise Scatter
 ############
 
-act_data = pd.read_csv("act_noise.csv").dropna()
-noise_data = pd.read_csv("w_noise.csv").dropna()
+act_data = pd.read_csv("act_noise1.csv").dropna()
+noise_data = pd.read_csv("w_noise1.csv").dropna()
 
 act_x = []
 act_y = []
@@ -419,13 +501,13 @@ act_x = np.array(act_x)
 act_y = 1 - np.array(act_y)
 act_e = np.array(act_e)
 
-act_mask = act_y < .15
+act_mask = act_y < .12
 
 w_x = np.array(w_x)
 w_y = 1 - np.array(w_y)
 w_e = np.array(w_e)
 
-w_mask = w_y < .15
+w_mask = w_y < .12
 
 plt.rcParams["font.weight"] = "bold"
 plt.rcParams["axes.labelweight"] = "bold"
@@ -456,12 +538,14 @@ axes[0].hlines(1-0.9055 ,0, max(w_x[w_mask]), linestyles='dashed', alpha=0.3)
 axes[0].plot(w_x[w_mask], w_y[w_mask], '-', color="blue")
 axes[0].fill_between(w_x[w_mask], w_y[w_mask]-w_e[w_mask], w_y[w_mask]+w_e[w_mask], alpha = .4, color='blue')
 axes[0].set_title('Weight Noise Effect')
-
+axes[0].set_ylim(.088 , .12) 
 
 axes[1].hlines(1-0.9055 ,0, max(act_x[act_mask]), linestyles='dashed', alpha=0.3)
 axes[1].plot(act_x[act_mask], act_y[act_mask], '-', color="red")
 axes[1].fill_between(act_x[act_mask], act_y[act_mask]-act_e[act_mask], act_y[act_mask]+act_e[act_mask], alpha = .4, color='red')
 axes[1].set_title('Activation Noise Effect')
+axes[1].set_ylim(.088 , .12) 
+
 
 #axes[0].scatter(act_data['w_noise_list'], 1-act_data['act_res'], marker= 'x', color = 'blue', label = 'Weight Noise')
 #axes[0].scatter([], [], marker = 'x', color = 'red', label = 'Activation Noise')
