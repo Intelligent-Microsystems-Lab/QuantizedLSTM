@@ -235,10 +235,10 @@ for i in range(trials):
         for cw in max_w:
             name = ident_word + "_" + str(cb) + "_" + str(cw) + "_M1_" + str(i)
             with open('jobscripts/'+name+'.script', 'w') as f:
-                if isinstance(value, str):
-                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + value+ "\" --method 1 --batch-size 100 --random-seed " + str(random_seeds[i])) 
-                else:
-                    f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --rows-bias " + str(cb) + " --max-w " + str(cw) + " --method 1 --batch-size 100 --random-seed " + str(random_seeds[i])) 
+                # if isinstance(value, str):
+                #     f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --" + variable + " \"" + value+ "\" --method 1 --batch-size 100 --random-seed " + str(random_seeds[i])) 
+                # else:
+                f.write(part1 + avail_q[q_counter] + part11  + name + part2 + name + part3 + name + part4 + " --rows-bias " + str(cb) + " --max-w " + str(cw) + " --method 1 --batch-size 100 --random-seed " + str(random_seeds[i])) 
             os.system("qsub "+ 'jobscripts/'+name+'.script')
             q_counter += 1
             if q_counter >= len(avail_q):
