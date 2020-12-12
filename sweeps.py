@@ -228,7 +228,8 @@ q_counter = 0
 
 
 bias = [1, 2, 4, 6, 8]
-max_w = [.5, .1, .15, .2]
+#max_w = [.5, .1, .15, .2]
+max_w = [.05]
 
 for i in range(trials):
     for cb in bias:
