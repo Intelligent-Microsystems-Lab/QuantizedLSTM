@@ -1,0 +1,11 @@
+#!/bin/csh 
+#$ -M cschaef6@nd.edu 
+#$ -m abe
+#$ -q gpu@@joshi
+#$ -l gpu_card=1
+#$ -N correct_wb_8_0.05_M1_2
+#$ -o ./logs/output_correct_wb_correct_wb_8_0.05_M1_2.txt
+#$ -e ./logs/error_correct_wb_correct_wb_8_0.05_M1_2.txt
+module load python
+setenv OMP_NUM_THREADS $NSLOTS
+python KWS_LSTM.py --rows-bias 8 --max-w 0.05 --method 1 --batch-size 100 --random-seed 8627169
