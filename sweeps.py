@@ -1,7 +1,7 @@
 import os
 import numpy as np
 
-ident_word = "noise_sweep"
+ident_word = "qweight_sweep"
 
 part1 = "#!/bin/csh \n#$ -M cschaef6@nd.edu \n#$ -m abe\n#$ -q " 
 part11 = "\n#$ -l gpu_card=1\n#$ -N "
@@ -116,7 +116,7 @@ part4 = ".txt\nmodule load python\nsetenv OMP_NUM_THREADS $NSLOTS\npython KWS_LS
 # #sweep_parameters = {'win-length':[640, 641, 654, 668, 682, 696, 712, 728, 746, 762, 782, 801, 822, 844, 866, 890, 916]}
 
 
-sweep_parameters = {'noise-injectionT':[0., .05, .1, .15]}
+sweep_parameters = {'quant-w':[4,6,8]}
 # sweep_parameters = {'quant-inp':[2,3,4,5,6,7,8], 'quant-actMVM':[2,3,4,5,6,7,8], 'quant-actNM':[2,3,4,5,6,7,8,9,10,11,12], 'n-msb':[1,2,3,4,5,6]}
 trials = 3
 

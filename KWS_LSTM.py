@@ -53,7 +53,7 @@ parser.add_argument("--hop-length", type=int, default=320, help='Length of hop b
 parser.add_argument("--hidden", type=int, default=108, help='Number of hidden LSTM units') 
 parser.add_argument("--n-mfcc", type=int, default=40, help='Number of mfc coefficients to retain') # 40 before
 
-parser.add_argument("--noise-injectionT", type=float, default=0.16, help='Percentage of noise injected to weights')
+parser.add_argument("--noise-injectionT", type=float, default=.0, help='Percentage of noise injected to weights')
 parser.add_argument("--noise-injectionI", type=float, default=0.1, help='Percentage of noise injected to weights')
 parser.add_argument("--quant-actMVM", type=int, default=6, help='Bits available for MVM activations/state')
 parser.add_argument("--quant-actNM", type=int, default=8, help='Bits available for non-MVM activations/state')
