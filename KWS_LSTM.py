@@ -30,7 +30,7 @@ parser.add_argument("--method", type=int, default=1, help='Method: 0 - blocks, 1
 parser.add_argument("--dataset-path-train", type=str, default='data.nosync/speech_commands_v0.02', help='Path to Dataset')
 parser.add_argument("--dataset-path-test", type=str, default='data.nosync/speech_commands_test_set_v0.02', help='Path to Dataset')
 parser.add_argument("--word-list", nargs='+', type=str, default=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'unknown', 'silence'], help='Keywords to be learned')
-parser.add_argument("--batch-size", type=int, default=474, help='Batch Size')
+parser.add_argument("--batch-size", type=int, default=100, help='Batch Size')
 # parser.add_argument("--training-steps", type=str, default='10000,10000,10000', help='Training Steps')
 # parser.add_argument("--learning-rate", type=str, default='0.0005,0.0001,0.00002', help='Learning Rate')
 parser.add_argument("--training-steps", type=str, default='10000,10000,200', help='Training Steps') #,10000,10000 ; ,10000
@@ -50,7 +50,7 @@ parser.add_argument('--time-shift-ms', type=float, default=100.0, help='Range to
 parser.add_argument("--win-length", type=int, default=641, help='Window size in ms') # 640
 parser.add_argument("--hop-length", type=int, default=320, help='Length of hop between STFT windows') #320
 
-parser.add_argument("--hidden", type=int, default=114, help='Number of hidden LSTM units') 
+parser.add_argument("--hidden", type=int, default=108, help='Number of hidden LSTM units') 
 parser.add_argument("--n-mfcc", type=int, default=40, help='Number of mfc coefficients to retain') # 40 before
 
 parser.add_argument("--noise-injectionT", type=float, default=0.16, help='Percentage of noise injected to weights')
@@ -64,7 +64,7 @@ parser.add_argument("--l2", type=float, default=.01, help='Strength of L2 norm')
 parser.add_argument("--n-msb", type=int, default=4, help='Number of blocks available')
 parser.add_argument("--cs", type=float, default=.1, help='Strength cosine similarity penalization')
 
-parser.add_argument("--max-w", type=float, default=.1, help='Maximumg weight')
+parser.add_argument("--max-w", type=float, default=.2, help='Maximumg weight')
 parser.add_argument("--drop-p", type=float, default=.125, help='Dropconnect probability')
 parser.add_argument("--pact-a", type=int, default=1, help='Whether scaling parameter is trainable (1:on,0:off)')
 
@@ -76,10 +76,11 @@ parser.add_argument("--gain-blocks", type=int, default=2, help='Fox mixed method
 args = parser.parse_args()
 args.canonical_testing = bool(args.canonical_testing)
 args.pact_a = bool(args.pact_a)
-args.hidden = args.hidden - args.rows_bias
+#args.hidden = args.hidden - args.rows_bias
 args.hop_length = args.win_length // 2
 
 args.rows_bias = args.rows_bias * args.max_w
+args.noise_injectionI = args.noise_injectionT
 
 print(args)
 
