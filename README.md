@@ -2,17 +2,17 @@
 
 This repository contains the models and training scripts used in the papers: "LSTMs for Keyword Spotting with ReRAM-based Compute-In-Memory Architectures" (ISCAS 2021).
 
-##Requirements
+## Requirements
 - python 3.7
 - python packages: argparse, uuid, time, itertools
 - NumPy
 - PyTorch and torchaudio
 - Matplotlib
 
-##Quantized LSTM with Google Speech Commands
+## Quantized LSTM with Google Speech Commands
 
 <p align="center">
-<img src="plots/DAC_curve.png" width="40%">
+<img src="plots/DAC_curve.png" width="80%">
 </p>
 
 ```
