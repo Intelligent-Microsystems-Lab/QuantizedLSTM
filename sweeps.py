@@ -95,7 +95,7 @@ for i in range(trials):
                                 + str(value)
                                 + " --"
                                 + variable2
-                                + ' "'
+                                + " "
                                 + str(value2)
                                 + " --method 1 --random-seed "
                                 + str(random_seeds[i])
