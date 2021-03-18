@@ -1,6 +1,6 @@
 import os
 
-ident_word = "qweight_sweep"
+ident_word = "noquant_sweep"
 
 part1 = "#!/bin/csh \n#$ -M cschaef6@nd.edu \n#$ -m abe\n#$ -q "
 part11 = "\n#$ -l gpu_card=1\n#$ -N "
@@ -15,7 +15,7 @@ part4 = (
 )
 
 
-sweep_parameters = {"quant-w": [3]}
+sweep_parameters = {"n-msb": [1,4]}
 trials = 3
 
 random_seeds = [
