@@ -170,23 +170,23 @@ parser.add_argument(
 parser.add_argument(
     "--noise-injectionI",
     type=float,
-    default=0.,
+    default=0.1,
     help="Percentage of noise injected to weights",
 )
 parser.add_argument(
     "--quant-actMVM",
     type=int,
-    default=None,
+    default=6,
     help="Bits available for MVM activations/state",
 )
 parser.add_argument(
     "--quant-actNM",
     type=int,
-    default=None,
+    default=8,
     help="Bits available for non-MVM activations/state",
 )
 parser.add_argument(
-    "--quant-inp", type=int, default=None, help="Bits available for inputs"
+    "--quant-inp", type=int, default=4, help="Bits available for inputs"
 )
 parser.add_argument(
     "--quant-w", type=int, default=None, help="Bits available for weights"

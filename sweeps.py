@@ -15,7 +15,8 @@ part4 = (
 )
 
 
-sweep_parameters = {"n-msb": [1,4]}
+sweep_parameters = {"noise-injectionI": [.0, .05, .1, .15]}
+sweep_parameters2 = {"noise-injectionT": [.0, .05, .1, .15, .20, .25, .3]}
 trials = 3
 
 random_seeds = [
@@ -38,54 +39,68 @@ q_counter = 0
 
 for i in range(trials):
     for variable in sweep_parameters:
-        for value in sweep_parameters[variable]:
-            name = (
-                ident_word
-                + "_"
-                + variable
-                + "_M1"
-                + str(value).replace(",", "")
-                + "_"
-                + str(i)
-            )
-            with open("jobscripts/" + name + ".script", "w") as f:
-                if isinstance(value, str):
-                    f.write(
-                        part1
-                        + avail_q[q_counter]
-                        + part11
-                        + name
-                        + part2
-                        + name
-                        + part3
-                        + name
-                        + part4
-                        + " --"
+        for variable2 in sweep_parameters2:
+            for value2 in sweep_parameters2[variable2]:
+                for value in sweep_parameters[variable]:
+                    name = (
+                        ident_word
+                        + "_"
                         + variable
-                        + ' "'
-                        + value
-                        + '" --method 1 --random-seed '
-                        + str(random_seeds[i])
+                        + "_M1"
+                        + str(value).replace(",", "")
+                        + "_"
+                        + variable2
+                        + "_M1"
+                        + str(value2).replace(",", "")
+                        + "_"
+                        + str(i)
                     )
-                else:
-                    f.write(
-                        part1
-                        + avail_q[q_counter]
-                        + part11
-                        + name
-                        + part2
-                        + name
-                        + part3
-                        + name
-                        + part4
-                        + " --"
-                        + variable
-                        + " "
-                        + str(value)
-                        + " --method 1 --random-seed "
-                        + str(random_seeds[i])
-                    )
-            os.system("qsub " + "jobscripts/" + name + ".script")
-            q_counter += 1
-            if q_counter >= len(avail_q):
-                q_counter = 0
+                    with open("jobscripts/" + name + ".script", "w") as f:
+                        if isinstance(value, str):
+                            f.write(
+                                part1
+                                + avail_q[q_counter]
+                                + part11
+                                + name
+                                + part2
+                                + name
+                                + part3
+                                + name
+                                + part4
+                                + " --"
+                                + variable
+                                + ' "'
+                                + value
+                                + " --"
+                                + variable2
+                                + ' "'
+                                + value2
+                                + '" --method 1 --random-seed '
+                                + str(random_seeds[i])
+                            )
+                        else:
+                            f.write(
+                                part1
+                                + avail_q[q_counter]
+                                + part11
+                                + name
+                                + part2
+                                + name
+                                + part3
+                                + name
+                                + part4
+                                + " --"
+                                + variable
+                                + " "
+                                + str(value)
+                                + " --"
+                                + variable2
+                                + ' "'
+                                + str(value2)
+                                + " --method 1 --random-seed "
+                                + str(random_seeds[i])
+                            )
+                    os.system("qsub " + "jobscripts/" + name + ".script")
+                    q_counter += 1
+                    if q_counter >= len(avail_q):
+                        q_counter = 0
