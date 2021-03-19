@@ -1,0 +1,11 @@
+#!/bin/csh 
+#$ -M cschaef6@nd.edu 
+#$ -m abe
+#$ -q gpu@@joshi
+#$ -l gpu_card=1
+#$ -N noquant_sweep_noise-injectionI_M10.15_noise-injectionT_M10.2_1
+#$ -o ./logs/output_noquant_sweep_noquant_sweep_noise-injectionI_M10.15_noise-injectionT_M10.2_1.txt
+#$ -e ./logs/error_noquant_sweep_noquant_sweep_noise-injectionI_M10.15_noise-injectionT_M10.2_1.txt
+module load python
+setenv OMP_NUM_THREADS $NSLOTS
+python KWS_LSTM.py --noise-injectionI 0.15 --noise-injectionT 0.2 --method 1 --random-seed 235899598
