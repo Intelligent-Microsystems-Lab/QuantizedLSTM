@@ -235,7 +235,7 @@ args.pact_a = bool(args.pact_a)
 args.hop_length = args.win_length // 2
 
 args.rows_bias = args.rows_bias * args.max_w
-args.noise_injectionI = args.noise_injectionT
+#args.noise_injectionI = args.noise_injectionT
 
 print(args)
 
