@@ -15,7 +15,7 @@ part4 = (
 )
 
 
-sweep_parameters = {"noise-injectionI": [.0, .05, .1, .15]}
+sweep_parameters = {"noise-injectionI": [.20, .25, .3]}
 sweep_parameters2 = {"noise-injectionT": [.0, .05, .1, .15, .20, .25, .3]}
 trials = 3
 
